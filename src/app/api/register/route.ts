@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
     return NextResponse.json({ message: "User created" }, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Register error:', err);
     return NextResponse.json({ message: "Server error", error: err?.message || String(err) }, { status: 500 });
   }

@@ -2,46 +2,45 @@
 
 import { useState, useEffect } from 'react'
 import Post from './Post'
-
-interface Post {
-  _id: string
-  content: string
-  author: {
-    _id: string
-    username: string
-    name: string
-    profilePicture: string
-  }
-  likes: string[]
-  comments: Array<{
-    _id: string
-    content: string
-    author: {
-      _id: string
-      username: string
-      name: string
-      profilePicture: string
-    }
-    createdAt: string
-  }>
-  createdAt: string
-}
+import { Post as PostType, User } from '@/types/models'
+import { Types } from 'mongoose'
 
 interface PostListProps {
-  initialPosts?: Post[]
+  initialPosts?: PostType[]
   fetchUrl: string
 }
 
 export default function PostList({ initialPosts = [], fetchUrl }: PostListProps) {
-  const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [posts, setPosts] = useState<PostType[]>(initialPosts)
   const [loading, setLoading] = useState(!initialPosts.length)
   const [error, setError] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   useEffect(() => {
     if (!initialPosts.length) {
       fetchPosts()
     }
+    // Récupérer l'utilisateur courant
+    const userId = localStorage.getItem('userId')
+    if (userId) {
+      fetchUser(userId)
+    }
   }, [])
+
+  const fetchUser = async (userId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      if (!response.ok) throw new Error('Erreur lors de la récupération de l\'utilisateur')
+      const user = await response.json()
+      setCurrentUser(user)
+    } catch (error) {
+      console.error('Erreur:', error)
+    }
+  }
 
   const fetchPosts = async () => {
     try {
@@ -67,12 +66,12 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
     }
   }
 
-  const handlePostCreated = (newPost: Post) => {
-    setPosts((prevPosts: Post[]) => [newPost, ...prevPosts])
+  const handlePostCreated = (newPost: PostType) => {
+    setPosts((prevPosts) => [newPost, ...prevPosts])
   }
 
   const handlePostDeleted = (postId: string) => {
-    setPosts((prevPosts: Post[]) => prevPosts.filter(post => post._id !== postId))
+    setPosts((prevPosts) => prevPosts.filter(post => post._id.toString() !== postId))
   }
 
   if (loading) {
@@ -103,17 +102,19 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
     <div className="space-y-4">
       {posts.map(post => (
         <Post
-          key={post._id}
+          key={post._id.toString()}
           post={post}
-          onLike={() => {
-            // Rafraîchir la liste des posts après un like
-            fetchPosts()
+          currentUser={currentUser as User}
+          onLike={async (postId) => {
+            await fetchPosts()
           }}
-          onComment={() => {
-            // Rafraîchir la liste des posts après un commentaire
-            fetchPosts()
+          onComment={async (postId, content) => {
+            await fetchPosts()
           }}
-          isClickable={true}
+          onShare={(postId) => {
+            // Implémenter le partage
+            console.log('Partager le post:', postId)
+          }}
         />
       ))}
     </div>

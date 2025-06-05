@@ -5,37 +5,26 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
+import { Post as PostType, User } from '@/types/models'
+import PostHeader from './post/PostHeader'
+import PostContent from './post/PostContent'
+import PostActions from './post/PostActions'
 
 interface PostProps {
-  post: {
-    _id: string
-    content: string
-    author: {
-      _id: string
-      username: string
-      name: string
-      profilePicture: string
-    }
-    likes: string[]
-    comments: Array<{
-      _id: string
-      content: string
-      author: {
-        _id: string
-        username: string
-        name: string
-        profilePicture: string
-      }
-      createdAt: string
-    }>
-    createdAt: string
-  }
-  onLike?: () => void
-  onComment?: () => void
-  isClickable?: boolean
+  post: PostType
+  currentUser: User
+  onLike: (postId: string) => Promise<void>
+  onComment: (postId: string, content: string) => Promise<void>
+  onShare: (postId: string) => void
 }
 
-export default function Post({ post, onLike, onComment, isClickable = true }: PostProps) {
+export default function Post({
+  post,
+  currentUser,
+  onLike,
+  onComment,
+  onShare,
+}: PostProps) {
   const [showCommentForm, setShowCommentForm] = useState(false)
   const getUserId = () => localStorage.getItem('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
@@ -91,7 +80,7 @@ export default function Post({ post, onLike, onComment, isClickable = true }: Po
 
       setIsLiked(!isLiked)
       setLikesCount((prev: number) => isLiked ? prev - 1 : prev + 1)
-      if (onLike) onLike()
+      if (onLike) onLike(post._id.toString())
     } catch (error) {
       console.error('Erreur:', error)
       alert('Une erreur est survenue')
@@ -124,94 +113,25 @@ export default function Post({ post, onLike, onComment, isClickable = true }: Po
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-4 mb-4 border border-gray-100 dark:border-gray-800 relative group">
-      {isClickable && (
-        <div ref={clickableRef} className="absolute inset-0 z-10 cursor-pointer rounded-2xl" style={{}} onClick={e => {
-          if ((e.target as HTMLElement).closest('button, input, textarea, a')) return
-          window.location.href = `/post/${post._id}`
-        }} />
-      )}
-      <div className="flex gap-3 relative z-20">
-        <Link href={`/profile/${post.author.username}`} onClick={e => e.stopPropagation()}>
-          <Image
-            src={post.author.profilePicture || '/default-avatar.png'}
-            alt={post.author.name}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <div>
-              <Link href={`/profile/${post.author.username}`} className="font-bold text-gray-900 dark:text-gray-100 hover:underline" onClick={e => e.stopPropagation()}>
-                {post.author.name}
-              </Link>
-              <span className="text-gray-500 dark:text-gray-400 ml-2">
-                @{post.author.username}
-              </span>
-              <span className="text-gray-500 dark:text-gray-400 ml-2">
-                · {formatDate(post.createdAt)}
-              </span>
-            </div>
-            <button className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" onClick={e => e.stopPropagation()}>
-              <MdMoreHoriz className="w-5 h-5" />
-            </button>
-          </div>
-          <p className="text-gray-900 dark:text-gray-100 mb-3 whitespace-pre-wrap">
-            {post.content}
-          </p>
-          <div className="flex items-center gap-6">
-            <button
-              onClick={e => { e.stopPropagation(); handleLike(); }}
-              className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-            >
-              {isLiked ? (
-                <MdFavorite className="w-5 h-5 text-red-500" />
-              ) : (
-                <MdFavoriteBorder className="w-5 h-5" />
-              )}
-              <span>{likesCount}</span>
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); window.location.href = `/post/${post._id}`; }}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors"
-            >
-              <MdChatBubbleOutline className="w-5 h-5" />
-              <span>{comments.length}</span>
-            </button>
-            <button className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors" onClick={e => e.stopPropagation()}>
-              <MdRepeat className="w-5 h-5" />
-            </button>
-            <button className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" onClick={e => e.stopPropagation()}>
-              <MdShare className="w-5 h-5" />
-            </button>
-          </div>
-          {showCommentForm && (
-            <div className="mt-4">
-              <PostForm
-                parentPostId={post._id}
-                placeholder="Répondre..."
-                onPostCreated={() => {
-                  setShowCommentForm(false)
-                  if (onComment) onComment()
-                }}
-              />
-              <div className="mt-4">
-                {loadingComments && <div className="text-gray-500">Chargement des commentaires...</div>}
-                {commentsError && <div className="text-red-500">{commentsError}</div>}
-                {!loadingComments && !commentsError && (
-                  <FlatComments parentId={post._id} formatDate={formatDate} allComments={comments} replyingCommentId={replyingCommentId} setReplyingCommentId={setReplyingCommentId} onLike={refreshComments} />
-                )}
-                {(!loadingComments && !commentsError && comments.length === 0) && (
-                  <div className="text-gray-500 text-sm">Aucun commentaire</div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <article className="bg-white rounded-lg shadow-md overflow-hidden">
+      <PostHeader
+        author={post.author as unknown as User}
+        createdAt={post.createdAt}
+        location={post.location}
+      />
+      <PostContent post={post} />
+      <PostActions
+        post={post}
+        currentUser={currentUser}
+        onLike={handleLike}
+        onComment={async (content) => {
+          if (onComment) await onComment(post._id.toString(), content)
+        }}
+        onShare={() => {
+          if (onShare) onShare(post._id.toString())
+        }}
+      />
+    </article>
   )
 }
 
