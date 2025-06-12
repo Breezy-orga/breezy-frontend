@@ -23,7 +23,7 @@ export default function Register() {
     setError("");
     setSuccess("");
     try {
-      const res = await api.post('/api/auth/register', form);
+      const res = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, form);
       if (res.status === 201) {
         setSuccess("Account created! You can now sign in.");
         setTimeout(() => router.push("/login"), 1500);

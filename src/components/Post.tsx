@@ -5,10 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
-import { Post as PostType, User } from '@/types/models'
 import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
 import PostActions from './post/PostActions'
+import type { Post as PostType, User } from '@/types/models'
 
 interface PostProps {
   post: PostType
@@ -25,6 +25,16 @@ export default function Post({
   onComment,
   onShare,
 }: PostProps) {
+  // Vérification et fallback complet pour le cas où l'author est null/undefined/string/objet
+  // Typage explicite pour éviter l'erreur TypeScript
+  if (!post.author) {
+    console.error('Author is null or undefined for post:', post._id);
+  }
+  
+  const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
+  const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
+  const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
+  const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
   const [showCommentForm, setShowCommentForm] = useState(false)
   const getUserId = () => localStorage.getItem('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
@@ -156,10 +166,10 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   }, [item.likes])
   return (
     <div className={isComment ? "flex gap-3 items-start mb-2" : "flex gap-3 items-start mb-4"}>
-      <Image src={item.author?.username === 'daemon' ? '/me.jpg' : (item.author?.profilePicture || '/default-avatar.png')} alt={item.author?.name || ''} width={isComment ? 32 : 40} height={isComment ? 32 : 40} className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} />
+      <Image src={item.author?.username === 'daemon' ? '/me.jpg' : (item.author?.profilePicture || '/default-avatar.png')} alt={item.author?.username || ''} width={isComment ? 32 : 40} height={isComment ? 32 : 40} className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.author?.name}</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{item.author?.username}</span>
           <span className="text-xs text-gray-500 dark:text-gray-400">@{item.author?.username}</span>
           <span className="text-xs text-gray-400 ml-2">{formatDate(item.createdAt)}</span>
         </div>

@@ -15,6 +15,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
     username: '',
     email: '',
     password: ''
+    // champ name supprimé
   })
   const [error, setError] = useState('')
 
@@ -25,19 +26,47 @@ export default function AuthForm({ mode }: AuthFormProps) {
     try {
       const endpoint = mode === 'login'
         ? (process.env.NEXT_PUBLIC_API_URL
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`
-            : 'http://localhost:5000/api/auth/login')
+            ? `${process.env.NEXT_PUBLIC_API_URL}/auth/login`
+            : 'http://localhost:5000/auth/login')
         : (process.env.NEXT_PUBLIC_API_URL
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`
-            : 'http://localhost:5000/api/auth/register');
-      const response = await axios.post(endpoint, formData)
+            ? `${process.env.NEXT_PUBLIC_API_URL}/auth/register`
+            : 'http://localhost:5000/auth/register');
+      
+      console.log('Attempting to connect to:', endpoint);
+      const payload = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+        // champ name supprimé
+      };
+      console.log('Payload envoyé:', payload);
+      
+      const response = await axios.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token)
         router.push('/feed')
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred')
+      console.error('Login error:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        headers: err.response?.headers
+      });
+      
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        setError('Email ou mot de passe incorrect. Veuillez réessayer.');
+      } else if (err.response?.status === 500) {
+        setError('Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.');
+      } else {
+        setError(err.response?.data?.message || 'Une erreur est survenue lors de l\'authentification');
+      }
     }
   }
 
@@ -66,19 +95,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {mode === 'register' && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Username</label>
-            <input
-              type="text"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Enter your username"
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
-              required
-            />
-          </div>
-        )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">Username</label>
+          <input
+            type="text"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Enter your username"
+            value={formData.username}
+            onChange={(e) => {
+              setFormData({...formData, username: e.target.value});
+              // DEBUG: Log formData after username change
+              console.log('[onChange username] formData:', {...formData, username: e.target.value});
+            }}
+            required
+          />
+        </div>
+        {/* Champ name supprimé */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Email</label>
           <input
@@ -86,7 +118,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Enter your email"
             value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            onChange={(e) => {
+              setFormData({...formData, email: e.target.value});
+              // DEBUG: Log formData after email change
+              console.log('[onChange email] formData:', {...formData, email: e.target.value});
+            }}
             required
           />
         </div>
@@ -97,7 +133,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Enter your password"
             value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
+            onChange={(e) => {
+              setFormData({...formData, password: e.target.value});
+              // DEBUG: Log formData after password change
+              console.log('[onChange password] formData:', {...formData, password: e.target.value});
+            }}
             required
           />
         </div>

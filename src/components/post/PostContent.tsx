@@ -8,7 +8,7 @@ interface PostContentProps {
 export default function PostContent({ post }: PostContentProps) {
   return (
     <div className="p-4">
-      <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
       {post.images && post.images.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-2">
           {post.images.map((image, index) => (
@@ -28,7 +28,7 @@ export default function PostContent({ post }: PostContentProps) {
           {post.tags.map((tag, index) => (
             <span
               key={index}
-              className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
+              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm"
             >
               #{tag}
             </span>

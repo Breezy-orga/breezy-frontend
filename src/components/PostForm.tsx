@@ -20,7 +20,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
         if (response.ok) {
@@ -37,7 +37,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-800">
       <div className="flex gap-3">
         <Image
-          src={user?.username === 'daemon' ? '/me.jpg' : (user?.profilePicture || '/default-avatar.png')}
+          src={user && user.username === 'daemon' ? '/me.jpg' : (user?.profilePicture || '/default-avatar.png')}
           alt="Votre avatar"
           width={40}
           height={40}

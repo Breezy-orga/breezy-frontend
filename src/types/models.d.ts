@@ -1,31 +1,29 @@
-import { Types } from 'mongoose';
-
 export interface User {
-  _id: Types.ObjectId;
+  _id: string;
   username: string;
   email: string;
   password: string;
   profilePicture: string;
   bio: string;
-  followers: Types.ObjectId[];
-  following: Types.ObjectId[];
+  followers: string[];
+  following: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Comment {
-  _id: Types.ObjectId;
-  author: Types.ObjectId;
+  _id: string;
+  author: string;
   content: string;
   createdAt: Date;
 }
 
 export interface Post {
-  _id: Types.ObjectId;
-  author: Types.ObjectId;
+  _id: string;
+  author: string;
   content: string;
   images: string[];
-  likes: Types.ObjectId[];
+  likes: string[];
   comments: Comment[];
   tags: string[];
   location?: string;

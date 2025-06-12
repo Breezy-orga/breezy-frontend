@@ -29,7 +29,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
 
   const fetchUser = async (userId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -100,23 +100,31 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
 
   return (
     <div className="space-y-4">
-      {posts.map(post => (
-        <Post
-          key={post._id.toString()}
-          post={post}
-          currentUser={currentUser as User}
-          onLike={async (postId) => {
-            await fetchPosts()
-          }}
-          onComment={async (postId, content) => {
-            await fetchPosts()
-          }}
-          onShare={(postId) => {
-            // Implémenter le partage
-            console.log('Partager le post:', postId)
-          }}
-        />
-      ))}
+      {posts.map(post => {
+        // Log pour debug et skip des posts qui causeraient une erreur
+        if (!post || !post._id) {
+          console.error('Post invalide détecté:', post)
+          return null
+        }
+        
+        return (
+          <Post
+            key={post._id.toString()}
+            post={post}
+            currentUser={currentUser || { _id: '', username: '', email: '', profilePicture: '/default-avatar.png' } as User}
+            onLike={async (postId) => {
+              await fetchPosts()
+            }}
+            onComment={async (postId, content) => {
+              await fetchPosts()
+            }}
+            onShare={(postId) => {
+              // Implémenter le partage
+              console.log('Partager le post:', postId)
+            }}
+          />
+        )
+      })}
     </div>
   )
 } 

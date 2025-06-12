@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,6 +17,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Script exécuté avant même que React ne charge
+          try {
+            // Supprimer toute préférence thème existante
+            localStorage.removeItem('theme');
+            // Définir explicitement le thème clair
+            localStorage.setItem('theme', 'light');
+            // S'assurer que la classe 'dark' n'est pas sur l'élément HTML
+            document.documentElement.classList.remove('dark');
+            // Ajouter la classe 'light' explicitement
+            document.documentElement.classList.add('light');
+          } catch (e) {
+            console.error('Erreur lors de l\'initialisation du thème:', e);
+          }
+        ` }} />
+      </head>
       <body className={inter.className}>
         <ThemeProvider>
           <main>

@@ -19,7 +19,7 @@ export default function Home() {
         <div className="mt-8">
           <PostList
             key={refreshKey}
-            fetchUrl={`${process.env.NEXT_PUBLIC_API_URL}/api/posts`}
+            fetchUrl={`${process.env.NEXT_PUBLIC_API_URL}/posts`}
           />
         </div>
       </div>

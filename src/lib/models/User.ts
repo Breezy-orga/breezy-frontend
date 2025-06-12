@@ -1,57 +1,11 @@
-import mongoose from 'mongoose';
-
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: [true, 'Username is required'],
-    unique: true,
-    trim: true,
-    minlength: [3, 'Username must be at least 3 characters long'],
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    trim: true,
-    lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters long'],
-  },
-  profilePicture: {
-    type: String,
-    default: '',
-  },
-  bio: {
-    type: String,
-    default: '',
-    maxlength: [500, 'Bio cannot exceed 500 characters'],
-  },
-  followers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  following: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-// Update the updatedAt field before saving
-userSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
-
-export default mongoose.models.User || mongoose.model('User', userSchema); 
+export interface User {
+  _id: string;
+  username: string;
+  email: string;
+  profilePicture?: string;
+  bio?: string;
+  followers: string[];
+  following: string[];
+  createdAt: string;
+  updatedAt: string;
+}
