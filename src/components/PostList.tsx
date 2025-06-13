@@ -34,9 +34,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include',
       })
       
       if (!response.ok) {
@@ -80,9 +78,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
     try {
       setLoading(true)
       const response = await fetch(fetchUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include',
       })
 
       if (!response.ok) {
