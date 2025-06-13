@@ -44,13 +44,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
       const response = await axios.post(endpoint, payload, {
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        withCredentials : true,
       });
       
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token)
-        router.push('/feed')
+      if (response.status === 200) {
+        router.push('/feed');
       }
+
     } catch (err: any) {
       console.error('Login error:', {
         status: err.response?.status,

@@ -18,53 +18,55 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (response.ok) {
-          setUser(await response.json())
-        }
-      } catch {}
-    }
-    fetchUser()
-  }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!content.trim() || isSubmitting) return
-
-    setIsSubmitting(true)
+  const fetchUser = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          content: content.trim(),
-          parentPost: parentPostId
-        })
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+        credentials: 'include'
       })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la publication')
+      if (response.ok) {
+        setUser(await response.json())
       }
-
-      setContent('')
-      if (onPostCreated) {
-        onPostCreated()
-      }
-      router.refresh()
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Une erreur est survenue lors de la publication')
-    } finally {
-      setIsSubmitting(false)
+    } catch {
+      console.error('Échec récupération utilisateur')
     }
   }
+
+  fetchUser()
+}, [])
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!content.trim() || isSubmitting) return
+
+  setIsSubmitting(true)
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        content: content.trim(),
+        parentPost: parentPostId
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la publication')
+    }
+
+    setContent('')
+    if (onPostCreated) onPostCreated()
+    router.refresh()
+  } catch (error) {
+    console.error('Erreur:', error)
+    alert('Une erreur est survenue lors de la publication')
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-800">

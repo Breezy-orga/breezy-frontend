@@ -10,6 +10,14 @@ import PostContent from './post/PostContent'
 import PostActions from './post/PostActions'
 import type { Post as PostType, User } from '@/types/models'
 
+
+// Fonction simple pour lire un cookie côté client
+function getCookie(name : string) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return decodeURIComponent(match[2]);
+  return null;
+}
+
 interface PostProps {
   post: PostType
   currentUser: User
@@ -30,13 +38,13 @@ export default function Post({
   if (!post.author) {
     console.error('Author is null or undefined for post:', post._id);
   }
-  
+
   const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
   const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
   const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
   const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
   const [showCommentForm, setShowCommentForm] = useState(false)
-  const getUserId = () => localStorage.getItem('userId') || ''
+  const getUserId = () => getCookie('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
   const [likesCount, setLikesCount] = useState(post.likes.length)
@@ -146,7 +154,7 @@ export default function Post({
 }
 
 function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike }: any) {
-  const getUserId = () => localStorage.getItem('userId') || ''
+  const getUserId = () => getCookie('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const isComment = !!item.parentPost
   const [isLiked, setIsLiked] = useState(isLikedByUser(item.likes || []))

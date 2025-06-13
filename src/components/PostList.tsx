@@ -30,9 +30,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   const fetchUser = async (userId: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include',
       })
       if (!response.ok) throw new Error('Erreur lors de la récupération de l\'utilisateur')
       const user = await response.json()
@@ -46,9 +44,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
     try {
       setLoading(true)
       const response = await fetch(fetchUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include',
       })
 
       if (!response.ok) {
