@@ -15,6 +15,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import PostForm from '@/components/PostForm';
 import PostList from '@/components/PostList';
+import { Sidebar } from '@/components/LayoutParts'
 
 interface Story {
   username: string;
@@ -329,34 +330,34 @@ function Follows() {
   );
 }
 
-function Sidebar() {
-  const [active, setActive] = useState('feed');
-  const navItems = [
-    { key: 'feed', label: "Page d'accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
-    { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
-  ];
-  return (
-    <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
-      <nav className="flex flex-col gap-2 text-base font-semibold">
-        {navItems.map(item => (
-          <button
-            key={item.key}
-            onClick={() => setActive(item.key)}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-150 group
-              ${active === item.key ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow font-bold scale-[1.04]' : 'text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50'}
-            `}
-          >
-            <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
-            <span>{item.label}</span>
-            {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
-          </button>
-        ))}
-      </nav>
-    </aside>
-  );
-}
+// function Sidebar() {
+//   const [active, setActive] = useState('feed');
+//   const navItems = [
+//     { key: 'feed', label: "Page d'accueil", icon: MdHome, href: '/feed' },
+//     { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
+//     { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
+//     { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
+//   ];
+//   return (
+//     <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
+//       <nav className="flex flex-col gap-2 text-base font-semibold">
+//         {navItems.map(item => (
+//           <button
+//             key={item.key}
+//             onClick={() => setActive(item.key)}
+//             className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-150 group
+//               ${active === item.key ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow font-bold scale-[1.04]' : 'text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50'}
+//             `}
+//           >
+//             <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
+//             <span>{item.label}</span>
+//             {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
+//           </button>
+//         ))}
+//       </nav>
+//     </aside>
+//   );
+// }
 
 export default function FeedPage() {
   const [refreshKey, setRefreshKey] = useState(0);
