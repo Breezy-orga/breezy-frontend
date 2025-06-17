@@ -12,10 +12,17 @@ import type { Post as PostType, User } from '@/types/models'
 
 interface PostProps {
   post: PostType
-  currentUser: User
+  currentUser: User | null
   onLike: (postId: string) => Promise<void>
   onComment: (postId: string, content: string) => Promise<void>
   onShare: (postId: string) => void
+}
+
+// Utilisateur par défaut en cas d'absence
+const defaultUser: User = {
+  _id: 'unknown',
+  username: 'utilisateur',
+  profilePicture: '/default-avatar.svg'
 }
 
 export default function Post({
@@ -25,6 +32,7 @@ export default function Post({
   onComment,
   onShare,
 }: PostProps) {
+<<<<<<< Updated upstream
   // Vérification et fallback complet pour le cas où l'author est null/undefined/string/objet
   // Typage explicite pour éviter l'erreur TypeScript
   if (!post.author) {
@@ -35,6 +43,10 @@ export default function Post({
   const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
   const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
   const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
+=======
+  // Utiliser l'utilisateur par défaut si currentUser est null/undefined
+  const safeCurrentUser = currentUser || defaultUser
+>>>>>>> Stashed changes
   const [showCommentForm, setShowCommentForm] = useState(false)
   const getUserId = () => localStorage.getItem('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
@@ -60,7 +72,7 @@ export default function Post({
     setLoadingComments(true)
     setCommentsError(null)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/comments`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -77,7 +89,7 @@ export default function Post({
 
   const handleLike = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/like`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -111,7 +123,7 @@ export default function Post({
 
   const refreshComments = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/comments`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -125,14 +137,14 @@ export default function Post({
   return (
     <article className="bg-white rounded-lg shadow-md overflow-hidden">
       <PostHeader
-        author={post.author as unknown as User}
-        createdAt={post.createdAt}
+        author={post.author as unknown as User || defaultUser}
+        createdAt={new Date(post.createdAt)}
         location={post.location}
       />
       <PostContent post={post} />
       <PostActions
         post={post}
-        currentUser={currentUser}
+        currentUser={safeCurrentUser}
         onLike={handleLike}
         onComment={async (content) => {
           if (onComment) await onComment(post._id.toString(), content)
@@ -154,7 +166,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${item._id}/like`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${item._id}/like`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
@@ -166,14 +178,22 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   }, [item.likes])
   return (
     <div className={isComment ? "flex gap-3 items-start mb-2" : "flex gap-3 items-start mb-4"}>
+<<<<<<< Updated upstream
       <Image src={item.author?.username === 'daemon' ? '/me.jpg' : (item.author?.profilePicture || '/default-avatar.png')} alt={item.author?.username || ''} width={isComment ? 32 : 40} height={isComment ? 32 : 40} className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-gray-900 dark:text-gray-100">{item.author?.username}</span>
           <span className="text-xs text-gray-500 dark:text-gray-400">@{item.author?.username}</span>
+=======
+      <Image src={item.author?.username === 'daemon' ? '/me.jpg' : (item.author?.profilePicture || '/default-avatar.svg')} alt={item.author?.name || ''} width={isComment ? 32 : 40} height={isComment ? 32 : 40} className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} />
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-900">{item.author?.name}</span>
+          <span className="text-xs text-gray-500">@{item.author?.username}</span>
+>>>>>>> Stashed changes
           <span className="text-xs text-gray-400 ml-2">{formatDate(item.createdAt)}</span>
         </div>
-        <div className="text-gray-800 dark:text-gray-200 whitespace-pre-line mt-1">{item.content}</div>
+        <div className="text-gray-800 whitespace-pre-line mt-1">{item.content}</div>
         <div className="flex items-center gap-4 mt-1 mb-2">
           <button className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors" onClick={handleLike}>
             {isLiked ? <MdFavorite className={isComment ? "w-4 h-4 text-red-500" : "w-5 h-5 text-red-500"} /> : <MdFavoriteBorder className={isComment ? "w-4 h-4" : "w-5 h-5"} />}
@@ -206,7 +226,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
       {comments.map(comment => {
         const repliesCount = allComments.filter(c => c.parentPost === comment._id).length
         return (
-          <div key={comment._id} className="py-3 border-t border-gray-200 dark:border-gray-700 relative group">
+          <div key={comment._id} className="py-3 border-t border-gray-200 relative group">
             <div className="absolute inset-0 z-10 cursor-pointer rounded-xl" onClick={e => {
               if ((e.target as HTMLElement).closest('button, input, textarea, a')) return
               window.location.href = `/post/${comment._id}`

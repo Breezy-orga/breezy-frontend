@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
-import { Types } from 'mongoose'
 
 interface PostListProps {
   initialPosts?: PostType[]
@@ -28,17 +27,52 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   }, [])
 
   const fetchUser = async (userId: string) => {
+    if (!userId) {
+      console.warn('Aucun ID utilisateur fourni pour la récupération')
+      return
+    }
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
-      if (!response.ok) throw new Error('Erreur lors de la récupération de l\'utilisateur')
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn('Utilisateur non trouvé, utilisation d\'un utilisateur par défaut')
+          // Créer un utilisateur par défaut pour éviter les erreurs
+          setCurrentUser({
+            _id: userId,
+            username: 'utilisateur',
+            profilePicture: '/default-avatar.svg'
+          })
+          return
+        }
+        throw new Error(`Erreur HTTP: ${response.status}`)
+      }
+      
       const user = await response.json()
-      setCurrentUser(user)
+      if (!user) {
+        throw new Error('Aucune donnée utilisateur reçue')
+      }
+      
+      // S'assurer que l'utilisateur a une photo de profil
+      const userWithDefaultAvatar = {
+        ...user,
+        profilePicture: user.profilePicture || '/default-avatar.svg'
+      }
+      
+      setCurrentUser(userWithDefaultAvatar)
     } catch (error) {
-      console.error('Erreur:', error)
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error)
+      // En cas d'erreur, définir un utilisateur par défaut
+      setCurrentUser({
+        _id: userId,
+        username: 'utilisateur',
+        profilePicture: '/default-avatar.svg'
+      })
     }
   }
 
@@ -92,7 +126,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
 
   if (!posts.length) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+      <div className="text-center py-8 text-gray-500">
         Aucun message à afficher
       </div>
     )

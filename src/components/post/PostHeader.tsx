@@ -15,7 +15,7 @@ export default function PostHeader({ author, createdAt, location }: PostHeaderPr
       <Link href={`/profile/${author._id}`}>
         <div className="relative h-10 w-10 rounded-full overflow-hidden">
           <Image
-            src={author.profilePicture || '/default-avatar.png'}
+            src={author.profilePicture || '/default-avatar.svg'}
             alt={author.username}
             fill
             className="object-cover"

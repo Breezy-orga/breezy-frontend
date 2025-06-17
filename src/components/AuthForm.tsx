@@ -14,8 +14,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+<<<<<<< Updated upstream
     password: ''
     // champ name supprimé
+=======
+    password: '',
+    identifier: ''
+>>>>>>> Stashed changes
   })
   const [error, setError] = useState('')
 
@@ -24,7 +29,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setError('')
 
     try {
+      // Créer les URLs d'authentification sans duplication du préfixe /api
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const endpoint = mode === 'login'
+<<<<<<< Updated upstream
         ? (process.env.NEXT_PUBLIC_API_URL
             ? `${process.env.NEXT_PUBLIC_API_URL}/auth/login`
             : 'http://localhost:5000/auth/login')
@@ -46,6 +54,16 @@ export default function AuthForm({ mode }: AuthFormProps) {
           'Content-Type': 'application/json',
         }
       });
+=======
+        ? baseUrl.replace(/\/api$/, '') + '/api/auth/login'
+        : baseUrl.replace(/\/api$/, '') + '/api/auth/register';
+      // Préparer les données selon le mode
+      const dataToSend = mode === 'login' 
+        ? { identifier: formData.identifier, password: formData.password } 
+        : formData;
+      
+      const response = await axios.post(endpoint, dataToSend)
+>>>>>>> Stashed changes
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token)
@@ -95,6 +113,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+<<<<<<< Updated upstream
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Username</label>
           <input
@@ -126,6 +145,46 @@ export default function AuthForm({ mode }: AuthFormProps) {
             required
           />
         </div>
+=======
+        {mode === 'register' && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your username"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              required
+            />
+          </div>
+        )}
+        {mode === 'login' ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Email or Username</label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your email or username"
+              value={formData.identifier}
+              onChange={(e) => setFormData({...formData, identifier: e.target.value})}
+              required
+            />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              required
+            />
+          </div>
+        )}
+>>>>>>> Stashed changes
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Password</label>
           <input

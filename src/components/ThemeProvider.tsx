@@ -35,6 +35,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+<<<<<<< Updated upstream
   const [theme, setTheme] = useState<Theme>('light')
   const [isLoading, setIsLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
@@ -136,6 +137,43 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Erreur lors de la mise à jour du thème:', error)
     }
+=======
+  // Force light theme only
+  const [theme] = useState<Theme>('light')
+
+  // Force light theme on initial render
+  if (typeof window !== 'undefined') {
+    // Ensure dark mode is removed immediately
+    document.documentElement.classList.remove('dark')
+    document.documentElement.classList.add('light')
+    // Cleanup any stored theme preference
+    localStorage.setItem('theme', 'light')
+  }
+
+  useEffect(() => {
+    // Always ensure light theme on component mount
+    const root = window.document.documentElement
+    root.classList.remove('dark')
+    root.classList.add('light')
+    localStorage.setItem('theme', 'light')
+
+    // Override any attempts to change the theme
+    const observer = new MutationObserver(() => {
+      if (root.classList.contains('dark')) {
+        root.classList.remove('dark')
+        root.classList.add('light')
+      }
+    })
+    
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
+  }, [])
+
+  // Dummy function that does nothing (to maintain compatibility)
+  const toggleTheme = () => {
+    // No-op - theme switching disabled
+>>>>>>> Stashed changes
   }
 
   return (

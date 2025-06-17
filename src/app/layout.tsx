@@ -16,6 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
+<<<<<<< Updated upstream
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -35,6 +36,10 @@ export default function RootLayout({
         ` }} />
       </head>
       <body className={inter.className}>
+=======
+    <html lang="en" suppressHydrationWarning className="light">
+      <body className={`${inter.className} bg-white text-gray-900`}>
+>>>>>>> Stashed changes
         <ThemeProvider>
           <main>
             {children}

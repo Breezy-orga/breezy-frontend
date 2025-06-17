@@ -120,6 +120,7 @@ const fakeTrends = [
   { tag: '#dev', count: 3 },
 ];
 
+<<<<<<< Updated upstream
 function Header() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -182,16 +183,18 @@ function Header() {
   );
 }
 
+=======
+>>>>>>> Stashed changes
 function Stories() {
   return (
     <div className="flex gap-5 mb-8 overflow-x-auto pb-2">
       {fakeStories.map((story, i) => (
         <div key={story.username} className="flex flex-col items-center group cursor-pointer relative">
-          <div className={`rounded-full border-4 ${story.isOnline ? 'border-green-400' : 'border-gray-200 dark:border-gray-700'} p-1 transition-all duration-200 group-hover:scale-105`}>
+          <div className={`rounded-full border-4 ${story.isOnline ? 'border-green-400' : 'border-gray-200 border-gray-200'} p-1 transition-all duration-200 group-hover:scale-105`}>
             <Image src={story.avatar} alt={story.username} width={60} height={60} className="rounded-full object-cover" />
           </div>
-          <span className="text-xs text-gray-700 dark:text-gray-300 mt-2">@{story.username}</span>
-          {story.isOnline && <span className="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></span>}
+          <span className="text-xs text-gray-700 text-gray-700 mt-2">@{story.username}</span>
+          {story.isOnline && <span className="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full border-2 border-white border-white"></span>}
         </div>
       ))}
     </div>
@@ -230,7 +233,7 @@ function Post({ post }: { post: Post }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-6 mb-6 border border-gray-100 dark:border-gray-800 animate-fade-in relative">
+    <div className="bg-white bg-white rounded-2xl shadow-md p-6 mb-6 border border-gray-100 border-gray-100 animate-fade-in relative">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -264,7 +267,7 @@ function Post({ post }: { post: Post }) {
           </div>
         </div>
       </div>
-      <div className="text-gray-900 dark:text-gray-100 mb-4 whitespace-pre-line text-base">
+      <div className="text-gray-900 mb-4 whitespace-pre-line text-base">
         {post.content.split(' ').map((word, i) => word.startsWith('#') ? (
           <button key={i} className="text-blue-500 cursor-pointer hover:underline inline" onClick={() => setFilterTag(word)}>{word} </button>
         ) : word + ' ')}
@@ -301,9 +304,26 @@ function Post({ post }: { post: Post }) {
 
 function Follows() {
   return (
+<<<<<<< Updated upstream
     <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 min-h-screen p-6">
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Tendances pour vous</h2>
+=======
+    <aside className="hidden xl:flex flex-col w-72 bg-white border-l border-gray-100 min-h-screen px-6 py-8 gap-10">
+      <div>
+        <h2 className="text-xl font-bold mb-6 text-gray-900">Comptes suivis</h2>
+        <div className="flex flex-col gap-5">
+          {fakeFollows.map(f => (
+            <div key={f.username} className="flex items-center gap-3">
+              <Image src={f.avatar} alt="Photo profil" width={36} height={36} className="rounded-full object-cover border border-gray-200" />
+              <span className="text-gray-900 font-medium">@{f.username}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h2 className="text-xl font-bold mb-4 text-gray-900">Tendances</h2>
+>>>>>>> Stashed changes
         <div className="flex flex-col gap-3">
           {fakeTrends.map(t => (
             <div key={t.tag} className="flex items-center gap-2">
@@ -338,7 +358,7 @@ function Sidebar() {
     { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
   ];
   return (
-    <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
+    <aside className="hidden md:flex flex-col w-60 bg-white bg-white border-r border-gray-100 border-gray-100 min-h-screen px-6 py-8 gap-8">
       <nav className="flex flex-col gap-2 text-base font-semibold">
         {navItems.map(item => (
           <button
@@ -365,11 +385,15 @@ export default function FeedPage() {
   const handlePostCreated = () => setRefreshKey((prev) => prev + 1);
 
   return (
+<<<<<<< Updated upstream
     <div 
       key={`feed-${theme}`} // Forcer le rendu quand le thème change 
       className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100"
     >
       <Header />
+=======
+    <div className="min-h-screen bg-white flex flex-col font-sans text-gray-900">
+>>>>>>> Stashed changes
       <div className="flex flex-1">
         <Sidebar />
         <main className="flex-1 max-w-2xl mx-auto py-10 px-4">
@@ -377,6 +401,10 @@ export default function FeedPage() {
           <div className="mt-8" key={`post-list-container-${refreshKey}-${theme}`}>
             {/* On utilise un div parent avec key pour forcer le rafraîchissement plutôt que de passer key directement à PostList */}
             <PostList
+<<<<<<< Updated upstream
+=======
+              key={refreshKey}
+>>>>>>> Stashed changes
               fetchUrl={`${process.env.NEXT_PUBLIC_API_URL}/posts/feed`}
             />
           </div>

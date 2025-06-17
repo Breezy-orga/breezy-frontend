@@ -20,13 +20,13 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       setLoading(true);
       setError(null);
       try {
-        const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${params.id}`, {
+        const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
         const postData = await resPost.json();
         setPost(postData);
-        const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${params.id}/comments`, {
+        const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
@@ -54,7 +54,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshComments = async () => {
     try {
-      const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${params.id}/comments`, {
+      const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
@@ -65,7 +65,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshPost = async () => {
     try {
-      const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${params.id}`, {
+      const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
