@@ -78,6 +78,22 @@ export default function UserProfile({ userId }: Props) {
     }
   }
 
+  const handleFollowToggle = async () => {
+    if (!user) return
+      try {
+        await api.post(`/users/${user._id}/follow`)
+        // Rafraîchir le user connecté et la cible
+        const [userRes, meRes] = await Promise.all([
+          api.get(`/users/${userId || 'me'}`),
+          api.get('/users/me'),
+        ])
+        setUser(userRes.data)
+        setCurrentUser(meRes.data)
+      } catch (error) {
+        console.error("Erreur lors du (un)follow :", error)
+      }
+  }
+
 
   if (loading) return <div className="text-center p-4">Chargement...</div>
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>
@@ -189,6 +205,19 @@ export default function UserProfile({ userId }: Props) {
                   className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
                   Modifier mon profil
+                </button>
+              )}
+
+              {!isSelf && (
+                <button
+                  onClick={handleFollowToggle}
+                  className={`mt-4 inline-block px-4 py-2 rounded-lg transition font-semibold ${
+                    currentUser?.following.includes(user._id)
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {currentUser?.following.includes(user._id) ? 'Se désabonner' : 'Suivre'}
                 </button>
               )}
             </>
