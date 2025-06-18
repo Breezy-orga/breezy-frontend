@@ -2,6 +2,9 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import Script from 'next/script'
+import '../i18n';
+
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -36,10 +39,14 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider>
+          <div className="absolute top-4 right-4">
+            
+          </div>
           <main>
             {children}
           </main>
         </ThemeProvider>
+
       </body>
     </html>
   )

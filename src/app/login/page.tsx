@@ -3,6 +3,7 @@
 import AuthForm from '@/components/AuthForm'
 import Link from 'next/link'
 import Image from 'next/image'
+import '../../i18n';
 
 export default function LoginPage() {
   return (

@@ -15,6 +15,10 @@ import { useTheme } from '@/components/ThemeProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import PostForm from '@/components/PostForm';
 import PostList from '@/components/PostList';
+import LanguageSwitcher from '@/components/post/LanguageSwitcher';
+import { MdTranslate } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+import '../../i18n'; 
 
 interface Story {
   username: string;
@@ -126,6 +130,8 @@ function Header() {
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const notifCount = 3;
+  const { i18n } = useTranslation();
+const current = i18n.resolvedLanguage === 'fr' ? 'fr' : 'en';
 
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 py-3 shadow-sm">
@@ -173,6 +179,18 @@ function Header() {
                 <ThemeToggle />
                 <span className="ml-2">{theme === 'dark' ? 'Mode clair' : 'Mode sombre'}</span>
               </div>
+              <button
+                className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"
+                onClick={() => {
+                  i18n.changeLanguage(current === 'en' ? 'fr' : 'en');
+                  setUserMenuOpen(false);
+                }}
+              >
+                <MdTranslate className="text-xl" />
+                <span className="text-gray-900 dark:text-gray-100">
+                  {current === 'en' ? 'English' : 'Français'}
+                </span>
+              </button>
               <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdLogout className="text-xl" /> Déconnexion</button>
             </div>
           )}
@@ -331,11 +349,13 @@ function Follows() {
 
 function Sidebar() {
   const [active, setActive] = useState('feed');
+    const { t } = useTranslation();
+
   const navItems = [
-    { key: 'feed', label: "Page d'accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
-    { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
+    { key: 'feed', labelKey: 'sidebar.home', icon: MdHome, href: '/feed' },
+    { key: 'profile', labelKey: 'sidebar.profile', icon: MdPerson, href: '/profile' },
+    { key: 'notifications', labelKey: 'sidebar.notifications', icon: MdNotifications, href: '/notifications' },
+    { key: 'messages', labelKey: 'sidebar.messages', icon: MdMail, href: '/messages' },
   ];
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
@@ -349,7 +369,7 @@ function Sidebar() {
             `}
           >
             <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
             {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
           </button>
         ))}

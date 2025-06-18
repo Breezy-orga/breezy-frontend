@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { MdTranslate } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+
 import { 
   MdAddCircle, MdEdit, MdAutoAwesome, MdPoll, MdEvent, 
   MdNotifications, MdPerson, MdSettings, MdLightMode, 
@@ -9,6 +12,7 @@ import {
   MdSend, MdExpandMore, MdHome, MdMail 
 } from 'react-icons/md';
 import { useTheme } from '@/components/ThemeProvider';
+import LanguageSwitcher from '@/components/post/LanguageSwitcher';
 
 const fakeFollows = [
   { username: 'alice', avatar: '/pp1.jpg' },
@@ -35,6 +39,9 @@ export function Header() {
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const notifCount = 3;
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language === 'fr' ? 'fr' : 'en';
+
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 py-3 shadow-sm">
       <div className="flex items-center gap-3">
@@ -76,10 +83,10 @@ export function Header() {
                 onClick={() => {
                   toggleTheme();
                   setUserMenuOpen(false);
-                }}
-              >
+                }}>
                 {theme === 'dark' ? <MdLightMode className="text-xl" /> : <MdDarkMode className="text-xl" />} <span className="text-gray-900 dark:text-gray-100">{theme === 'dark' ? 'Mode clair' : 'Mode sombre'}</span>
               </button>
+
               <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdLogout className="text-xl" /> Déconnexion</button>
             </div>
           )}
@@ -91,12 +98,15 @@ export function Header() {
 
 export function Sidebar() {
   const [active, setActive] = useState('feed');
+  const { t } = useTranslation();
+
   const navItems = [
-    { key: 'feed', label: "Page d'accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
-    { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
-  ];
+  { key: 'feed', labelKey: "sidebar.home", icon: MdHome, href: '/feed' },
+  { key: 'profile', labelKey: "sidebar.profile", icon: MdPerson, href: '/profile' },
+  { key: 'notifications', labelKey: "sidebar.notifications", icon: MdNotifications, href: '/notifications' },
+  { key: 'messages', labelKey: "sidebar.messages", icon: MdMail, href: '/messages' },
+];
+
   return (
     <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
       <nav className="flex flex-col gap-2 text-base font-semibold">
@@ -109,7 +119,7 @@ export function Sidebar() {
             `}
           >
             <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
             {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
           </button>
         ))}
