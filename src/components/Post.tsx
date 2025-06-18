@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
@@ -64,71 +63,62 @@ export default function Post({
     setIsLiked(isLikedByUser(post.likes))
   }, [post.likes])
 
-  const fetchComments = async () => {
-    setLoadingComments(true)
-    setCommentsError(null)
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
-      const data = await response.json()
-      setComments(data)
-    } catch (e) {
-      setCommentsError('Impossible de charger les commentaires')
-    } finally {
-      setLoadingComments(false)
-    }
-  }
-
-  const handleLike = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du like')
+const fetchComments = async () => {
+  setLoadingComments(true)
+  setCommentsError(null)
+  try {
+    const response = await fetch(
+      `/api/posts/${post._id}/comments`,
+      {
+        credentials: 'include', // <-- Ajouté
       }
+    )
+    if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
+    const data = await response.json()
+    setComments(data)
+  } catch (e) {
+    setCommentsError('Impossible de charger les commentaires')
+  } finally {
+    setLoadingComments(false)
+  }
+}
 
-      setIsLiked(!isLiked)
-      setLikesCount((prev: number) => isLiked ? prev - 1 : prev + 1)
-      if (onLike) onLike(post._id.toString())
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Une erreur est survenue')
+const handleLike = async () => {
+  try {
+    const response = await fetch(
+      `/api/posts/${post._id}/like`,
+      {
+        method: 'POST',
+        credentials: 'include', // <-- Ajouté
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du like')
     }
-  }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-    if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
-    return date.toLocaleDateString()
+    setIsLiked(!isLiked)
+    setLikesCount((prev: number) => (isLiked ? prev - 1 : prev + 1))
+    if (onLike) onLike(post._id.toString())
+  } catch (error) {
+    console.error('Erreur:', error)
+    alert('Une erreur est survenue')
   }
+}
 
-  const refreshComments = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
-      const data = await response.json()
-      setComments(data)
-    } catch {}
-  }
+const refreshComments = async () => {
+  try {
+    const response = await fetch(
+      `/api/posts/${post._id}/comments`,
+      {
+        credentials: 'include', // <-- Ajouté
+      }
+    )
+    if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
+    const data = await response.json()
+    setComments(data)
+  } catch {}
+}
 
   return (
     <article className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -162,7 +152,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts/${item._id}/like`, {
+      await fetch(`/api/posts/${item._id}/like`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
