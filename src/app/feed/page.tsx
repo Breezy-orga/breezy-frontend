@@ -19,6 +19,8 @@ import LanguageSwitcher from '@/components/post/LanguageSwitcher';
 import { MdTranslate } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import '../../i18n'; 
+import 'flag-icons/css/flag-icons.min.css';
+
 
 interface Story {
   username: string;
@@ -182,14 +184,12 @@ const current = i18n.resolvedLanguage === 'fr' ? 'fr' : 'en';
               <button
                 className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"
                 onClick={() => {
-                  i18n.changeLanguage(current === 'en' ? 'fr' : 'en');
+                  i18n.changeLanguage(current === 'fr' ? 'en' : 'fr');
                   setUserMenuOpen(false);
                 }}
               >
-                <MdTranslate className="text-xl" />
-                <span className="text-gray-900 dark:text-gray-100">
-                  {current === 'en' ? 'English' : 'Français'}
-                </span>
+                <span className={`fi fi-${current === 'fr' ? 'gb' : 'fr'}`}></span>
+                <span className="ml-2">{current === 'fr' ? 'English' : 'Français'}</span>
               </button>
               <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdLogout className="text-xl" /> Déconnexion</button>
             </div>
@@ -318,27 +318,28 @@ function Post({ post }: { post: Post }) {
 }
 
 function Follows() {
+  const { t } = useTranslation();
   return (
     <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 min-h-screen p-6">
       <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Tendances pour vous</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('rightbar.trends')}</h2>
         <div className="flex flex-col gap-3">
-          {fakeTrends.map(t => (
-            <div key={t.tag} className="flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">{t.tag}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t.count} posts</span>
+          {fakeTrends.map(tend => (
+            <div key={tend.tag} className="flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">{tend.tag}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{tend.count} {t('rightbar.posts')}</span>
             </div>
           ))}
         </div>
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Suggestions d&apos;amis</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('rightbar.suggested_friends')}</h2>
         <div className="flex flex-col gap-4">
           {fakeStories.slice(2).map(f => (
             <div key={f.username} className="flex items-center gap-3">
-              <Image src={f.avatar} alt="Photo profil" width={32} height={32} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+              <Image src={f.avatar} alt={t('rightbar.profile_picture')} width={32} height={32} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
               <span className="text-gray-900 font-medium">@{f.username}</span>
-              <button className="ml-auto bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition">Suivre</button>
+              <button className="ml-auto bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition">{t('rightbar.follow')}</button>
             </div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from 'react-i18next';
+import 'flag-icons/css/flag-icons.min.css';
 
 export default function LanguageSwitcher({ className }: { className?: string }) {
   const { i18n } = useTranslation();
@@ -11,13 +12,13 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
   };
 
 
-   const flag = current === 'fr' ? '🇬🇧' : '🇫🇷';
+
   const label = current === 'fr' ? 'English' : 'Français';
 
    return (
     <button className={className} onClick={toggleLanguage}>
-    <span className="text-xl mr-2">{flag}</span>
-    {label}
+      <span className={`fi fi-${current === 'fr' ? 'gb' : 'fr'}`}></span>
+      <span className="ml-2">{current === 'fr' ? 'English' : 'Français'}</span>
     </button>
   );
 }

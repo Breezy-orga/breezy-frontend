@@ -1,7 +1,18 @@
-{"sidebar": {
+{
+  "sidebar": {
   "home": "Home",
   "profile": "Profile",
   "notifications": "Notifications",
   "messages": "Messages"
-}}
+},
+
+"rightbar": {
+    "trends": "Trends for you",
+    "suggested_friends": "Suggested friends",
+    "follow": "Follow",
+    "posts": "posts",
+    "profile_picture": "Profile picture"
+  }
+
+}
 

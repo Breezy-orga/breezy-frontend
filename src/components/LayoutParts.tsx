@@ -129,10 +129,11 @@ export function Sidebar() {
 }
 
 export function Follows() {
+    const { t } = useTranslation();
   return (
     <aside className="hidden xl:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-10">
       <div>
-        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">Comptes suivis</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t('rightbar.suggested_friends')}</h2>
         <div className="flex flex-col gap-5">
           {fakeFollows.map(f => (
             <div key={f.username} className="flex items-center gap-3">
@@ -143,24 +144,24 @@ export function Follows() {
         </div>
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Tendances</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('rightbar.trends')}</h2>
         <div className="flex flex-col gap-3">
-          {fakeTrends.map(t => (
-            <div key={t.tag} className="flex items-center gap-2">
-              <span className="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">{t.tag}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t.count} posts</span>
+          {fakeTrends.map(tend => (
+            <div key={tend.tag} className="flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">{tend.tag}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{tend.count} {t('rightbar.posts')}</span>
             </div>
           ))}
         </div>
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Suggestions d'amis</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('rightbar.suggested_friends')}</h2>
         <div className="flex flex-col gap-4">
           {fakeStories.slice(2).map(f => (
             <div key={f.username} className="flex items-center gap-3">
               <Image src={f.avatar} alt="Photo profil" width={32} height={32} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
               <span className="text-gray-900 font-medium">@{f.username}</span>
-              <button className="ml-auto bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition">Suivre</button>
+              <button className="ml-auto bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 transition">{t('rightbar.follow')}</button>
             </div>
           ))}
         </div>

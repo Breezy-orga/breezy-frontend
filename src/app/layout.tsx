@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import Script from 'next/script'
 import '../i18n';
+import 'flag-icons/css/flag-icons.min.css';
 
 
 

@@ -12,6 +12,7 @@
     "axios": "^1.6.7",
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.3.1",
+    "flag-icons": "^7.5.0",
     "i18next": "^25.2.1",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.344.0",

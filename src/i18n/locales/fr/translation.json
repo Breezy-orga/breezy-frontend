@@ -1,6 +1,15 @@
-{"sidebar": {
-  "home": "Page d'accueil",
-  "profile": "Profil",
-  "notifications": "Notifications",
-  "messages": "Messages"
-}}
+{
+  "sidebar": {
+    "home": "Page d'accueil",
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "messages": "Messages"
+  },
+  "rightbar": {
+    "trends": "Tendances pour vous",
+    "suggested_friends": "Suggestions d'amis",
+    "follow": "Suivre",
+    "posts": "publications",
+    "profile_picture": "Photo profil"
+  }
+}
