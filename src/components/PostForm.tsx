@@ -18,55 +18,55 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-  const fetchUser = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        setUser(await response.json())
+    const fetchUser = async () => {
+      try {
+        // ✅ Proxy passe par Next.js → Express → authMiddleware
+        const response = await fetch('/api/users/me', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          setUser(await response.json())
+        }
+      } catch {
+        console.error('Échec récupération utilisateur')
       }
-    } catch {
-      console.error('Échec récupération utilisateur')
     }
-  }
 
-  fetchUser()
-}, [])
+    fetchUser()
+  }, [])
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (!content.trim() || isSubmitting) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!content.trim() || isSubmitting) return
 
-  setIsSubmitting(true)
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        content: content.trim(),
-        parentPost: parentPostId
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: content.trim(),
+          parentPost: parentPostId
+        })
       })
-    })
 
-    if (!response.ok) {
-      throw new Error('Erreur lors de la publication')
+      if (!response.ok) {
+        throw new Error('Erreur lors de la publication')
+      }
+
+      setContent('')
+      onPostCreated?.()
+      router.refresh()
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('Une erreur est survenue lors de la publication')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setContent('')
-    if (onPostCreated) onPostCreated()
-    router.refresh()
-  } catch (error) {
-    console.error('Erreur:', error)
-    alert('Une erreur est survenue lors de la publication')
-  } finally {
-    setIsSubmitting(false)
   }
-}
-
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-800">
@@ -125,4 +125,4 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
     </form>
   )
-} 
+}
