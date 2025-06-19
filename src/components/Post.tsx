@@ -70,7 +70,7 @@ const fetchComments = async () => {
     const response = await fetch(
       `/api/posts/${post._id}/comments`,
       {
-        credentials: 'include', // <-- Ajouté
+        credentials: 'include',
       }
     )
     if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
@@ -89,7 +89,7 @@ const handleLike = async () => {
       `/api/posts/${post._id}/like`,
       {
         method: 'POST',
-        credentials: 'include', // <-- Ajouté
+        credentials: 'include',
       }
     )
 
@@ -111,7 +111,7 @@ const refreshComments = async () => {
     const response = await fetch(
       `/api/posts/${post._id}/comments`,
       {
-        credentials: 'include', // <-- Ajouté
+        credentials: 'include',
       }
     )
     if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
