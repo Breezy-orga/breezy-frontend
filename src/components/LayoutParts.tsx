@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SuggestedUser } from '@/types/models';
 import api from '@/lib/axios';
+import { MdTranslate } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+
 import { 
   MdAddCircle, MdEdit, MdAutoAwesome, MdPoll, MdEvent, 
   MdNotifications, MdPerson, MdSettings, MdLightMode, 
@@ -42,6 +45,9 @@ export function Header() {
   
   // Fonction helper pour basculer entre thème clair et sombre
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language === 'fr' ? 'fr' : 'en';
+
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 py-3 shadow-sm">
       <div className="flex items-center gap-3">
@@ -83,10 +89,10 @@ export function Header() {
                 onClick={() => {
                   toggleTheme();
                   setUserMenuOpen(false);
-                }}
-              >
+                }}>
                 {theme === 'dark' ? <MdLightMode className="text-xl" /> : <MdDarkMode className="text-xl" />} <span className="text-gray-900 dark:text-gray-100">{theme === 'dark' ? 'Mode clair' : 'Mode sombre'}</span>
               </button>
+
               <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdLogout className="text-xl" /> Déconnexion</button>
             </div>
           )}
@@ -168,6 +174,7 @@ export function Follows() {
             ))}
           </div>
         )}
+
       </div>
     </aside>
   )
