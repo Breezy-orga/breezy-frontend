@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SuggestedUser } from '@/types/models';
+import api from '@/lib/axios';
 import { 
   MdAddCircle, MdEdit, MdAutoAwesome, MdPoll, MdEvent, 
   MdNotifications, MdPerson, MdSettings, MdLightMode, 

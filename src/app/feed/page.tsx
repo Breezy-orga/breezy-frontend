@@ -9,7 +9,6 @@ import {
 import { FaRegSmile } from 'react-icons/fa';
 import PostForm from '@/components/PostForm';
 import PostList from '@/components/PostList';
-import { Sidebar } from '@/components/LayoutParts'
 
 interface Story {
   username: string;

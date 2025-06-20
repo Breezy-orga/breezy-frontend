@@ -12,6 +12,10 @@ export interface User {
   updatedAt?: string;
 }
 
+export interface SuggestedUser extends Omit<User, 'email' | 'createdAt' | 'updatedAt'> {
+  isFollowing?: boolean;
+}
+
 export interface Media {
   url: string;
   type: 'image' | 'video';
