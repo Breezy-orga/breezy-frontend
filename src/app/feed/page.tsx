@@ -9,6 +9,7 @@ import {
 import { FaRegSmile } from 'react-icons/fa';
 import PostForm from '@/components/PostForm';
 import PostList from '@/components/PostList';
+import { Sidebar } from '@/components/LayoutParts'
 
 interface Story {
   username: string;
@@ -232,16 +233,6 @@ function Post({ post }: { post: Post }) {
 }
 
 // La fonction Follows a été supprimée car remplacée par le composant importé depuis LayoutParts
-
-// L'ancienne fonction Sidebar a été supprimée au profit du composant AppSidebar plus moderne
-
-// Composant supprimé pour éviter les erreurs de build
-/* 
-function ThemeAwareRefreshWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useTheme();
-  return <>{children}</>;
-}
-*/
 
 export default function FeedPage() {
   const [refreshKey, setRefreshKey] = useState(0);
