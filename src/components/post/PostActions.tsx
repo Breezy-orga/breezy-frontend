@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, Share2 } from 'lucide-react';
+import { MessageCircle, Share2 } from 'lucide-react';
 import { Post, User } from '@/types/models';
+import LikeButton from '../LikeButton';
 
 interface PostActionsProps {
   post: Post;
@@ -24,9 +25,8 @@ export default function PostActions({
 
   const handleLike = async () => {
     try {
+      // Cette fonction est maintenant utilisée comme callback pour LikeButton
       await onLike(post._id.toString());
-      setIsLiked(!isLiked);
-      setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
     } catch (error) {
       console.error('Error liking post:', error);
     }
@@ -48,15 +48,13 @@ export default function PostActions({
     <div className="p-4 border-t">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <button
-            onClick={handleLike}
-            className={`flex items-center space-x-1 ${
-              isLiked ? 'text-red-500' : 'text-gray-500'
-            }`}
-          >
-            <Heart className="w-5 h-5" fill={isLiked ? 'currentColor' : 'none'} />
-            <span>{likeCount}</span>
-          </button>
+          <LikeButton 
+            itemId={post._id.toString()} 
+            itemType="post" 
+            initialLikes={likeCount} 
+            initialLikedStatus={isLiked}
+            onLikeSuccess={handleLike} 
+          />
           <button
             onClick={() => setIsCommenting(!isCommenting)}
             className="flex items-center space-x-1 text-gray-500"

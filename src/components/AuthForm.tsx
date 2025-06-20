@@ -14,13 +14,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-<<<<<<< Updated upstream
-    password: ''
-    // champ name supprimé
-=======
     password: '',
     identifier: ''
->>>>>>> Stashed changes
   })
   const [error, setError] = useState('')
 
@@ -32,29 +27,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
       // Créer les URLs d'authentification sans duplication du préfixe /api
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const endpoint = mode === 'login'
-<<<<<<< Updated upstream
-        ? (process.env.NEXT_PUBLIC_API_URL
-            ? `${process.env.NEXT_PUBLIC_API_URL}/auth/login`
-            : 'http://localhost:5000/auth/login')
-        : (process.env.NEXT_PUBLIC_API_URL
-            ? `${process.env.NEXT_PUBLIC_API_URL}/auth/register`
-            : 'http://localhost:5000/auth/register');
-      
-      console.log('Attempting to connect to:', endpoint);
-      const payload = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-        // champ name supprimé
-      };
-      console.log('Payload envoyé:', payload);
-      
-      const response = await axios.post(endpoint, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-=======
         ? baseUrl.replace(/\/api$/, '') + '/api/auth/login'
         : baseUrl.replace(/\/api$/, '') + '/api/auth/register';
       // Préparer les données selon le mode
@@ -63,7 +35,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
         : formData;
       
       const response = await axios.post(endpoint, dataToSend)
->>>>>>> Stashed changes
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token)
@@ -113,39 +84,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-<<<<<<< Updated upstream
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Username</label>
-          <input
-            type="text"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Enter your username"
-            value={formData.username}
-            onChange={(e) => {
-              setFormData({...formData, username: e.target.value});
-              // DEBUG: Log formData after username change
-              console.log('[onChange username] formData:', {...formData, username: e.target.value});
-            }}
-            required
-          />
-        </div>
-        {/* Champ name supprimé */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={(e) => {
-              setFormData({...formData, email: e.target.value});
-              // DEBUG: Log formData after email change
-              console.log('[onChange email] formData:', {...formData, email: e.target.value});
-            }}
-            required
-          />
-        </div>
-=======
         {mode === 'register' && (
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Username</label>
@@ -184,7 +122,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
             />
           </div>
         )}
->>>>>>> Stashed changes
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Password</label>
           <input

@@ -18,6 +18,13 @@ export interface Comment {
   createdAt: Date;
 }
 
+export interface Media {
+  filename: string;
+  base64: string;
+  contentType: string;
+  alt?: string;
+}
+
 export interface Post {
   _id: string;
   author: string;
@@ -25,16 +32,18 @@ export interface Post {
   images: string[];
   likes: string[];
   comments: Comment[];
+  commentsCount?: number; // Nombre total de commentaires (y compris sous-commentaires)
   tags: string[];
   location?: string;
   createdAt: Date;
   updatedAt: Date;
+  media?: Media[];
 }
 
 export interface Message {
-  _id: Types.ObjectId;
-  sender: Types.ObjectId;
-  receiver: Types.ObjectId;
+  _id: string;
+  sender: string;
+  receiver: string;
   content: string;
   read: boolean;
   createdAt: Date;

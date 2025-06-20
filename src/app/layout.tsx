@@ -1,9 +1,9 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
-import { ThemeProvider } from '@/components/ThemeProvider'
+import { ThemeProvider } from '@/components/ThemeProviderWrapper';
+import { LanguageProvider } from '@/components/LanguageProvider';
+import { NotificationProvider } from '../contexts/NotificationContext';
+import MainLayout from '@/components/MainLayout'
 import Script from 'next/script'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Breezy',
@@ -16,36 +16,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-<<<<<<< Updated upstream
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: `
-          // Script exécuté avant même que React ne charge
-          try {
-            // Supprimer toute préférence thème existante
-            localStorage.removeItem('theme');
-            // Définir explicitement le thème clair
-            localStorage.setItem('theme', 'light');
-            // S'assurer que la classe 'dark' n'est pas sur l'élément HTML
-            document.documentElement.classList.remove('dark');
-            // Ajouter la classe 'light' explicitement
-            document.documentElement.classList.add('light');
-          } catch (e) {
-            console.error('Erreur lors de l\'initialisation du thème:', e);
-          }
-        ` }} />
-      </head>
-      <body className={inter.className}>
-=======
-    <html lang="en" suppressHydrationWarning className="light">
-      <body className={`${inter.className} bg-white text-gray-900`}>
->>>>>>> Stashed changes
-        <ThemeProvider>
-          <main>
-            {children}
-          </main>
+      <body className="font-sans">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <LanguageProvider>
+            <NotificationProvider>
+              <MainLayout>
+                {children}
+              </MainLayout>
+            </NotificationProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
   )
-} 
+}
