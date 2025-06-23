@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import LikeButton from './LikeButton'
+import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
@@ -15,6 +15,13 @@ import type { Post as PostType, User } from '@/types/models'
 // Type étendu pour ajouter des propriétés temporaires en attendant la mise à jour du backend
 interface ExtendedPost extends PostType {
   commentsCount?: number;
+}
+
+// Fonction simple pour lire un cookie côté client
+function getCookie(name : string) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return decodeURIComponent(match[2]);
+  return null;
 }
 
 interface PostProps {
@@ -41,9 +48,17 @@ export default function Post({
 }: PostProps) {
   // Utiliser l'utilisateur par défaut si currentUser est null/undefined
   const safeCurrentUser = currentUser || defaultUser
-  const [showCommentForm, setShowCommentForm] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const getUserId = () => localStorage.getItem('userId') || ''
+  if (!post.author) {
+    console.error('Author is null or undefined for post:', post._id);
+  }
+
+  const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
+  const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
+  const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
+  const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
+  const [showCommentForm, setShowCommentForm] = useState(false)
+  const getUserId = () => getCookie('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
   const [likesCount, setLikesCount] = useState(post.likes.length)
@@ -73,69 +88,85 @@ export default function Post({
     setIsLiked(isLikedByUser(post.likes))
   }, [post.likes])
 
-  const fetchComments = async () => {
-    setLoadingComments(true)
-    setCommentsError(null)
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
-      const data = await response.json()
-      setComments(data)
-    } catch (e) {
-      setCommentsError('Impossible de charger les commentaires')
-    } finally {
-      setLoadingComments(false)
-    }
+const fetchComments = async () => {
+  setLoadingComments(true)
+  setCommentsError(null)
+  try {
+    const response = await fetch(
+      `/api/posts/${post._id}/comments`,
+      {
+        credentials: 'include',
+      }
+    )
+    if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
+    const data = await response.json()
+    setComments(data)
+  } catch (e) {
+    setCommentsError('Impossible de charger les commentaires')
+  } finally {
+    setLoadingComments(false)
   }
+}
 
-  const handleLike = async () => {
-    try {
-      // Cette fonction est maintenant utilisée comme callback pour le LikeButton
-      if (onLike) onLike(post._id.toString())
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Une erreur est survenue')
+const handleLike = async () => {
+  try {
+    const response = await fetch(
+      `/api/posts/${post._id}/like`,
+      {
+        method: 'POST',
+        credentials: 'include',
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du like')
     }
-  }
 
-  const formatDate = (dateString: string) => {
+    setIsLiked(!isLiked)
+    setLikesCount((prev: number) => (isLiked ? prev - 1 : prev + 1))
+    if (onLike) onLike(post._id.toString())
+  } catch (error) {
+    console.error('Erreur:', error)
+    alert('Une erreur est survenue')
+  }
+}
+
+const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
     if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
+    if (diffInSeconds < 3600) return 'Il y a ${Math.floor(diffInSeconds / 60)}m'
+    if (diffInSeconds < 86400) return 'Il y a ${Math.floor(diffInSeconds / 3600)}h'
+    if (diffInSeconds < 604800) return 'Il y a ${Math.floor(diffInSeconds / 86400)}j'
     return date.toLocaleDateString()
   }
 
-  const refreshComments = async () => {
-    try {
-      setLoadingComments(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      const data = await response.json()
-      console.log('Commentaires rafraîchis:', data)
-      setComments(data)
-      
-      // Mettre à jour le compteur de commentaires si necessaire
-      if (data.length !== commentsCount) {
-        setCommentsCount(data.length)
+const refreshComments = async () => {
+  try {
+    setLoadingComments(true)
+    setCommentsError(null)
+    const response = await fetch(
+      `/api/posts/${post._id}/comments`,
+      {
+        credentials: 'include',
       }
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement des commentaires:', error)
-    } finally {
-      setLoadingComments(false)
+    )
+    if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
+    const data = await response.json()
+    setComments(data)
+    // Mettre à jour le compteur de commentaires si nécessaire
+    if (data.length !== commentsCount) {
+      setCommentsCount(data.length)
     }
+  } catch (error) {
+    setCommentsError('Erreur lors du rafraîchissement des commentaires')
+    console.error('Erreur lors du rafraîchissement des commentaires:', error)
+  } finally {
+    setLoadingComments(false)
   }
+}
 
   // Fonction pour gérer le clic sur le bouton commentaire
   const handleCommentClick = () => {
@@ -264,7 +295,7 @@ export default function Post({
 }
 
 function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
-  const getUserId = () => localStorage.getItem('userId') || ''
+  const getUserId = () => getCookie('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const isComment = !!item.parentPost
   const [isLiked, setIsLiked] = useState(isLikedByUser(item.likes || []))
@@ -274,11 +305,18 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
   
-  const handleLike = () => {
-    // Rafraîchir les données si nécessaire
+  const handleLike = async () => {
+  try {
+    await fetch(`/api/posts/${item._id}/like`, {
+      method: 'POST',
+      credentials: 'include',
+    });
     if (onLike) onLike();
-  };
-
+  } catch (error) {
+    // Optionnel : afficher une erreur à l'utilisateur
+    console.error('Erreur lors du like du commentaire:', error);
+  }
+};
   useEffect(() => {
     setIsLiked(isLikedByUser(item.likes || []))
   }, [item.likes])

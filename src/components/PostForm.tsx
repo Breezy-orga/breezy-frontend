@@ -43,14 +43,18 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        // ✅ Proxy passe par Next.js → Express → authMiddleware
+        const response = await fetch('/api/users/me', {
+          credentials: 'include'
         })
         if (response.ok) {
           setUser(await response.json())
         }
-      } catch {}
+      } catch {
+        console.error('Échec récupération utilisateur')
+      }
     }
+
     fetchUser()
   }, [])
   
@@ -222,12 +226,12 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           content: content.trim(),
           parentPost: parentPostId,
@@ -453,4 +457,4 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       </div>
     </form>
   )
-} 
+}
