@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
-
+import { useTranslation } from 'react-i18next'
 interface PostListProps {
   initialPosts?: PostType[]
   fetchUrl: string
@@ -14,16 +14,17 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   const [loading, setLoading] = useState(!initialPosts.length)
   const [error, setError] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-
+  const { t } = useTranslation()
   useEffect(() => {
     if (!initialPosts.length) {
       fetchPosts()
     }
     // Récupérer l'utilisateur courant
-    const userId = localStorage.getItem('userId')
-    if (userId) {
-      fetchUser(userId)
-    }
+    
+      const userId = localStorage.getItem('userId')
+      if (userId) {
+        fetchUser(userId)
+      }
   }, [])
 
   const fetchUser = async (userId: string) => {
@@ -33,9 +34,10 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
     }
 
     try {
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
       
@@ -79,9 +81,10 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   const fetchPosts = async () => {
     try {
       setLoading(true)
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(fetchUrl, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
 
@@ -119,7 +122,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   if (error) {
     return (
       <div className="text-center py-8 text-red-500">
-        {error}
+        {t("post.error_loading_posts")}
       </div>
     )
   }
@@ -127,7 +130,7 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
   if (!posts.length) {
     return (
       <div className="text-center py-8 text-gray-500">
-        Aucun message à afficher
+        {t("post.error_loading_posts")}
       </div>
     )
   }
@@ -161,4 +164,4 @@ export default function PostList({ initialPosts = [], fetchUrl }: PostListProps)
       })}
     </div>
   )
-} 
+}

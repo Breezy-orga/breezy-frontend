@@ -11,6 +11,7 @@ import PostContent from './post/PostContent'
 import PostActions from './post/PostActions'
 import MediaModal from './ImageModal';
 import type { Post as PostType, User } from '@/types/models'
+import { useTranslation } from 'react-i18next';
 
 // Type étendu pour ajouter des propriétés temporaires en attendant la mise à jour du backend
 interface ExtendedPost extends PostType {
@@ -31,7 +32,6 @@ const defaultUser: User = {
   username: 'utilisateur',
   profilePicture: '/default-avatar.svg'
 }
-
 export default function Post({
   post,
   currentUser,
@@ -39,11 +39,11 @@ export default function Post({
   onComment,
   onShare,
 }: PostProps) {
-  // Utiliser l'utilisateur par défaut si currentUser est null/undefined
+  const {t} = useTranslation()
   const safeCurrentUser = currentUser || defaultUser
   const [showCommentForm, setShowCommentForm] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const getUserId = () => localStorage.getItem('userId') || ''
+  const getUserId = () => (localStorage.getItem('userId')) || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
   const [likesCount, setLikesCount] = useState(post.likes.length)
@@ -77,16 +77,17 @@ export default function Post({
     setLoadingComments(true)
     setCommentsError(null)
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
+      if (!response.ok) throw new Error(t('post.loading_comments'))
       const data = await response.json()
       setComments(data)
     } catch (e) {
-      setCommentsError('Impossible de charger les commentaires')
+      setCommentsError(t('post.error_loading_comments'))
     } finally {
       setLoadingComments(false)
     }
@@ -98,7 +99,7 @@ export default function Post({
       if (onLike) onLike(post._id.toString())
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Une erreur est survenue')
+      alert(t('post.error_like'))
     }
   }
 
@@ -107,19 +108,21 @@ export default function Post({
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
-    return date.toLocaleDateString()
-  }
+    if (diffInSeconds < 60) return  t('post.just_now')
+    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) })
+    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) })
+    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) })
+    const locale = t('lang') === 'fr' ? 'fr-FR' : 'en-US';
+    return t('post.date_format', { date: date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })
+}
 
   const refreshComments = async () => {
     try {
       setLoadingComments(true)
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       })
       const data = await response.json()
@@ -163,21 +166,19 @@ export default function Post({
   // Fonction pour charger plus de commentaires depuis l'API
   const loadMoreComments = async () => {
     if (loadingComments) return;
-    
     setLoadingComments(true);
     setCommentsError(null);
-    
     try {
-      // Ajouter un paramètre skip pour la pagination
       const skip = comments.length;
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments?skip=${skip}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
-      
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires');
-      
+
+      if (!response.ok) throw new Error(t('post.error_loading_comments'));
+
       const newComments = await response.json();
       if (newComments.length > 0) {
         setComments([...comments, ...newComments]);
@@ -186,7 +187,7 @@ export default function Post({
         // Ex: remplacer par votre logique spécifique d'étalement des commentaires
       }
     } catch (e) {
-      setCommentsError('Impossible de charger plus de commentaires');
+      setCommentsError(t('post.error_loading_comments'));
       console.error('Erreur lors du chargement des commentaires:', e);
     } finally {
       setLoadingComments(false);
@@ -264,6 +265,7 @@ export default function Post({
 }
 
 function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
+  const { t } = useTranslation()
   const getUserId = () => localStorage.getItem('userId') || ''
   const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
   const isComment = !!item.parentPost
@@ -338,7 +340,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
                     e.stopPropagation();
                     // Déterminer si c'est une image ou une vidéo
                     const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
-                    openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
+                    openMediaModal(imageSrc, media.alt || t("post.media_alt", { index: index + 1 }), type);
                   }}
                 >
                   {media.contentType?.startsWith('video/') ? (
@@ -364,7 +366,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
                         {/* Overlay avec effet de hover */}
                         <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all flex items-center justify-center">
                           <span className="flex items-center gap-1 text-white text-sm font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-2 py-1 rounded-md transition-all">
-                            <span className="text-sm">▶️</span> Vidéo
+                            <span className="text-sm">▶️</span> {t("post.video")}
                           </span>
                         </div>
                       </div>
@@ -372,7 +374,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
                   ) : (
                     <Image
                       src={imageSrc}
-                      alt={media.alt || `Media ${index + 1}`}
+                      alt={media.alt || t(`post.media_alt`, { index: index + 1 })}
                       fill
                       className="object-cover rounded-lg"
                     />
@@ -419,12 +421,12 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
           {/* Bouton Republier */}
           <button 
             className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors duration-200"
-            aria-label="Republier"
-            title="Republier"
+            aria-label={t("post.repost")}
+            title={t("post.repost")}
             onClick={(e) => {
               e.preventDefault(); 
               e.stopPropagation();
-              alert('Fonctionnalité de republication à venir !'); 
+              alert(t('post.repost_soon'));
             }}
           >
             <MdRepeat className={isComment ? "w-4 h-4" : "w-5 h-5"} />
@@ -436,7 +438,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
           <div className="border-t border-gray-200 mt-2 pt-2">
             <PostForm
               parentPostId={item._id}
-              placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
+              placeholder={t(`post.reply_to`, { username: item.author?.username || 'utilisateur' })}
               onPostCreated={() => {
                 setReplyingCommentId(null);
                 if (onLike) onLike();
@@ -470,6 +472,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
   expandedComments: Array<{ id: string, maxDisplayed: number }>,
   setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
 }) {
+  const { t } = useTranslation()
   // Nombre initial de sous-commentaires à afficher par défaut
   const maxDisplayedComments = 3;
   
@@ -512,7 +515,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                 <div className="ml-8 mt-2 pl-4">
                   <PostForm
                     parentPostId={comment._id}
-                    placeholder={`Répondre à @${comment.author?.username || 'utilisateur'}...`}
+                    placeholder={t(`post.reply_to`, { username: comment.author?.username || 'utilisateur' })}
                     onPostCreated={() => {
                       // Fermer le formulaire de réponse
                       setReplyingCommentId(null);
@@ -549,7 +552,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                         <div className="mt-2 pl-4">
                           <PostForm
                             parentPostId={reply._id}
-                            placeholder={`Répondre à @${reply.author?.username || 'utilisateur'}...`}
+                            placeholder={t(`post.reply_to`, { username: reply.author?.username || 'utilisateur' })}
                             onPostCreated={() => {
                               // Fermer le formulaire de réponse
                               setReplyingCommentId(null);
@@ -590,7 +593,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                         }
                       }}
                     >
-                      Afficher plus de commentaires ({repliesCount - maxDisplayedComments})
+                     {t("post.show_more_comments")} ({repliesCount - maxDisplayedComments})
                     </button>
                   )}
                 </div>
@@ -603,4 +606,4 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
   )
 }
 
-export { ThreadItem, FlatComments } 
+export { ThreadItem, FlatComments }

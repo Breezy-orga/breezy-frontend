@@ -19,9 +19,10 @@ import {
   MdSearch,
   MdMenu
 } from 'react-icons/md'
-import { useLanguage } from './LanguageProvider'
 import NotificationBadge from './NotificationBadge'
 import { useNotifications } from '../contexts/NotificationContext'
+import { useTranslation } from 'react-i18next';
+
 
 interface AppSidebarProps {
   className?: string
@@ -34,10 +35,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const { theme, setTheme } = useTheme()
   
   // Language provider hook
-  const { language, setLanguage } = useLanguage()
+  const { i18n } = useTranslation();
+  const current = i18n.resolvedLanguage === 'fr' ? 'fr' : 'en';
   const [userInfo, setUserInfo] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
-
+  const {t}= useTranslation();
   // Fermer le menu d'options lorsqu'on clique ailleurs
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -94,13 +96,12 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
 
   // Navigation principale
   const navItems = [
-    { key: 'feed', label: "Accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
-    { key: 'search', label: 'Rechercher', icon: MdSearch, href: '/search' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
-    { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
+    { key: 'feed', label: t("sidebar.feed"), icon: MdHome, href: '/feed' },
+    { key: 'profile', label: t("sidebar.profile"), icon: MdPerson, href: '/profile' },
+    { key: 'search', label: t("sidebar.search"), icon: MdSearch, href: '/search' },
+    { key: 'messages', label: t("sidebar.messages"), icon: MdMail, href: '/messages' },
+    { key: 'notifications', label: t("sidebar.notifications"), icon: MdNotifications, href: '/notifications' },
   ];
-
   const isActive = (path: string) => {
     return pathname === path ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'
   }
@@ -127,8 +128,8 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">{userInfo?.username || 'Utilisateur'}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">@{userInfo?.username || 'utilisateur'}</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">{userInfo?.username || t("sidebar.user")}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">@{userInfo?.username || t("sidebar.user")}</p>
             </div>
           </div>
           
@@ -136,11 +137,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           <div className="flex justify-start gap-6 text-sm">
             <div className="flex items-center gap-1">
               <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.following?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Abonnements</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t("sidebar.following")}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.followers?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Abonnés</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t("sidebar.followers")}</span>
             </div>
           </div>
         </div>
@@ -159,7 +160,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               }`}
             >
               <MdHome className="w-5 h-5 mr-3" />
-              Accueil
+              {(t("sidebar.feed"))}
             </Link>
           </li>
           <li>
@@ -172,7 +173,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               }`}
             >
               <MdSearch className="w-5 h-5 mr-3" />
-              Rechercher
+              {(t("sidebar.search"))}
             </Link>
           </li>
           <li>
@@ -188,7 +189,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 <MdNotifications className="w-5 h-5 mr-3" />
                 <NotificationBadge className="min-w-4 h-4" />
               </div>
-              Notifications
+              {t("sidebar.notifications")}
             </Link>
           </li>
           <li>
@@ -201,7 +202,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               }`}
             >
               <MdMail className="w-5 h-5 mr-3" />
-              Messages
+              {t("sidebar.messages")}
             </Link>
           </li>
           <li>
@@ -214,7 +215,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               }`}
             >
               <MdPerson className="w-5 h-5 mr-3" />
-              Profil
+              {t("sidebar.profile")}
             </Link>
           </li>
         </ul>
@@ -232,7 +233,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           >
             <div className="flex items-center">
               <MdSettings className="w-5 h-5 mr-3" />
-              Options
+              {t("sidebar.options")}
             </div>
             <svg
               className={`w-5 h-5 ml-2 transition-transform ${optionsMenuOpen ? 'transform rotate-180' : ''}`}
@@ -266,21 +267,20 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 role="menuitem"
               >
                 <MdBrightness4 className="w-5 h-5 mr-3" />
-                {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+                {theme === 'dark' ? t('sidebar.light_mode') : t('sidebar.dark_mode')}
               </button>
               
-              <button 
+              <button
                 onClick={() => {
-                  setLanguage(language === 'fr' ? 'en' : 'fr');
+                  i18n.changeLanguage(current === 'fr' ? 'en' : 'fr');
                   setOptionsMenuOpen(false);
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
                 role="menuitem"
               >
-                <MdLanguage className="w-5 h-5 mr-3" />
-                {language === 'fr' ? 'English' : 'Français'}
+                <span className={`fi fi-${current === 'fr' ? 'gb' : 'fr'}`}></span>
+                <span className="ml-2">{current === 'fr' ? t('sidebar.english') : t('sidebar.french')}</span>
               </button>
-              
               <Link 
                 href="/settings" 
                 className="flex items-center px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
@@ -288,20 +288,22 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 onClick={() => setOptionsMenuOpen(false)}
               >
                 <MdSettings className="w-5 h-5 mr-3" />
-                Paramètres
+                {t("sidebar.settings")}
               </Link>
               
               <button 
                 onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('userInfo');
-                  window.location.href = '/login';
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userInfo');
+                    window.location.href = '/login';
+                  }
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                 role="menuitem"
               >
                 <MdLogout className="w-5 h-5 mr-3" />
-                Déconnexion
+                {t("sidebar.logout")}
               </button>
             </div>
           )}

@@ -1,4 +1,4 @@
-"use client";
+'use client'
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -106,6 +106,7 @@ export function Header() {
 export function Follows() {
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [t] = useTranslation();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -134,22 +135,25 @@ export function Follows() {
     }
   }
 
+  
   return (
     <aside className="hidden xl:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-10">
       <div>
-        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">Suggestions d'amis</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+          {t('rightbar.suggested_friends')}
+        </h2>
 
         {loading ? (
-          <p className="text-gray-500">Chargement...</p>
+          <p className="text-gray-500">{t('general.loading')}</p>
         ) : suggestions.length === 0 ? (
-          <p className="text-gray-500">Aucune suggestion disponible.</p>
+          <p className="text-gray-500">{t('rightbar.no_suggestions')}</p>
         ) : (
           <div className="flex flex-col gap-4">
             {suggestions.map(user => (
               <div key={user._id} className="flex items-center gap-3">
                 <Image
                   src={user.profilePicture || '/default-avatar.png'}
-                  alt="Photo profil"
+                  alt={t('rightbar.profile_picture')}
                   width={32}
                   height={32}
                   className="rounded-full object-cover border border-gray-200 dark:border-gray-700"
@@ -168,7 +172,7 @@ export function Follows() {
                       : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
                   }`}
                 >
-                  {user.isFollowing ? 'Se désabonner' : 'Suivre'}
+                  {user.isFollowing ? t('rightbar.unfollow') : t('rightbar.follow')}
                 </button>
               </div>
             ))}
@@ -178,4 +182,5 @@ export function Follows() {
       </div>
     </aside>
   )
+
 }

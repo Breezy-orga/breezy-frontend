@@ -1,11 +1,15 @@
 'use client'
-
 import AuthForm from '@/components/AuthForm'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslation } from 'react-i18next';
 import '../../i18n';
 
+
+
 export default function LoginPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-r from-blue-50 via-white to-white text-gray-900">
       <div className="flex flex-1">
@@ -25,21 +29,21 @@ export default function LoginPage() {
           </div>
           {/* Lien inscription */}
           <div className="w-full max-w-md text-center mt-6">
-            <span className="text-gray-500">Don't have an account? </span>
-            <Link href="/register" className="text-blue-600 hover:underline font-medium">Sign up</Link>
+            <span className="text-gray-500">{t('login.no_account')}</span>
+            <Link href="/register" className="text-blue-600 hover:underline font-medium">{t('login.signup')}</Link>
           </div>
         </div>
       </div>
       {/* Footer */}
       <footer className="py-6 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500">
-          <Link href="/about" className="hover:text-gray-700 transition-colors">About</Link>
-          <Link href="/terms" className="hover:text-gray-700 transition-colors">Terms</Link>
-          <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacy</Link>
-          <Link href="/contact" className="hover:text-gray-700 transition-colors">Contact</Link>
+          <Link href="/about" className="hover:text-gray-700 transition-colors">{t('footer.about')}</Link>
+          <Link href="/terms" className="hover:text-gray-700 transition-colors">{t('footer.terms')}</Link>
+          <Link href="/privacy" className="hover:text-gray-700 transition-colors">{t('footer.privacy')}</Link>
+          <Link href="/contact" className="hover:text-gray-700 transition-colors">{t('footer.contact')}</Link>
           <span>© {new Date().getFullYear()} Breezy</span>
         </div>
       </footer>
     </div>
   )
-} 
+}

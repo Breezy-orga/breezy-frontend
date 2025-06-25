@@ -5,10 +5,8 @@ import translationEN from './locales/en/translation.json';
 import translationFR from './locales/fr/translation.json';
 import 'flag-icons/css/flag-icons.min.css';
 
-
-
-
 i18n
+  .use(LanguageDetector) // Ajoute le détecteur de langue pour le support multilingue automatique
   .use(initReactI18next)
   .init({
     resources: {

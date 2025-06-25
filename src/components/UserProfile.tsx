@@ -6,6 +6,7 @@ import { User } from '@/lib/models/User'
 import PostList from './PostList'
 import Link from 'next/link'
 import { MdArrowBack } from 'react-icons/md'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   userId?: string
@@ -18,7 +19,7 @@ export default function UserProfile({ userId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ username: '', bio: '' })
-
+  const { t } = useTranslation()
   const [viewMode, setViewMode] = useState<'profile' | 'followers' | 'following'>('profile')
   
   const [followers, setFollowers] = useState<User[]>([])
@@ -95,9 +96,10 @@ export default function UserProfile({ userId }: Props) {
   }
 
 
-  if (loading) return <div className="text-center p-4">Chargement...</div>
-  if (error) return <div className="text-center p-4 text-red-500">{error}</div>
-  if (!user) return <div className="text-center p-4">Utilisateur introuvable</div>
+
+  if (loading) return <div className="text-center p-4">{t("profile.loading")}</div>
+  if (error) return <div className="text-center p-4 text-red-500">{t("profile.error_loading")}</div>
+  if (!user) return <div className="text-center p-4">{t("profile.not_found")}</div>
 
   // ----------------------------
   // AFFICHAGE DES FOLLOWERS/FOLLOWING
@@ -116,20 +118,20 @@ export default function UserProfile({ userId }: Props) {
               onClick={() => setViewMode('followers')}
               className={`px-4 py-2 ${viewMode === 'followers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonné{user.followers.length > 1 ? 's' : ''} ({user.followers.length})
+              {t("profile.followers", { count: user.followers.length })}
             </button>
             <button
               onClick={() => setViewMode('following')}
               className={`px-4 py-2 ${viewMode === 'following' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonnement{user.following.length > 1 ? 's' : ''} ({user.following.length})
+              {t("profile.following", { count: user.following.length })}
             </button>
           </div>
         </div>
 
         <div className="space-y-3 mt-6">
           {list.length === 0 ? (
-            <p className="text-gray-500">Aucun résultat.</p>
+            <p className="text-gray-500">{t("profile.no_results")}</p>
           ) : (
             list.map((u: any) => (
               <div key={u._id} className="flex items-center gap-3">
@@ -162,25 +164,25 @@ export default function UserProfile({ userId }: Props) {
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
-                placeholder="Nom d'utilisateur"
+                placeholder={t("profile.username_placeholder")}
               />
               <textarea
                 value={formData.bio} 
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
-                placeholder="Biographie"
+                placeholder={t("profile.bio_placeholder")}
               />
               <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Enregistrer</button>
-                <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Annuler</button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t("profile.save")}</button>
+                <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">{t("profile.cancel")}</button>
               </div>
             </form>
           ) : (
             <>
               <h2 className="text-xl font-semibold">@{user.username}</h2>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">{user.bio || 'Aucune biographie renseignée.'}</p>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">{user.bio || t("profile.no_bio")}</p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Membre depuis le {new Date(user.createdAt).toLocaleDateString()}
+               {t("profile.member_since", { date: new Date(user.createdAt).toLocaleDateString() })}
               </div>
 
               <div className="mt-2 text-sm space-x-4">
@@ -188,14 +190,14 @@ export default function UserProfile({ userId }: Props) {
                   onClick={() => setViewMode('followers')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.followers.length}</strong> abonné{user.followers.length > 1 ? 's' : ''}
+                   <strong>{user.followers.length}</strong> {t("profile.followers_short", { count: user.followers.length })}
                 </button>
                 <span>·</span>
                 <button
                   onClick={() => setViewMode('following')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.following.length}</strong> abonnement{user.following.length > 1 ? 's' : ''}
+                  <strong>{user.following.length}</strong> {t("profile.following_short", { count: user.following.length })} 
                 </button>
               </div>
 
@@ -204,7 +206,7 @@ export default function UserProfile({ userId }: Props) {
                   onClick={() => setIsEditing(true)}
                   className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
-                  Modifier mon profil
+                  {t("profile.edit")}
                 </button>
               )}
 
@@ -217,7 +219,7 @@ export default function UserProfile({ userId }: Props) {
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentUser?.following.includes(user._id) ? 'Se désabonner' : 'Suivre'}
+                  {currentUser?.following.includes(user._id) ? t('profile.unfollow') : t('profile.follow')}
                 </button>
               )}
             </>
@@ -225,7 +227,7 @@ export default function UserProfile({ userId }: Props) {
         </div>
       </div>
 
-      <h2 className="text-xl font-bold mb-4">Publications</h2>
+      <h2 className="text-xl font-bold mb-4">{t("profile.posts")}</h2>
       <PostList fetchUrl={`${process.env.NEXT_PUBLIC_API_URL}/posts/user/${user._id}`} />
     </div>
   )

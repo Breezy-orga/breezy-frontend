@@ -1,9 +1,10 @@
+'use client '
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Post, Media } from '../../types/models';
 import MediaModal from '../ImageModal';
-
+import { useTranslation } from 'react-i18next';
 interface PostContentProps {
   post: Post;
 }
@@ -22,7 +23,7 @@ export default function PostContent({ post }: PostContentProps) {
   const [modalSrc, setModalSrc] = useState<string>('');
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
-  
+  const { t } = useTranslation();
   // Fonction pour ouvrir la modal avec le média sélectionné
   const openMediaModal = (src: string, alt: string = '', type: 'image' | 'video' = 'image') => {
     setModalSrc(src);
@@ -132,7 +133,7 @@ export default function PostContent({ post }: PostContentProps) {
                       {/* Overlay avec effet de hover */}
                       <div className="absolute inset-0 bg-black bg-opacity-30 hover:bg-opacity-10 transition-all flex items-center justify-center">
                         <span className="flex items-center gap-2 text-white font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-4 py-2 rounded-lg transition-all">
-                          <span className="text-xl">▶️</span> Vidéo
+                          <span className="text-xl">▶️</span> {t("post.video")}
                         </span>
                       </div>
                     </div>
@@ -140,7 +141,7 @@ export default function PostContent({ post }: PostContentProps) {
                 ) : (
                   <Image
                     src={imageSrc}
-                    alt={media.alt || `Post media ${index + 1}`}
+                    alt={media.alt || t("post.media_alt", { index: index + 1 })}
                     fill
                     className="object-cover rounded-lg"
                   />
