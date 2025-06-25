@@ -4,7 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   MdThumbUp, MdShare, MdLink, MdRepeat, 
-  MdChatBubbleOutline, MdComment, MdPersonAdd, MdSend 
+  MdChatBubbleOutline, MdComment, MdPersonAdd, MdSend, 
+  MdHome,
+  MdMail,
+  MdNotifications,
+  MdPerson
 } from 'react-icons/md';
 import { FaRegSmile } from 'react-icons/fa';
 import PostForm from '@/components/PostForm';
