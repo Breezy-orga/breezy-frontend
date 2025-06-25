@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,6 +16,7 @@ import { MdTranslate } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import '../../i18n'; 
 import 'flag-icons/css/flag-icons.min.css';
+import { Post as PostType } from '@/types/models'
 
 
 interface Story {
@@ -302,57 +304,72 @@ function Sidebar() {
 }
 
 export default function FeedPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<'all' | 'following'>('all'); 
-  const handlePostCreated = () => setRefreshKey((prev) => prev + 1);
+  const [posts, setPosts] = useState<PostType[]>([])
+  const [activeTab, setActiveTab] = useState<'all' | 'following'>('all');
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/posts/feed`)
+      .then(res => res.json())
+      .then(data => {
+        setPosts(data)
+        setLoading(false)
+      })
+  }, [])
+
+  const handlePostCreated = (newPost: PostType) => {
+    console.log(newPost)
+    // Ajouter le nouveau post en tête de liste
+    setPosts(prev => [newPost, ...prev])
+  }
 
   // URL de l'API en fonction de l'onglet actif
   const getFetchUrl = () => {
     if (activeTab === 'following') {
-      return `${process.env.NEXT_PUBLIC_API_URL}/posts/feed?following=true`;
+      return `/api/posts/feed?following=true`;
     } else {
-      return `${process.env.NEXT_PUBLIC_API_URL}/posts/feed`;
+      return `/api/posts/feed`;
     }
   };
 
-  return (
-    <div className="w-full font-sans text-gray-900 dark:text-white">
-      <PostForm onPostCreated={handlePostCreated} />
-      
-      {/* Onglets Pour Toi / Abonnement */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mt-6 mb-4">
-        <button 
-          onClick={() => setActiveTab('all')}
-          className={`px-4 py-3 font-medium text-sm relative ${activeTab === 'all' 
-            ? 'text-blue-600 dark:text-blue-400 font-semibold' 
-            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
-        >
-          Pour toi
-          {activeTab === 'all' && (
-            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('following')}
-          className={`px-4 py-3 font-medium text-sm relative ${activeTab === 'following' 
-            ? 'text-blue-600 dark:text-blue-400 font-semibold' 
-            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
-        >
-          Abonnement
-          {activeTab === 'following' && (
-            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
-          )}
-        </button>
-      </div>
-      
-      <div className="mt-4" key={`post-list-container-${refreshKey}-${activeTab}`}>
-        <PostList
-          key={`${refreshKey}-${activeTab}`}
-          fetchUrl={getFetchUrl()}
-        />
-      </div>
+return (
+  <div className="w-full font-sans text-gray-900 dark:text-white">
+    <PostForm onPostCreated={handlePostCreated} />
+    {/* Onglets Pour Toi / Abonnement */}
+    <div className="flex border-b border-gray-200 dark:border-gray-700 mt-6 mb-4">
+      <button 
+        onClick={() => setActiveTab('all')}
+        className={`px-4 py-3 font-medium text-sm relative ${activeTab === 'all' 
+          ? 'text-blue-600 dark:text-blue-400 font-semibold' 
+          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
+      >
+        Pour toi
+        {activeTab === 'all' && (
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+        )}
+      </button>
+      <button 
+        onClick={() => setActiveTab('following')}
+        className={`px-4 py-3 font-medium text-sm relative ${activeTab === 'following' 
+          ? 'text-blue-600 dark:text-blue-400 font-semibold' 
+          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
+      >
+        Abonnement
+        {activeTab === 'following' && (
+          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+        )}
+      </button>
     </div>
-  );
+    
+    <div className="mt-4">
+      <PostList
+        initialPosts={posts}
+        fetchUrl={getFetchUrl()}
+      />
+    </div>
+  </div>
+);
+
 }
 
 // Animation utilitaire

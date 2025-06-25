@@ -25,25 +25,23 @@ export default function SearchPage() {
     setError(null);
     setSearchPerformed(true);
     
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-    
     try {
       // Rechercher les posts par tags
-      const postsPromise = fetch(`${API_URL}/posts/search?tags=${encodeURIComponent(query)}`, {
+      const postsPromise = fetch(`api/posts/search?tags=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
       
       // Rechercher les utilisateurs
-      const usersPromise = fetch(`${API_URL}/users/search?query=${encodeURIComponent(query)}`, {
+      const usersPromise = fetch(`api/users/search?query=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
       
       // Exécuter les deux requêtes en parallèle
@@ -76,75 +74,68 @@ export default function SearchPage() {
 
   // Récupérer l'utilisateur actuel au chargement
   useEffect(() => {
-    const userInfo = localStorage.getItem('userInfo');
-    if (userInfo) {
+    const fetchCurrentUser = async () => {
       try {
-        setCurrentUser(JSON.parse(userInfo));
+        const response = await fetch('/api/users/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+        }
       } catch (err) {
+        setCurrentUser(null);
         console.error('Erreur lors du chargement des infos utilisateur:', err);
       }
-    }
+    };
+    fetchCurrentUser();
   }, []);
 
   // Gérer l'action "Like"
-  const handleLike = async (postId: string) => {
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${API_URL}/posts/${postId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
+const handleLike = async (postId: string) => {
+  try {
+    const response = await fetch(`/api/posts/${postId}/like`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
 
-      if (!response.ok) {
-        throw new Error(`Erreur: ${response.status}`);
-      }
-
-      // Mettre à jour l'état local
-      const updatedPosts = posts.map(post => {
-        if (post._id === postId) {
-          const userId = localStorage.getItem('userId');
-          const isLiked = post.likes.includes(userId || '');
-          return {
-            ...post,
-            likes: isLiked 
-              ? post.likes.filter(id => id !== userId) 
-              : [...post.likes, userId || '']
-          };
-        }
-        return post;
-      });
-      
-      setPosts(updatedPosts);
-    } catch (err) {
-      console.error('Erreur lors du like:', err);
+    if (!response.ok) {
+      throw new Error(`Erreur: ${response.status}`);
     }
-  };
 
-  // Gérer l'ajout de commentaire
-  const handleComment = async (postId: string, content: string) => {
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: JSON.stringify({ content })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur: ${response.status}`);
+    // Mettre à jour l'état local
+    const updatedPosts = posts.map(post => {
+      if (post._id === postId) {
+        const userId = currentUser?._id;
+        if (!userId) return post; // Ne rien faire si pas d'utilisateur connecté
+        const isLiked = post.likes.some((like: any) => (typeof like === 'object' ? like._id : like) === userId);
+        return {
+          ...post,
+          likes: isLiked
+            ? post.likes.filter(id => id !== userId)
+            : [...post.likes, userId]
+        };
       }
+      return post;
+    });
 
-      // Rafraîchir les données du post
-      await search(searchQuery);
-    } catch (err) {
-      console.error('Erreur lors de l\'ajout du commentaire:', err);
-    }
+    setPosts(updatedPosts);
+  } catch (err) {
+    console.error('Erreur lors du like:', err);
+  }
+};
+
+  const handleComment = async (postId: string, updatedPost: PostType) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post._id === postId ? updatedPost : post
+      )
+    );
   };
 
   // Gérer le partage
@@ -224,7 +215,7 @@ export default function SearchPage() {
             ))}
           </div>
         </div>
-      )}
+      )}  
 
       {/* Section posts */}
       {posts.length > 0 && (
