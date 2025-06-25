@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 
 export default function Register() {
@@ -147,12 +148,15 @@ export default function Register() {
       </div>
       {/* Footer */}
       <footer className="py-6 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
+          <ThemeToggle className="order-1" />
+          <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500">
           <Link href="/about" className="hover:text-gray-700 transition-colors">{t("footer.about")}</Link>
           <Link href="/terms" className="hover:text-gray-700 transition-colors">{t("footer.terms")}</Link>
           <Link href="/privacy" className="hover:text-gray-700 transition-colors">{t("footer.privacy")}</Link>
           <Link href="/contact" className="hover:text-gray-700 transition-colors">{t("footer.contact")}</Link>
           <span>© {new Date().getFullYear()} Breezy</span>
+          </div>
         </div>
       </footer>
     </div>
