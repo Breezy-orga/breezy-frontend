@@ -110,8 +110,14 @@ export function Follows() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await api.get('/users/all')
-        setSuggestions(res.data)
+        const res = await api.get('/users/list')
+        setSuggestions((res.data as SuggestedUser[]).map(u => ({
+          _id: u._id,
+          username: u.username,
+          profilePicture: u.profilePicture || '/default-avatar.png',
+          isFollowing: !!u.isFollowing,
+          role: u.role || 'user',
+        })))
       } catch (error) {
         console.error('Erreur lors de la récupération des utilisateurs :', error)
       } finally {

@@ -6,9 +6,10 @@ import Image from 'next/image'
 import { MdImage, MdClose, MdTag } from 'react-icons/md'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
+import { Post as PostType } from '@/types/models'
 
 interface PostFormProps {
-  onPostCreated?: () => void
+  onPostCreated?: (newPost: PostType) => void
   parentPostId?: string
   placeholder?: string
 }
@@ -64,13 +65,13 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       
       try {
         console.log('Appel API pour recherche utilisateurs:', query);
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/search?query=${encodeURIComponent(query)}`;
+        const apiUrl = `api/users/search?query=${encodeURIComponent(query)}`;
         console.log('URL API:', apiUrl);
         
         const response = await fetch(
           apiUrl,
           {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
           }
         );
         
@@ -239,6 +240,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       if (!response.ok) {
         throw new Error('Erreur lors de la publication')
       }
+      const newPost = await response.json()
 
       setContent('')
       setMediaPreviews([])
@@ -250,9 +252,8 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
         fileInputRef.current.value = ''
       }
       if (onPostCreated) {
-        onPostCreated()
+        onPostCreated(newPost)
       }
-      router.refresh()
     } catch (error) {
       console.error('Erreur:', error)
       alert('Une erreur est survenue lors de la publication')
