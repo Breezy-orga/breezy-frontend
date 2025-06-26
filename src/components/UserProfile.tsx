@@ -37,7 +37,6 @@ export default function UserProfile({ userId }: Props) {
       setFormData({
         displayName: userRes.data.displayName || userRes.data.username || '',
         bio: userRes.data.bio || '',
-        profilePicture: userRes.data.profilePicture || ''
       })
     } catch (err) {
       setError('Erreur lors du chargement du profil')
@@ -76,7 +75,6 @@ export default function UserProfile({ userId }: Props) {
       const formPayload: any = {
         displayName: formData.displayName,
         bio: formData.bio,
-        profilePicture: formData.profilePicture
       }
       await api.put('/profile/me', formPayload)
       await fetchData()
@@ -221,7 +219,7 @@ export default function UserProfile({ userId }: Props) {
                     <div className="flex flex-col items-center gap-2">
                       <div className="relative">
                         <img
-                          src={formData.profilePicture || user.profilePicture || '/default-avatar.png'}
+                          src={user.profilePicture || '/default-avatar.png'}
                           alt="avatar preview"
                           className="w-24 h-24 rounded-full object-cover border-4 border-blue-400 dark:border-blue-700 shadow-lg mx-auto transition-all duration-200 hover:scale-105"
                         />
