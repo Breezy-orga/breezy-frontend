@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import api from '@/lib/axios'
-import { User } from '@/lib/models/User'
+import { User } from '@/types/models'
 import PostList from './PostList'
 import Link from 'next/link'
 import { MdArrowBack } from 'react-icons/md'
@@ -20,7 +20,6 @@ export default function UserProfile({ userId }: Props) {
   const [formData, setFormData] = useState({ username: '', bio: '' })
 
   const [viewMode, setViewMode] = useState<'profile' | 'followers' | 'following'>('profile')
-  
   const [followers, setFollowers] = useState<User[]>([])
   const [following, setFollowing] = useState<User[]>([])
 
@@ -29,10 +28,10 @@ export default function UserProfile({ userId }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, meRes] = await Promise.all([
-          api.get(`/users/${userId || 'me'}`),
-          api.get('/users/me')
-        ])
+        const userRes = userId
+          ? await api.get(`/users/getById/${userId}`)
+          : await api.get('/users/me')
+        const meRes = await api.get('/users/me')
         setUser(userRes.data)
         setCurrentUser(meRes.data)
         setFormData({
@@ -45,25 +44,24 @@ export default function UserProfile({ userId }: Props) {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [userId])
 
   useEffect(() => {
     const fetchList = async () => {
       try {
+        const targetId = userId || 'me'
         if (viewMode === 'followers') {
-          const res = await api.get(`/users/${userId || 'me'}/followers`)
+          const res = await api.get(`/users/getById/${targetId}/followers`)
           setFollowers(res.data)
         } else if (viewMode === 'following') {
-          const res = await api.get(`/users/${userId || 'me'}/following`)
+          const res = await api.get(`/users/getById/${targetId}/following`)
           setFollowing(res.data)
         }
       } catch (error) {
         console.error("Erreur lors du chargement des abonnés/abonnements :", error)
       }
     }
-
     if (viewMode !== 'profile') fetchList()
   }, [viewMode, userId])
 
@@ -80,18 +78,18 @@ export default function UserProfile({ userId }: Props) {
 
   const handleFollowToggle = async () => {
     if (!user) return
-      try {
-        await api.post(`/users/${user._id}/follow`)
-        // Rafraîchir le user connecté et la cible
-        const [userRes, meRes] = await Promise.all([
-          api.get(`/users/${userId || 'me'}`),
-          api.get('/users/me'),
-        ])
-        setUser(userRes.data)
-        setCurrentUser(meRes.data)
-      } catch (error) {
-        console.error("Erreur lors du (un)follow :", error)
-      }
+    try {
+      await api.post(`/users/${user._id}/follow`)
+      // Rafraîchir le user connecté et la cible
+      const userRes = userId
+        ? await api.get(`/users/getById/${userId}`)
+        : await api.get('/users/me')
+      const meRes = await api.get('/users/me')
+      setUser(userRes.data)
+      setCurrentUser(meRes.data)
+    } catch (error) {
+      console.error("Erreur lors du (un)follow :", error)
+    }
   }
 
 
@@ -116,13 +114,13 @@ export default function UserProfile({ userId }: Props) {
               onClick={() => setViewMode('followers')}
               className={`px-4 py-2 ${viewMode === 'followers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonné{user.followers.length > 1 ? 's' : ''} ({user.followers.length})
+              Abonné{(user.followers?.length ?? 0) > 1 ? 's' : ''} ({user.followers?.length ?? 0})
             </button>
             <button
               onClick={() => setViewMode('following')}
               className={`px-4 py-2 ${viewMode === 'following' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonnement{user.following.length > 1 ? 's' : ''} ({user.following.length})
+              Abonnement{(user.following?.length ?? 0) > 1 ? 's' : ''} ({user.following?.length ?? 0})
             </button>
           </div>
         </div>
@@ -165,22 +163,32 @@ export default function UserProfile({ userId }: Props) {
                 placeholder="Nom d'utilisateur"
               />
               <textarea
-                value={formData.bio} 
+                value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
                 placeholder="Biographie"
               />
               <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Enregistrer</button>
-                <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Annuler</button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Enregistrer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                >
+                  Annuler
+                </button>
               </div>
             </form>
           ) : (
             <>
               <h2 className="text-xl font-semibold">@{user.username}</h2>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">{user.bio || 'Aucune biographie renseignée.'}</p>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">
+                {user.bio || 'Aucune biographie renseignée.'}
+              </p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Membre depuis le {new Date(user.createdAt).toLocaleDateString()}
+                Membre depuis le {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'date inconnue'}
               </div>
 
               <div className="mt-2 text-sm space-x-4">
@@ -188,14 +196,14 @@ export default function UserProfile({ userId }: Props) {
                   onClick={() => setViewMode('followers')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.followers.length}</strong> abonné{user.followers.length > 1 ? 's' : ''}
+                  <strong>{user.followers?.length ?? 0}</strong> abonné{(user.followers?.length ?? 0) > 1 ? 's' : ''}
                 </button>
                 <span>·</span>
                 <button
                   onClick={() => setViewMode('following')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.following.length}</strong> abonnement{user.following.length > 1 ? 's' : ''}
+                  <strong>{user.following?.length ?? 0}</strong> abonnement{(user.following?.length ?? 0) > 1 ? 's' : ''}
                 </button>
               </div>
 
@@ -212,21 +220,58 @@ export default function UserProfile({ userId }: Props) {
                 <button
                   onClick={handleFollowToggle}
                   className={`mt-4 inline-block px-4 py-2 rounded-lg transition font-semibold ${
-                    currentUser?.following.includes(user._id)
+                    (currentUser?.following ?? []).includes(user._id)
                       ? 'bg-red-100 text-red-600 hover:bg-red-200'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentUser?.following.includes(user._id) ? 'Se désabonner' : 'Suivre'}
+                  {(currentUser?.following ?? []).includes(user._id)
+                    ? 'Se désabonner'
+                    : 'Suivre'}
                 </button>
               )}
             </>
           )}
+          {(currentUser?.role === 'admin' && !isSelf) && (
+            <button
+              onClick={async () => {
+                // À remplacer par ta future route d'API
+                try {
+                  const newRole = user.role === 'moderator' ? 'user' : 'moderator';
+                  // await api.put(`/users/${user._id}/role`, { role: newRole });
+                  alert(`(Démo) Le rôle passera à : ${newRole}`);
+                } catch (err) {
+                  alert("Erreur lors du changement de rôle.");
+                }
+              }}
+              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+            >
+              {user.role === 'moderator' ? 'Rétrograder en utilisateur' : 'Promouvoir en modérateur'}
+            </button>
+          )}
+          {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
+            <button
+              onClick={async () => {
+                if (confirm("Supprimer ce compte ? Cette action est irréversible.")) {
+                  try {
+                    await api.delete(`/users/${user._id}`);
+                    alert("Compte supprimé !");
+                    window.location.href = "/";
+                  } catch (err) {
+                    alert("Erreur lors de la suppression du compte.");
+                  }
+                }
+              }}
+              className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+            >
+              Supprimer ce compte
+            </button>
+          ) : null}
         </div>
       </div>
 
       <h2 className="text-xl font-bold mb-4">Publications</h2>
-      <PostList fetchUrl={`${process.env.NEXT_PUBLIC_API_URL}/posts/user/${user._id}`} />
+      <PostList fetchUrl={`/api/posts/user/${user._id}`} />
     </div>
   )
 }

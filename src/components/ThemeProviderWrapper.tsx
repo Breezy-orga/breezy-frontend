@@ -4,14 +4,34 @@ import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'n
 import { ThemeProviderProps } from 'next-themes/dist/types'
 import { useEffect } from 'react'
 
+// Utilitaires cookie
+function setThemeCookie(theme: string) {
+  document.cookie = `theme=${theme}; path=/; max-age=31536000`
+}
+function getThemeCookie(): string | null {
+  const match = document.cookie.match(/(?:^|; )theme=(light|dark|system)/)
+  return match ? match[1] : null
+}
+
 // Composant pour appliquer les variables CSS en fonction du thème
 const ThemeVariables = () => {
-  const { theme } = useNextTheme()
-  
+  const { theme, setTheme } = useNextTheme()
+
+  // Appliquer le thème depuis le cookie au premier chargement
   useEffect(() => {
-    // Appliquer des classes CSS en fonction du thème
+    const cookieTheme = getThemeCookie()
+    if (cookieTheme && cookieTheme !== theme) {
+      setTheme(cookieTheme)
+    }
+  }, [])
+
+  // Mettre à jour le cookie à chaque changement de thème
+  useEffect(() => {
+    if (theme) setThemeCookie(theme)
+  }, [theme])
+
+  useEffect(() => {
     const root = window.document.documentElement
-    
     if (theme === 'dark') {
       root.classList.add('dark')
       root.style.setProperty('--color-bg', '#0f172a')
@@ -28,13 +48,13 @@ const ThemeVariables = () => {
       root.style.setProperty('--color-border', '#e5e7eb')
     }
   }, [theme])
-  
+
   return null
 }
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
-    <NextThemesProvider 
+    <NextThemesProvider
       attribute="class"
       defaultTheme="system"
       enableSystem

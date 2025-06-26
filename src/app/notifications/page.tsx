@@ -33,16 +33,10 @@ export default function NotificationsPage() {
     setDeleting(id);
     
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_URL}/notifications/${id}`, {
+      const response = await fetch(`api/notifications/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include',
       });
-      
       if (!response.ok) {
         throw new Error(`Erreur: ${response.status}`);
       }

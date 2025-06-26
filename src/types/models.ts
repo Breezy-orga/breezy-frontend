@@ -4,6 +4,7 @@ export interface User {
   _id: string;
   username: string;
   email?: string;
+  role: 'user' | 'moderator' | 'admin';
   profilePicture?: string;
   followers?: string[];
   following?: string[];

@@ -24,22 +24,34 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setError('')
 
     try {
-      // Créer les URLs d'authentification sans duplication du préfixe /api
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const endpoint = mode === 'login'
-        ? baseUrl.replace(/\/api$/, '') + '/api/auth/login'
-        : baseUrl.replace(/\/api$/, '') + '/api/auth/register';
+        ? '/api/auth/login'
+        : '/api/auth/register';
       // Préparer les données selon le mode
       const dataToSend = mode === 'login' 
         ? { identifier: formData.identifier, password: formData.password } 
         : formData;
+      console.log('Attempting to connect to:', endpoint);
+      const payload = mode === 'login'
+  ? { identifier: formData.identifier, password: formData.password }
+  : {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password
+    };
+      console.log('Payload envoyé:', payload);
       
-      const response = await axios.post(endpoint, dataToSend)
+      const response = await axios.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials : true,
+      });
       
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token)
-        router.push('/feed')
+      if (response.status === 200) {
+        router.push('/feed');
       }
+
     } catch (err: any) {
       console.error('Login error:', {
         status: err.response?.status,

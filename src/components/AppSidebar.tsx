@@ -61,36 +61,27 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   
   // Éviter les erreurs d'hydratation
   useEffect(() => {
-    setMounted(true)
-    // Récupérer l'info utilisateur du localStorage ou API
+    setMounted(true);
+    // Récupérer l'info utilisateur via l'API (cookie JWT)
     const fetchUserInfo = async () => {
       try {
-        // Essayer d'abord de récupérer depuis localStorage
-        const storedUser = localStorage.getItem('userInfo')
-        if (storedUser) {
-          setUserInfo(JSON.parse(storedUser))
-          return
-        }
-        
-        // Sinon, essayer de récupérer depuis l'API
-        const token = localStorage.getItem('token')
-        if (token) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-          if (response.ok) {
-            const userData = await response.json()
-            setUserInfo(userData)
-            localStorage.setItem('userInfo', JSON.stringify(userData))
-          }
+        const response = await fetch('/api/users/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUserInfo(userData);
+        } else {
+          setUserInfo(null);
         }
       } catch (err) {
-        console.error('Erreur lors de la récupération des infos utilisateur:', err)
+        setUserInfo(null);
+        console.error('Erreur lors de la récupération des infos utilisateur:', err);
       }
-    }
-    
-    fetchUserInfo()
-  }, [])
+    };
+
+    fetchUserInfo();
+  }, []);
 
   // Navigation principale
   const navItems = [
@@ -291,10 +282,9 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 Paramètres
               </Link>
               
-              <button 
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('userInfo');
+              <button
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
                   window.location.href = '/login';
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"

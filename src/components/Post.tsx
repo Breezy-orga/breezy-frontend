@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import LikeButton from './LikeButton'
+import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
@@ -17,11 +17,25 @@ interface ExtendedPost extends PostType {
   commentsCount?: number;
 }
 
+const fetchUserId = async (): Promise<string | null> => {
+  try {
+    const res = await fetch('/api/users/me', {
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Échec récupération userId');
+    const data = await res.json();
+    return data._id || null;
+  } catch (err) {
+    console.error('Erreur fetchUserId:', err);
+    return null;
+  }
+}
+
 interface PostProps {
   post: ExtendedPost
   currentUser: User | null
-  onLike: (postId: string) => Promise<void>
-  onComment: (postId: string, content: string) => Promise<void>
+  onLike: (postId: string, updatedPost: PostType) => Promise<void>
+  onComment: (postId: string, updatedPost: PostType) => Promise<void>
   onShare: (postId: string) => void
 }
 
@@ -29,11 +43,12 @@ interface PostProps {
 const defaultUser: User = {
   _id: 'unknown',
   username: 'utilisateur',
-  profilePicture: '/default-avatar.svg'
+  profilePicture: '/default-avatar.svg',
+  role: 'user'
 }
 
 export default function Post({
-  post,
+  post: initialPost,
   currentUser,
   onLike,
   onComment,
@@ -41,10 +56,20 @@ export default function Post({
 }: PostProps) {
   // Utiliser l'utilisateur par défaut si currentUser est null/undefined
   const safeCurrentUser = currentUser || defaultUser
-  const [showCommentForm, setShowCommentForm] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const getUserId = () => localStorage.getItem('userId') || ''
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
+  const [userId, setUserId] = useState<string | null>(null);
+  const [post, setPost] = useState<ExtendedPost>(initialPost);
+
+  if (!post.author) {
+    console.error('Author is null or undefined for post:', post._id);
+  }
+
+  const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
+  const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
+  const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
+  const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
+  const [showCommentForm, setShowCommentForm] = useState(false)
+  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
   const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
   const [likesCount, setLikesCount] = useState(post.likes.length)
   const [comments, setComments] = useState<any[]>([])
@@ -56,6 +81,11 @@ export default function Post({
   // Nombre de sous-commentaires affichés
   const displayedComments = 5
   const clickableRef = useRef<HTMLDivElement>(null)
+
+  // Récupérer l'userId au montage du composant
+  useEffect(() => {
+    fetchUserId().then(setUserId);
+  }, []);
 
   // Charger les commentaires au chargement initial
   useEffect(() => {
@@ -77,11 +107,12 @@ export default function Post({
     setLoadingComments(true)
     setCommentsError(null)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `/api/posts/${post._id}/comments`,
+        {
+          credentials: 'include',
         }
-      })
+      )
       if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
       const data = await response.json()
       setComments(data)
@@ -92,15 +123,10 @@ export default function Post({
     }
   }
 
-  const handleLike = async () => {
-    try {
-      // Cette fonction est maintenant utilisée comme callback pour le LikeButton
-      if (onLike) onLike(post._id.toString())
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Une erreur est survenue')
-    }
-  }
+  const handleLike = (updatedPost: PostType) => {
+    setPost(updatedPost);
+    if (onLike) onLike(post._id.toString(), updatedPost);
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -108,29 +134,31 @@ export default function Post({
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
     if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
+    if (diffInSeconds < 3600) return 'Il y a ${Math.floor(diffInSeconds / 60)}m'
+    if (diffInSeconds < 86400) return 'Il y a ${Math.floor(diffInSeconds / 3600)}h'
+    if (diffInSeconds < 604800) return 'Il y a ${Math.floor(diffInSeconds / 86400)}j'
     return date.toLocaleDateString()
   }
 
   const refreshComments = async () => {
     try {
       setLoadingComments(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      setCommentsError(null)
+      const response = await fetch(
+        `/api/posts/${post._id}/comments`,
+        {
+          credentials: 'include',
         }
-      })
+      )
+      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
       const data = await response.json()
-      console.log('Commentaires rafraîchis:', data)
       setComments(data)
-      
-      // Mettre à jour le compteur de commentaires si necessaire
+      // Mettre à jour le compteur de commentaires si nécessaire
       if (data.length !== commentsCount) {
         setCommentsCount(data.length)
       }
     } catch (error) {
+      setCommentsError('Erreur lors du rafraîchissement des commentaires')
       console.error('Erreur lors du rafraîchissement des commentaires:', error)
     } finally {
       setLoadingComments(false)
@@ -144,9 +172,9 @@ export default function Post({
   }
   
   // Fonction pour gérer l'ajout d'un nouveau commentaire
-  const handleCommentSubmit = async (postId: string, content: string) => {
+  const handleCommentSubmit = async (postId: string, updatedPost: PostType) => {
     try {
-      const response = await onComment(postId, content)
+      const response = await onComment(postId, updatedPost)
       setShowCommentForm(false)
       
       // Actualiser les compteurs et commentaires
@@ -170,10 +198,8 @@ export default function Post({
     try {
       // Ajouter un paramètre skip pour la pagination
       const skip = comments.length;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments?skip=${skip}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await fetch(`/api/posts/${post._id}/comments?skip=${skip}`, {
+        credentials: 'include'
       });
       
       if (!response.ok) throw new Error('Erreur lors du chargement des commentaires');
@@ -193,6 +219,7 @@ export default function Post({
     }
   };
 
+
   return (
     <article className="bg-white rounded-lg shadow-md overflow-hidden">
       <PostHeader
@@ -209,7 +236,7 @@ export default function Post({
                   itemId={post._id.toString()} 
                   itemType="post" 
                   initialLikes={likesCount} 
-                  initialLikedStatus={isLiked}
+                  initialLikedStatus={post.likes.some((like:any) => (like._id || like) === userId)}
                   onLikeSuccess={handleLike} 
                 />
               </div>       <button 
@@ -254,6 +281,7 @@ export default function Post({
                 onLike={refreshComments}
                 expandedComments={expandedComments}
                 setExpandedComments={setExpandedComments}
+                currentUser={safeCurrentUser}
               />
             )}
           </div>
@@ -263,9 +291,9 @@ export default function Post({
   )
 }
 
-function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
-  const getUserId = () => localStorage.getItem('userId') || ''
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
+function ThreadItem({ item, currentUser, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
+  const [userId, setUserId] = useState<string | null>(null);
+  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
   const isComment = !!item.parentPost
   const [isLiked, setIsLiked] = useState(isLikedByUser(item.likes || []))
   const [likesCount, setLikesCount] = useState(item.likes?.length || 0)
@@ -274,14 +302,24 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
   
-  const handleLike = () => {
-    // Rafraîchir les données si nécessaire
-    if (onLike) onLike();
-  };
+  // Récupérer l'userId au montage du composant
+  useEffect(() => {
+    fetchUserId().then(setUserId);
+  }, []);
 
   useEffect(() => {
     setIsLiked(isLikedByUser(item.likes || []))
   }, [item.likes])
+
+  const handleLike = (updatedPost: PostType) => {
+    setIsLiked(
+      updatedPost.likes.some((like: any) =>
+        (typeof like === 'object' ? like._id : like) === userId
+      )
+  );
+    setLikesCount(updatedPost.likes.length);
+    if (onLike) onLike(item._id.toString(), updatedPost);
+  };
 
   // Fonction pour ouvrir la modal avec le média sélectionné
   const openMediaModal = (src: string, alt: string = '', type: 'image' | 'video' = 'image') => {
@@ -397,7 +435,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
             itemType={isComment ? 'comment' : 'post'} 
             initialLikes={likesCount} 
             initialLikedStatus={isLiked}
-            onLikeSuccess={() => handleLike()} 
+            onLikeSuccess={handleLike} 
             size={isComment ? "small" : "normal"}
           />
           
@@ -460,7 +498,7 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   )
 }
 
-function FlatComments({ parentId, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments }: { 
+function FlatComments({ parentId, currentUser, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments }: { 
   parentId: string | null, 
   formatDate: (date: string) => string, 
   allComments: any[], 
@@ -469,6 +507,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
   onLike?: () => void,
   expandedComments: Array<{ id: string, maxDisplayed: number }>,
   setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
+  currentUser: User
 }) {
   // Nombre initial de sous-commentaires à afficher par défaut
   const maxDisplayedComments = 3;
@@ -495,6 +534,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
             {/* Commentaire principal */}
             <ThreadItem
               item={comment}
+              currentUser={currentUser}
               formatDate={formatDate}
               repliesCount={repliesCount}
               onReply={(e: React.MouseEvent) => { 
@@ -551,7 +591,6 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                             parentPostId={reply._id}
                             placeholder={`Répondre à @${reply.author?.username || 'utilisateur'}...`}
                             onPostCreated={() => {
-                              // Fermer le formulaire de réponse
                               setReplyingCommentId(null);
                               // Rafraîchir les commentaires
                               if (onLike) onLike();
