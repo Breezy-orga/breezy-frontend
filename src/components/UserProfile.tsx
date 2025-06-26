@@ -18,7 +18,7 @@ export default function UserProfile({ userId }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({ username: '', bio: '' })
+  const [formData, setFormData] = useState({ displayName: '', bio: '' })
   const { t } = useTranslation()
   const [viewMode, setViewMode] = useState<'profile' | 'followers' | 'following'>('profile')
   const [followers, setFollowers] = useState<User[]>([])
@@ -37,8 +37,7 @@ export default function UserProfile({ userId }: Props) {
         setCurrentUser(meRes.data)
         setFormData({
           displayName: userRes.data.displayName || userRes.data.username || '',
-          bio: userRes.data.bio || '',
-          profilePicture: userRes.data.profilePicture || ''
+          bio: userRes.data.bio || ''
         })
       } catch (err) {
         setError('Erreur lors du chargement du profil')
@@ -73,9 +72,6 @@ export default function UserProfile({ userId }: Props) {
       const data = new FormData();
       data.append('displayName', formData.displayName);
       data.append('bio', formData.bio);
-      if (formData.profilePicture && formData.profilePicture.startsWith('data:')) {
-        data.append('profilePicture', formData.profilePicture);
-      }
       const res = await api.put('/users/me', data, { headers: { 'Content-Type': 'multipart/form-data' } });
       setUser(res.data);
       setIsEditing(false);
@@ -148,6 +144,7 @@ export default function UserProfile({ userId }: Props) {
           )}
         </div>
       </div>
+    </div>
     )
   }
 
@@ -166,10 +163,10 @@ export default function UserProfile({ userId }: Props) {
           <div className="flex-1 mt-6 md:mt-0 text-center md:text-left">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">@{user.username}</h2>
             <p className="text-gray-600 dark:text-gray-300 mt-2 italic">
-              {user.bio || 'Aucune biographie renseignée.'}
+              {user.bio || t('profile.no_bio')}
             </p>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Membre depuis le {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'date inconnue'}
+              {t('profile.member_since', { date: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : t('profile.unknown_date') })}
             </div>
 
             <div className="mt-3 flex justify-center md:justify-start gap-4 text-sm">
@@ -177,14 +174,14 @@ export default function UserProfile({ userId }: Props) {
                 onClick={() => setViewMode('followers')}
                 className="hover:underline font-medium text-blue-700 dark:text-blue-300"
               >
-                <strong>{user.followers?.length ?? 0}</strong> abonné{(user.followers?.length ?? 0) > 1 ? 's' : ''}
+                <strong>{user.followers?.length ?? 0}</strong> {t('profile.followers_short', { count: user.followers?.length ?? 0 })}
               </button>
               <span className="text-gray-400">·</span>
               <button
                 onClick={() => setViewMode('following')}
                 className="hover:underline font-medium text-blue-700 dark:text-blue-300"
               >
-                <strong>{user.following?.length ?? 0}</strong> abonnement{(user.following?.length ?? 0) > 1 ? 's' : ''}
+                <strong>{user.following?.length ?? 0}</strong> {t('profile.following_short', { count: user.following?.length ?? 0 })}
               </button>
             </div>
 
@@ -193,7 +190,7 @@ export default function UserProfile({ userId }: Props) {
                 onClick={() => setIsEditing(true)}
                 className="mt-5 px-5 py-2 bg-blue-600 text-white rounded-full font-semibold shadow hover:bg-blue-700 transition"
               >
-                Modifier mon profil
+                {t('profile.edit')}
               </button>
             )}
 
@@ -211,7 +208,7 @@ export default function UserProfile({ userId }: Props) {
         <div className="flex flex-col items-center gap-2">
           <div className="relative">
             <img
-              src={formData.profilePicture || user.profilePicture || '/default-avatar.png'}
+              src={user.profilePicture || '/default-avatar.png'}
               alt="avatar preview"
               className="w-24 h-24 rounded-full object-cover border-4 border-blue-400 dark:border-blue-700 shadow-lg mx-auto transition-all duration-200 hover:scale-105"
             />
@@ -288,8 +285,8 @@ export default function UserProfile({ userId }: Props) {
                 }`}
               >
                 {(currentUser?.following ?? []).includes(user._id)
-                  ? 'Se désabonner'
-                  : 'Suivre'}
+                  ? t('profile.unfollow')
+                  : t('profile.follow')}
               </button>
             )}
           </div>
@@ -301,32 +298,32 @@ export default function UserProfile({ userId }: Props) {
               try {
                 const newRole = user.role === 'moderator' ? 'user' : 'moderator';
                 // await api.put(`/users/${user._id}/role`, { role: newRole });
-                alert(`(Démo) Le rôle passera à : ${newRole}`);
+                alert(t('profile.role_change_demo', { newRole }));
               } catch (err) {
-                alert("Erreur lors du changement de rôle.");
+                alert(t('profile.role_change_error'));
               }
             }}
             className="mt-5 px-5 py-2 bg-green-600 text-white rounded-full font-semibold shadow hover:bg-green-700 transition"
           >
-            {user.role === 'moderator' ? 'Rétrograder en utilisateur' : 'Promouvoir en modérateur'}
+            {user.role === 'moderator' ? t('profile.demote_user') : t('profile.promote_moderator')}
           </button>
         )}
         {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
           <button
             onClick={async () => {
-              if (confirm("Supprimer ce compte ? Cette action est irréversible.")) {
+              if (confirm(t('profile.delete_confirm'))) {
                 try {
                   await api.delete(`/users/${user._id}`);
-                  alert("Compte supprimé !");
+                  alert(t('profile.delete_success'));
                   window.location.href = "/";
                 } catch (err) {
-                  alert("Erreur lors de la suppression du compte.");
+                  alert(t('profile.delete_error'));
                 }
               }
             }}
             className="mt-5 px-5 py-2 bg-red-600 text-white rounded-full font-semibold shadow hover:bg-red-700 transition"
           >
-            Supprimer ce compte
+            {t('profile.delete_account')}
           </button>
         ) : null}
       </div>

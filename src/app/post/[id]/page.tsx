@@ -102,12 +102,12 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     if (diffInSeconds < 60) return t('post.just_now');
-    if (diffInSeconds < 3600) return t('post.minutes_ago', { minutes: Math.floor(diffInSeconds / 60) });
-    if (diffInSeconds < 86400) return t('post.hours_ago', { hours: Math.floor(diffInSeconds / 3600) });
-    if (diffInSeconds < 604800) return t('post.days_ago', { days: Math.floor(diffInSeconds / 86400) });
+    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
     const locale = t('lang') === 'fr' ? 'fr-FR' : 'en-US';
     return t('post.date_format', { date: date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })
-};
+  };
 
   const refreshComments = async () => {
     try {

@@ -63,7 +63,6 @@ export default function LoginPage() {
           <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">{t('footer.terms')}</Link> • 
           <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">{t('footer.privacy')}</Link>
         </div>
-      </div>
       </footer>
     </div>
   )
