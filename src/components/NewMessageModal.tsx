@@ -137,7 +137,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
                 />
 
                 {filtered.length === 0 && query.length >= 1 && (
-                  <p className="text-gray-500">Aucun abonné ne correspond.</p>
+                  <p className="text-gray-500">{t('Messages.NoResultsFound')}</p>
                 )}
 
                 <ul className="max-h-60 overflow-y-auto space-y-2">

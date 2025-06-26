@@ -222,11 +222,13 @@
   "change": "Change theme"
 },
 "Messages": {
-  "Conversations": "Conversations",
+ "Conversations": "Conversations",
   "NewMessage": "New message",
   "Search": "Search conversations",
+  "SearchPlaceholder": "Search for a user...",
   "NoConversations": "No conversations found",
-  "ErrorLoading": "Error loading conversations",
+  "LoadingConversations": "Loading conversations...",
+  "ErrorLoadingConversations": "Error loading conversations",
   "SendMessage": "Send message",
   "TypeMessage": "Type your message...",
   "Send": "Send",
@@ -234,7 +236,11 @@
   "NoMessages": "No messages yet",
   "ReplyTo": "Reply to @{{username}}...",
   "ShowMoreMessages": "Show more messages",
-  "MessageSent": " Message sent successfully",
-  "LoadingSub": "Loading subscribers..."
+  "MessageSent": "Message sent successfully",
+  "ConversationWith": "Conversation with {{username}}",
+  "ErrorSendingMessage": "Error sending message.",
+  "LoadingSub": "Loading subscribers...",
+  "NoResultsFound": "No results found.",
+  "TypeYourMessage": "Type your message..."
 }
 }

@@ -82,7 +82,7 @@ export default function MessagesPage() {
           />
 
           {loading ? (
-            <p className="text-center mt-6">Chargement…</p>
+            <p className="text-center mt-6">{t('Messages.LoadingConversations')}</p>
           ) : error ? (
             <p className="text-center text-red-500 mt-6">{error}</p>
           ) : (
