@@ -299,7 +299,7 @@ export default function UserProfile({ userId }: Props) {
               // À remplacer par ta future route d'API
               try {
                 const newRole = user.role === 'moderator' ? 'user' : 'moderator';
-                // await api.put(`/users/${user._id}/role`, { role: newRole });
+                await api.put(`/roles/${user._id}`, { role: newRole });
                 alert(`(Démo) Le rôle passera à : ${newRole}`);
               } catch (err) {
                 alert("Erreur lors du changement de rôle.");
