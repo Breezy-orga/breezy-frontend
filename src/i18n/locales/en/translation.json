@@ -220,5 +220,21 @@
   "dark": "theme Dark active",
   "system": "theme System active",
   "change": "Change theme"
+},
+"Messages": {
+  "Conversations": "Conversations",
+  "NewMessage": "New message",
+  "Search": "Search conversations",
+  "NoConversations": "No conversations found",
+  "ErrorLoading": "Error loading conversations",
+  "SendMessage": "Send message",
+  "TypeMessage": "Type your message...",
+  "Send": "Send",
+  "LoadingMessages": "Loading messages...",
+  "NoMessages": "No messages yet",
+  "ReplyTo": "Reply to @{{username}}...",
+  "ShowMoreMessages": "Show more messages",
+  "MessageSent": " Message sent successfully",
+  "LoadingSub": "Loading subscribers..."
 }
 }

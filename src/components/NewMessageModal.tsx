@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { MdClose } from 'react-icons/md'
-
+import { useTranslation } from 'react-i18next';
 
 interface User {
   _id: string
   username: string
+  profilePicture?: string // Ajouté ici
   avatar?: string
 }
 
@@ -47,13 +48,16 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
 
   const [query, setQuery] = useState('')
   const filtered = followings.filter(
-    (u) => typeof u.username === 'string' && u.username.toLowerCase().includes(query.toLowerCase())
+    (u) =>
+      typeof u.username === 'string' &&
+      u.username.toLowerCase().includes(query.toLowerCase())
   )
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [messageText, setMessageText] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const { t } = useTranslation();
 
   const handleSend = async () => {
     if (!selectedUser || !messageText.trim()) return
@@ -76,6 +80,12 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
     }
   }
 
+  function getAvatarUrl(user: { profilePicture?: string, avatar?: string }) {
+    if (user.profilePicture) return user.profilePicture;
+    if (user.avatar) return user.avatar;
+    return '/default-avatar.png';
+  }
+
   if (!isOpen) return null
 
   return (
@@ -89,14 +99,14 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
         </button>
 
         <h2 className="text-xl font-semibold mb-4">
-          {selectedUser ? `À ${selectedUser.username}` : 'Nouveau message'}
+          {selectedUser ? `À ${selectedUser.username}` : t('Messages.NewMessage')}
         </h2>
 
         {selectedUser ? (
           <>
             <textarea
               rows={4}
-              placeholder="Écrire votre message…"
+              placeholder={t('Messages.TypeYourMessage')}
               className="w-full mb-2 px-4 py-2 border rounded focus:outline-none"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -107,13 +117,13 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
               disabled={sending}
               className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {sending ? 'Envoi…' : 'Envoyer'}
+              {sending ? t('Messages.Sent') : t('Messages.Send')}
             </button>
           </>
         ) : (
           <>
             {loadingFollowings ? (
-              <p>Chargement de vos abonnements…</p>
+              <p>{t('Messages.LoadingSub')}</p>
             ) : loadError ? (
               <p className="text-red-500">Erreur : {loadError}</p>
             ) : (
@@ -138,7 +148,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
                         onClick={() => setSelectedUser(u)}
                       >
                         <img
-                          src={u.avatar || '/default-avatar.png'}
+                          src={getAvatarUrl(u)}
                           alt={u.username}
                           className="w-8 h-8 rounded-full mr-3 object-cover"
                         />

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import AppSidebar from '@/components/AppSidebar'
 import MessageBubble from '@/components/MessageBubble'
+import { useTranslation } from 'react-i18next';
 
 type Message = {
   _id: string
@@ -15,7 +16,34 @@ type Message = {
 type User = {
   _id: string
   username: string
+  profilePicture?: string
   avatar?: string
+}
+
+function formatDateLabel(dateString: string) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+function DateLabel({ date }: { date: string }) {
+  return (
+    <div className="w-full flex justify-center my-3">
+      <span className="bg-gray-100 text-gray-700 px-4 py-1 rounded-full font-semibold text-sm">
+        {formatDateLabel(date)}
+      </span>
+    </div>
+  )
+}
+
+function getAvatarUrl(user?: { profilePicture?: string; avatar?: string }) {
+  if (user?.profilePicture) return user.profilePicture
+  if (user?.avatar) return user.avatar
+  return '/default-avatar.png'
 }
 
 export default function ConversationPage() {
@@ -26,6 +54,7 @@ export default function ConversationPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [receiver, setReceiver] = useState<User | null>(null)
+  const { t } = useTranslation();
 
   // Récupère l'utilisateur connecté
   useEffect(() => {
@@ -96,6 +125,16 @@ export default function ConversationPage() {
     }
   }
 
+  let lastDate = ''
+  function shouldShowDate(ts: string) {
+    const date = new Date(ts).toDateString()
+    if (date !== lastDate) {
+      lastDate = date
+      return true
+    }
+    return false
+  }
+
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <AppSidebar />
@@ -115,25 +154,34 @@ export default function ConversationPage() {
             {receiver && (
               <>
                 <img
-                  src={receiver.avatar || '/default-avatar.png'}
-                  alt={receiver.username}
+                  src={getAvatarUrl(receiver)}
+                  alt={receiver?.username}
                   className="w-10 h-10 rounded-full object-cover mr-3"
-                />
+                />  
                 <span className="font-semibold text-lg">{receiver.username}</span>
               </>
             )}
           </div>
 
-          {/* Liste des messages */}
+          {/* Liste des messages avec affichage des dates */}
           <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col space-y-2 bg-white">
             {currentUserId &&
-              messages.map((m) => (
-                <MessageBubble
-                  key={m._id}
-                  message={m}
-                  me={currentUserId}
-                />
-              ))}
+              messages.map((m, idx) => {
+                const prev = messages[idx - 1]
+                const currentDate = new Date(m.timestamp).toDateString()
+                const prevDate = prev ? new Date(prev.timestamp).toDateString() : null
+                const showDate = idx === 0 || currentDate !== prevDate
+
+                return (
+                  <div key={m._id}>
+                    {showDate && <DateLabel date={m.timestamp} />}
+                    <MessageBubble
+                      message={m}
+                      me={currentUserId}
+                    />
+                  </div>
+                )
+              })}
             <div ref={scrollRef} />
           </div>
 
@@ -145,13 +193,13 @@ export default function ConversationPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               className="flex-1 border rounded-full px-4 py-2 mr-2 focus:outline-none"
-              placeholder="Écrire un message…"
+              placeholder={t('Messages.TypeYourMessage')}
             />
             <button
               onClick={sendMessage}
               className="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700"
             >
-              Envoyer
+              {t('Messages.Send')}
             </button>
           </div>
         </div>

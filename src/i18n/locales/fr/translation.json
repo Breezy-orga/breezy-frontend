@@ -218,5 +218,21 @@
   "dark": "Thème sombre actif",
   "system": "Thème système actif",
   "change": "Changer de thème"
+},
+"Messages": {
+  "Conversations": "Mes conversations",
+  "NewMessage": "Nouveau message",
+  "SearchPlaceholder": "Rechercher un utilisateur...",
+  "NoConversations": "Aucune conversation trouvée.",
+  "LoadingConversations": "Chargement des conversations...",
+  "ErrorLoadingConversations": "Erreur lors du chargement des conversations.",
+  "SendMessage": "Envoyer le message",
+  "TypeMessage": "Tapez votre message ici...",
+  "NoMessages": "Aucun message pour l'instant.",
+  "ErrorSendingMessage": "Erreur lors de l'envoi du message.",
+  "ConversationWith": "Conversation avec {{username}}",
+  "Send": "Envoyer",
+  "MessageSent": "Message envoyé !",
+  "LoadingSub": "Chargement des abonnements..."
 }
 }
