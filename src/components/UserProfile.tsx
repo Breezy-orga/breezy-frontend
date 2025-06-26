@@ -20,7 +20,6 @@ export default function UserProfile({ userId }: Props) {
   const [formData, setFormData] = useState({ username: '', bio: '' })
 
   const [viewMode, setViewMode] = useState<'profile' | 'followers' | 'following'>('profile')
-  
   const [followers, setFollowers] = useState<User[]>([])
   const [following, setFollowing] = useState<User[]>([])
 
@@ -29,10 +28,10 @@ export default function UserProfile({ userId }: Props) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, meRes] = await Promise.all([
-          api.get(`/users/${userId || 'me'}`),
-          api.get('/users/me')
-        ])
+        const userRes = userId
+          ? await api.get(`/users/getById/${userId}`)
+          : await api.get('/users/me')
+        const meRes = await api.get('/users/me')
         setUser(userRes.data)
         setCurrentUser(meRes.data)
         setFormData({
@@ -45,25 +44,24 @@ export default function UserProfile({ userId }: Props) {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [userId])
 
   useEffect(() => {
     const fetchList = async () => {
       try {
+        const targetId = userId || 'me'
         if (viewMode === 'followers') {
-          const res = await api.get(`api/users/${userId || 'me'}/followers`)
+          const res = await api.get(`/users/getById/${targetId}/followers`)
           setFollowers(res.data)
         } else if (viewMode === 'following') {
-          const res = await api.get(`api/users/${userId || 'me'}/following`)
+          const res = await api.get(`/users/getById/${targetId}/following`)
           setFollowing(res.data)
         }
       } catch (error) {
         console.error("Erreur lors du chargement des abonnés/abonnements :", error)
       }
     }
-
     if (viewMode !== 'profile') fetchList()
   }, [viewMode, userId])
 
@@ -80,18 +78,18 @@ export default function UserProfile({ userId }: Props) {
 
   const handleFollowToggle = async () => {
     if (!user) return
-      try {
-        await api.post(`/users/${user._id}/follow`)
-        // Rafraîchir le user connecté et la cible
-        const [userRes, meRes] = await Promise.all([
-          api.get(`/users/${userId || 'me'}`),
-          api.get('/users/me'),
-        ])
-        setUser(userRes.data)
-        setCurrentUser(meRes.data)
-      } catch (error) {
-        console.error("Erreur lors du (un)follow :", error)
-      }
+    try {
+      await api.post(`/users/${user._id}/follow`)
+      // Rafraîchir le user connecté et la cible
+      const userRes = userId
+        ? await api.get(`/users/getById/${userId}`)
+        : await api.get('/users/me')
+      const meRes = await api.get('/users/me')
+      setUser(userRes.data)
+      setCurrentUser(meRes.data)
+    } catch (error) {
+      console.error("Erreur lors du (un)follow :", error)
+    }
   }
 
 
@@ -234,6 +232,23 @@ export default function UserProfile({ userId }: Props) {
               )}
             </>
           )}
+          {(currentUser?.role === 'admin' && !isSelf) && (
+            <button
+              onClick={async () => {
+                // À remplacer par ta future route d'API
+                try {
+                  const newRole = user.role === 'moderator' ? 'user' : 'moderator';
+                  // await api.put(`/users/${user._id}/role`, { role: newRole });
+                  alert(`(Démo) Le rôle passera à : ${newRole}`);
+                } catch (err) {
+                  alert("Erreur lors du changement de rôle.");
+                }
+              }}
+              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+            >
+              {user.role === 'moderator' ? 'Rétrograder en utilisateur' : 'Promouvoir en modérateur'}
+            </button>
+          )}
           {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
             <button
               onClick={async () => {
@@ -256,7 +271,7 @@ export default function UserProfile({ userId }: Props) {
       </div>
 
       <h2 className="text-xl font-bold mb-4">Publications</h2>
-      <PostList fetchUrl={`api/posts/user/${user._id}`} />
+      <PostList fetchUrl={`/api/posts/user/${user._id}`} />
     </div>
   )
 }
