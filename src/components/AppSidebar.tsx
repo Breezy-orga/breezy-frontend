@@ -67,7 +67,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     // Récupérer l'info utilisateur via l'API (cookie JWT)
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('/api/users/me', {
+        const response = await fetch('/api/profile/me', {
           credentials: 'include',
         });
         if (response.ok) {

@@ -3,6 +3,7 @@
 export interface User {
   _id: string;
   username: string;
+  displayName?: string;
   email?: string;
   role: 'user' | 'moderator' | 'admin';
   profilePicture?: string;
