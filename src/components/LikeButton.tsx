@@ -15,7 +15,7 @@ interface LikeButtonProps {
 
 const fetchUserId = async (): Promise<string | null> => {
   try {
-    const res = await fetch('/api/users/me', {
+    const res = await fetch('/api/profile/me', {
       credentials: 'include'
     });
     console.log(res.status);

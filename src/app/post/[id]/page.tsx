@@ -22,7 +22,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/users/me', { credentials: 'include' });
+        const response = await fetch('/api/profile/me', { credentials: 'include' });
         if (!response.ok) throw new Error('Utilisateur non authentifié');
         const user = await response.json();
         setCurrentUser({

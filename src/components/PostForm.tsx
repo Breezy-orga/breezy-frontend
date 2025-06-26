@@ -45,7 +45,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
     const fetchUser = async () => {
       try {
         // ✅ Proxy passe par Next.js → Express → authMiddleware
-        const response = await fetch('/api/users/me', {
+        const response = await fetch('/api/profile/me', {
           credentials: 'include'
         })
         if (response.ok) {
