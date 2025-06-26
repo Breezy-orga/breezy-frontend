@@ -1,5 +1,7 @@
+'use client'
 import { useState } from 'react';
 import Image from 'next/image';
+import {useTranslation} from 'react-i18next';
 
 interface Media {
   data: string;
@@ -15,6 +17,7 @@ interface PostContentProps {
 export default function PostContent({ content, media, className = '' }: PostContentProps) {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { t } = useTranslation();
 
   // Vérifier si le média est une image ou une vidéo
   const isImage = media?.contentType?.startsWith('image/') || 
@@ -28,8 +31,6 @@ export default function PostContent({ content, media, className = '' }: PostCont
       </div>
     );
   }
-
-
   return (
     <div className={`${className} space-y-2`}>
       {content && <p className="whitespace-pre-line">{content}</p>}
@@ -38,7 +39,7 @@ export default function PostContent({ content, media, className = '' }: PostCont
         <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
           <img
             src={media.data}
-            alt=""
+             alt={t("post.media_alt", { index: 1 })}
             className={`w-full h-auto max-h-[500px] object-cover transition-opacity duration-200 ${
               isImageLoaded ? 'opacity-100' : 'opacity-0'
             }`}

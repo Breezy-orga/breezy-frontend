@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThreadItem, FlatComments } from '../../../components/Post';
-import Link from 'next/link';
 import PostForm from '../../../components/PostForm';
 import { Header, Follows } from '@/components/LayoutParts';
 import AppSidebar from '@/components/AppSidebar';
+import { useTranslation } from 'react-i18next';
 
 export default function PostFocusPage({ params }: { params: { id: string } }) {
+  const { t } = useTranslation();
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/users/me', { credentials: 'include' });
+        const response = await fetch('/api/profile/me', { credentials: 'include' });
         if (!response.ok) throw new Error('Utilisateur non authentifié');
         const user = await response.json();
         setCurrentUser({
@@ -46,11 +47,15 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       setLoading(true);
       setError(null);
       try {
+        let token = '';
+        if (typeof window !== 'undefined') {
+          token = localStorage.getItem('token') || '';
+        }
         // Récupération du post principal
         const resPost = await fetch(`/api/posts/${params.id}`, {
           credentials: 'include'
         });
-        if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
+        if (!resPost.ok) throw new Error(t('post.error_loading_post'));
         const postData = await resPost.json();
         setPost(postData);
 
@@ -58,7 +63,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
         const resComments = await fetch(`/api/posts/${params.id}/comments`, {
           credentials: 'include'
         });
-        if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
+        if (!resComments.ok) throw new Error(t('post.error_loading_comments'));
         const commentsData = await resComments.json();
 
         // Pour chaque commentaire de premier niveau, récupérer ses sous-commentaires
@@ -75,30 +80,33 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               console.log(`Récupéré ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
             }
           } catch (error) {
-            console.error(`Erreur lors du chargement des sous-commentaires pour ${comment._id}:`, error);
+            console.error(`${t('post.error_loading_subcomments', { id: comment._id })}:`, error);
           }
         }
 
         console.log('Total de commentaires chargés:', allComments.length);
         setComments(allComments);
       } catch (e: any) {
-        setError(e.message || 'Erreur inconnue');
+        setError(e.message || t('post.unknown_error'));
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    if (typeof window !== 'undefined') {
+      fetchData();
+    }
   }, [params.id]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diffInSeconds < 60) return 'À l\'instant';
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`;
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`;
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`;
-    return date.toLocaleDateString();
+    if (diffInSeconds < 60) return t('post.just_now');
+    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
+    const locale = t('lang') === 'fr' ? 'fr-FR' : 'en-US';
+    return t('post.date_format', { date: date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })
   };
 
   const refreshComments = async () => {
@@ -106,7 +114,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       const resComments = await fetch(`/api/posts/${params.id}/comments`, {
         credentials: 'include'
       });
-      if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
+      if (!resComments.ok) throw new Error(t('post.error_loading_comments'));
       const commentsData = await resComments.json();
 
       const allComments = [...commentsData];
@@ -122,14 +130,14 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
             console.log(`Rafraîchi ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
           }
         } catch (error) {
-          console.error(`Erreur lors du chargement des sous-commentaires pour ${comment._id}:`, error);
+          console.error(`${t('post.error_loading_subcomments', { id: comment._id })}:`, error);
         }
       }
 
       console.log('Total de commentaires rafraîchis:', allComments.length);
       setComments(allComments);
     } catch (error) {
-      console.error('Erreur lors du rafraîchissement des commentaires:', error);
+      console.error(t('post.error_refreshing_comments'), error);
     }
   };
 
@@ -138,15 +146,15 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       const resPost = await fetch(`/api/posts/${params.id}`, {
         credentials: 'include'
       });
-      if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
+      if (!resPost.ok) throw new Error(t('post.error_loading_post'));
       const postData = await resPost.json();
       setPost(postData);
     } catch {}
   };
 
-  if (loading || !currentUser) return <div className="p-6 text-center text-gray-500">Chargement...</div>;
+  if (loading || !currentUser) return <div className="p-6 text-center text-gray-500">{t('general.loading')}</div>;
   if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
-  if (!post) return <div className="p-6 text-center text-gray-500">Aucun post trouvé</div>;
+  if (!post) return <div className="p-6 text-center text-gray-500">{t('post.not_found')}</div>;
 
   const repliesCount = comments.filter(c => c.parentPost === post._id).length;
 
@@ -157,7 +165,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
         <AppSidebar className="hidden md:flex" />
         <main className="flex-1 w-full max-w-full md:max-w-2xl mx-auto py-4 px-2 sm:py-8 sm:px-4 flex flex-col relative">
           <div className="mb-2 sm:mb-4 flex items-center">
-            <button onClick={() => router.back()} className="text-blue-600 hover:underline text-sm sm:text-base">← Retour</button>
+            <button onClick={() => router.back()} className="text-blue-600 hover:underline text-sm sm:text-base">←{t('general.back')}</button>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-md border border-blue-200 dark:border-blue-700 p-3 sm:p-6 mb-4 sm:mb-6">
             <ThreadItem

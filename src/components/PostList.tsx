@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
-
+import { useTranslation } from 'react-i18next'
 interface PostListProps {
   initialPosts?: PostType[]
   fetchUrl: string
@@ -15,6 +15,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const { t } = useTranslation()
 
   const updatePostInState = (updatedPost: PostType) => {
     setPosts(prevPosts =>
@@ -27,6 +28,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
   const fetchPosts = async () => {
     try {
       setLoading(true)
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(fetchUrl, {
         credentials: 'include',
       })
@@ -60,7 +62,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('/api/users/me', {
+      const response = await fetch('/api/profile/me', {
         credentials: 'include',
       })
       if (!response.ok) {
@@ -98,7 +100,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
   if (error) {
     return (
       <div className="text-center py-8 text-red-500">
-        {error}
+        {t("post.error_loading_posts")}
       </div>
     )
   }
@@ -107,7 +109,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     <div className="space-y-4">
       {posts.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Aucun message à afficher
+          {t("post.no_posts")}
         </div>
       ) : (
         posts.map(post => {

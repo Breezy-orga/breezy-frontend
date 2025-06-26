@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { useState, useEffect } from 'react';
 import { Post as PostType } from '../../types/models';
@@ -7,6 +7,7 @@ import SearchBar from '../../components/SearchBar';
 import { MdInfo } from 'react-icons/md';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function SearchPage() {
   const [posts, setPosts] = useState<PostType[]>([]);
@@ -17,6 +18,8 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const { t } = useTranslation();
+
 
   async function search(query: string) {
     if (!query.trim()) return;
@@ -64,7 +67,7 @@ export default function SearchPage() {
       }
     } catch (err) {
       console.error('Erreur lors de la recherche:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la recherche');
+      setError(err instanceof Error ? err.message : t('search.error'));
       setPosts([]);
       setUsers([]);
     } finally {
@@ -76,7 +79,7 @@ export default function SearchPage() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/users/me', {
+        const response = await fetch('/api/profile/me', {
           credentials: 'include',
         });
         if (response.ok) {
@@ -143,8 +146,8 @@ const handleLike = async (postId: string) => {
     // Copier l'URL du post dans le presse-papier
     const postUrl = `${window.location.origin}/post/${postId}`;
     navigator.clipboard.writeText(postUrl)
-      .then(() => alert('Lien copié dans le presse-papier'))
-      .catch(err => console.error('Erreur de copie:', err));
+      .then(() => alert(t("search.copy_link")))
+      .catch(err => console.error(t("search.copy_error"), err));
   };
 
   function handleSearch(query: string) {
@@ -154,12 +157,12 @@ const handleLike = async (postId: string) => {
 
   return (
     <div className="flex flex-col w-full max-w-full md:max-w-2xl mx-auto px-2 py-4 sm:px-4">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Recherche</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{t("search.title")}</h1>
 
       <div className="flex flex-col space-y-3 sm:space-y-4">
         <SearchBar 
           onSearch={handleSearch} 
-          placeholder="Rechercher des tags ou des utilisateurs..." 
+          placeholder={t("search.placeholder")} 
         />
       </div>
       
@@ -179,14 +182,14 @@ const handleLike = async (postId: string) => {
       
       {searchPerformed && !loading && posts.length === 0 && users.length === 0 && !error && (
         <div className="my-8 text-center">
-          <p className="text-gray-500">Aucun résultat trouvé pour &quot;{searchQuery}&quot;</p>
+          <p className="text-gray-500">{t("search.no_results", { query: searchQuery })}</p>
         </div>
       )}
       
       {/* Section utilisateurs */}
       {users.length > 0 && (
         <div className="mt-5 sm:mt-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Utilisateurs</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">{t("search.users")}</h2>
           <div className="space-y-3 sm:space-y-4">
             {users.map((user) => (
               <div key={user._id} className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
@@ -209,7 +212,7 @@ const handleLike = async (postId: string) => {
                   href={`/profile/${user._id}`} 
                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs sm:text-sm ml-2"
                 >
-                  Voir profil
+                  {t("search.view_profile")}
                 </Link>
               </div>
             ))}
@@ -220,7 +223,7 @@ const handleLike = async (postId: string) => {
       {/* Section posts */}
       {posts.length > 0 && (
         <div className="mt-5 sm:mt-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Publications</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">{t("search.posts")}</h2>
           <div className="space-y-3 sm:space-y-4">
             {posts.map((post) => (
               <Post 

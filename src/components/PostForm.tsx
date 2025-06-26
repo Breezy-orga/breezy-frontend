@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { MdImage, MdClose, MdTag } from 'react-icons/md'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
+import { useTranslation } from 'react-i18next'
+
 import { Post as PostType } from '@/types/models'
 
 interface PostFormProps {
@@ -14,7 +16,10 @@ interface PostFormProps {
   placeholder?: string
 }
 
-export default function PostForm({ onPostCreated, parentPostId, placeholder = "Quoi de neuf ?" }: PostFormProps) {
+export default function PostForm({ onPostCreated, parentPostId, placeholder  }: PostFormProps) {
+  const { t } = useTranslation()
+  const effectivePlaceholder = placeholder || t("post.placeholder");
+
   const [content, setContent] = useState('')
   // Tableaux pour gérer plusieurs médias (max 4)
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
@@ -40,12 +45,11 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0) // Index de la suggestion sélectionnée avec clavier
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionListRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     const fetchUser = async () => {
       try {
         // ✅ Proxy passe par Next.js → Express → authMiddleware
-        const response = await fetch('/api/users/me', {
+        const response = await fetch('/api/profile/me', {
           credentials: 'include'
         })
         if (response.ok) {
@@ -262,7 +266,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       }
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Une erreur est survenue lors de la publication')
+      alert(t('post.error_publish'))
     } finally {
       setIsSubmitting(false)
     }
@@ -284,7 +288,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               ref={textareaRef}
               value={content}
               onChange={handleContentChange}
-              placeholder={placeholder}
+              placeholder={effectivePlaceholder}
               maxLength={280}
               className="w-full bg-transparent border-none focus:ring-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               rows={3}
@@ -298,7 +302,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               >
                 {mentionSuggestions.length === 0 ? (
                   <div className="p-3 text-center text-gray-500 dark:text-gray-400">
-                    Recherche d'utilisateurs...
+                    {t("post.searching_users")}
                   </div>
                 ) : (
                   mentionSuggestions.map((user, index) => (
@@ -351,7 +355,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                           poster={preview} // Utiliser le preview comme fallback
                         />
                         <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md flex items-center gap-1">
-                          <span className="text-white font-bold">▶</span> Vidéo
+                          <span className="text-white font-bold">▶</span> {t("post.video")}
                         </div>
                       </div>
                     ) : (
@@ -374,7 +378,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               ))}
               {/* Indicateur du nombre de médias */}
               <div className="mt-1 text-sm text-gray-500">
-                {mediaPreviews.length}/4 médias
+                {mediaPreviews.length}/4 {t("post.media_count")}
               </div>
             </div>
           )}
@@ -403,7 +407,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 type="text"
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
-                placeholder="Ajouter un tag (sans #)"
+                placeholder={t("post.add_tag_placeholder")}
                 className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               />
@@ -412,7 +416,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 onClick={addTag}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg"
               >
-                Ajouter
+                {t("post.add_tag")}
               </button>
               <button
                 type="button"
@@ -452,7 +456,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 disabled={(!content.trim() && mediaData.length === 0) || isSubmitting}
                 className="px-4 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? 'Publication...' : 'Publier'}
+                {isSubmitting ? t('post.submitting') : t('post.publish')}
               </button>
             </div>
           </div>

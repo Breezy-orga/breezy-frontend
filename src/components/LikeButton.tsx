@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { MdFavorite, MdFavoriteBorder } from 'react-icons/md';
+
+import { useTranslation } from 'react-i18next';
+
 import type { Post as PostType } from '@/types/models';
 
 interface LikeButtonProps {
@@ -15,7 +18,7 @@ interface LikeButtonProps {
 
 const fetchUserId = async (): Promise<string | null> => {
   try {
-    const res = await fetch('/api/users/me', {
+    const res = await fetch('/api/profile/me', {
       credentials: 'include'
     });
     console.log(res.status);
@@ -43,15 +46,14 @@ export default function LikeButton({
   const [isLiked, setIsLiked] = useState(initialLikedStatus);
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { t } = useTranslation();
+
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Récupérer l'userId au montage du composant
-  useEffect(() => {
-    fetchUserId().then(setUserId);
-  }, []);
 
   // Synchronise l'état du composant avec les props si elles changent
   useEffect(() => {
+    fetchUserId().then(setUserId);
     setIsLiked(initialLikedStatus);
     setLikesCount(initialLikes);
   }, [initialLikedStatus, initialLikes]);
@@ -107,8 +109,8 @@ export default function LikeButton({
       className={`flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors duration-200 ${isProcessing ? 'opacity-70' : ''}`}
       onClick={handleLike}
       disabled={isProcessing}
-      aria-label={isLiked ? 'Retirer le like' : 'Aimer'}
-      title={isLiked ? 'Retirer le like' : 'Aimer'}
+      aria-label={isLiked ? t('post.remove') : t('post.add')}
+      title={isLiked ? t('post.remove') : t('post.add')}
     >
       {isLiked ? 
         <MdFavorite className={size === 'small' ? "w-4 h-4 text-red-500" : "w-5 h-5 text-red-500"} /> : 
