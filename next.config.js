@@ -59,39 +59,16 @@ const nextConfig = {
   
   // Configuration expérimentale
   experimental: {
-    serverActions: true,
+    // Conserver les autres configurations expérimentales si nécessaire
   },
-  
-  // Désactiver le cache pour le développement
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_DOCKER_API_URL}/:path*`,
+      },
+    ]
   },
-  
-  // Activer le rechargement rapide (Fast Refresh)
-  fastRefresh: true,
-  
-  // Améliorer la gestion des erreurs
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        dns: false,
-        child_process: false,
-        dgram: false,
-      };
-    }
-    return config;
-  },
-};
-
-// Afficher la configuration en mode développement
-if (process.env.NODE_ENV === 'development') {
-  console.log('Configuration Next.js en mode développement');
-  console.log('URL de l\'API:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
 }
 
-module.exports = nextConfig;
+module.exports = nextConfig

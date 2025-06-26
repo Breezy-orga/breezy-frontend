@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { MessageCircle, Share2, MoreHorizontal, Trash2, Edit2, Check, X } from 'lucide-react';
+import {useEffect, useState } from 'react';
+import { MessageCircle, Share2 } from 'lucide-react';
 import { Post, User } from '@/types/models';
 import LikeButton from '../LikeButton';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,7 @@ import api from '@/lib/api';
 interface PostActionsProps {
   post: Post;
   currentUser: User;
-  onLike: (postId: string) => Promise<void>;
+  onLike: (postId: string, updatedPost: Post) => Promise<void>;
   onComment: (postId: string, content: string) => Promise<void>;
   onShare: (postId: string) => void;
   onPostDeleted?: (postId: string) => void;
@@ -24,8 +24,7 @@ export default function PostActions({
   onPostDeleted,
   onPostUpdated,
 }: PostActionsProps) {
-  const router = useRouter();
-  const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser._id));
+  const [isLiked, setIsLiked] = useState(post.likes.some((like: any) => (typeof like === 'object' ? like._id : like) === currentUser._id));
   const [likeCount, setLikeCount] = useState(post.likes.length);
   const [isCommenting, setIsCommenting] = useState(false);
   const [commentContent, setCommentContent] = useState('');
@@ -35,13 +34,16 @@ export default function PostActions({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleLike = async () => {
-    try {
-      // Cette fonction est maintenant utilisée comme callback pour LikeButton
-      await onLike(post._id.toString());
-    } catch (error) {
-      console.error('Error liking post:', error);
-    }
+  // Synchronise l'état local si le post change (ex: après un like ailleurs)
+  useEffect(() => {
+    setIsLiked(post.likes.some((like: any) => (typeof like === 'object' ? like._id : like) === currentUser._id));
+    setLikeCount(post.likes.length);
+  }, [post.likes, currentUser._id]);
+
+  const handleLike = (updatedPost: Post) => {
+    setIsLiked(updatedPost.likes.some((like: any) => (typeof like === 'object' ? like._id : like) === currentUser._id));
+    setLikeCount(updatedPost.likes.length);
+    onLike(post._id.toString(), updatedPost); // <-- Ajoute cette ligne
   };
 
   const handleComment = async () => {

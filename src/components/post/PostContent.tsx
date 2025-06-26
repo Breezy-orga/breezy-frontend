@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Post, Media } from '../../types/models';
@@ -22,7 +22,22 @@ export default function PostContent({ post }: PostContentProps) {
   const [modalSrc, setModalSrc] = useState<string>('');
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
+  const [mentionIds, setMentionIds] = useState<{ [username: string]: string }>({});
   
+  // Fonction pour récupérer l'id d'un username
+  const fetchUserId = async (username: string) => {
+    if (mentionIds[username]) return; // déjà récupéré
+    try {
+      const res = await fetch(`/api/users/find-id-by-username/${username}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMentionIds(prev => ({ ...prev, [username]: data._id }));
+      }
+    } catch (e) {
+      // ignore si non trouvé
+    }
+  };
+
   // Fonction pour ouvrir la modal avec le média sélectionné
   const openMediaModal = (src: string, alt: string = '', type: 'image' | 'video' = 'image') => {
     setModalSrc(src);
@@ -55,8 +70,6 @@ export default function PostContent({ post }: PostContentProps) {
     
     // Regex pour détecter les mentions @username
     const mentionRegex = /@([\w.-]+)/g;
-    
-    // Diviser le contenu en segments (texte normal et mentions)
     const segments = [];
     let lastIndex = 0;
     let match;
@@ -70,10 +83,11 @@ export default function PostContent({ post }: PostContentProps) {
       
       // Ajouter la mention comme un lien
       const username = match[1];
+      useEffect(() => { fetchUserId(username); }, [username]);
       segments.push(
         <Link 
           key={`mention-${match.index}`}
-          href={`/(protected)/profile/${username}`}
+          href={`/profile/${mentionIds[username] || username}`}
           className="text-blue-500 hover:text-blue-700 hover:underline"
         >
           @{username}

@@ -47,28 +47,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const fetchNotifications = async () => {
     if (typeof window === 'undefined') return;
-    
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${API_URL}/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch('/api/notifications', {
+        credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error(`Erreur: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setNotifications(data);
-      
+
       // Calculer le nombre de notifications non lues
       const unread = data.filter((notification: Notification) => !notification.read).length;
       setUnreadCount(unread);
@@ -83,16 +77,10 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const markAsRead = async (notificationId: string) => {
     if (typeof window === 'undefined') return;
     
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+      const response = await fetch(`api/notifications/${notificationId}/read`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -118,16 +106,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const markAllAsRead = async () => {
     if (typeof window === 'undefined') return;
     
-    const token = localStorage.getItem('token');
-    if (!token) return;
     
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${API_URL}/notifications/read-all`, {
+      const response = await fetch(`api/notifications/read-all`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {

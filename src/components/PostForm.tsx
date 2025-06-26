@@ -7,9 +7,10 @@ import Image from 'next/image'
 import { MdImage, MdClose, MdTag } from 'react-icons/md'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
+import { Post as PostType } from '@/types/models'
 
 interface PostFormProps {
-  onPostCreated?: () => void
+  onPostCreated?: (newPost: PostType) => void
   parentPostId?: string
   placeholder?: string
 }
@@ -42,11 +43,23 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const suggestionListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!userLoading && !user) {
-      router.push('/login')
+    const fetchUser = async () => {
+      try {
+        // ✅ Proxy passe par Next.js → Express → authMiddleware
+        const response = await fetch('/api/users/me', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          setUser(await response.json())
+        }
+      } catch {
+        console.error('Échec récupération utilisateur')
+      }
     }
-  }, [user, userLoading, router])
 
+    fetchUser()
+  }, [])
+  
   // Fonction pour déboucer la recherche d'utilisateurs (réduit le nombre d'appels API)
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
@@ -57,13 +70,13 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       
       try {
         console.log('Appel API pour recherche utilisateurs:', query);
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/search?query=${encodeURIComponent(query)}`;
+        const apiUrl = `api/users/search?query=${encodeURIComponent(query)}`;
         console.log('URL API:', apiUrl);
         
         const response = await fetch(
           apiUrl,
           {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
           }
         );
         
@@ -214,25 +227,28 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
     if ((!content.trim() && !mediaData) || isSubmitting) return
 
     setIsSubmitting(true)
+    let newPost
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           content: content.trim(),
           parentPost: parentPostId,
-          media: mediaData, // Déjà au format tableau maintenant
+          media: mediaData,
           tags: tags.length > 0 ? tags : undefined
         })
       })
-
       if (!response.ok) {
         throw new Error('Erreur lors de la publication')
       }
-
+      newPost = await response.json()
+    }catch (error) {
+      alert('erreur lors de la création')}
+    try{
       setContent('')
       setMediaPreviews([])
       setMediaData([])
@@ -243,9 +259,8 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
         fileInputRef.current.value = ''
       }
       if (onPostCreated) {
-        onPostCreated()
+        onPostCreated(newPost)
       }
-      router.refresh()
     } catch (error) {
       console.error('Erreur:', error)
       alert('Une erreur est survenue lors de la publication')
@@ -446,4 +461,4 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       </div>
     </form>
   )
-} 
+}

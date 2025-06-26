@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import LikeButton from './LikeButton'
+import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
@@ -17,11 +17,25 @@ interface ExtendedPost extends PostType {
   commentsCount?: number;
 }
 
+const fetchUserId = async (): Promise<string | null> => {
+  try {
+    const res = await fetch('/api/users/me', {
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Échec récupération userId');
+    const data = await res.json();
+    return data._id || null;
+  } catch (err) {
+    console.error('Erreur fetchUserId:', err);
+    return null;
+  }
+}
+
 interface PostProps {
   post: ExtendedPost
   currentUser: User | null
-  onLike: (postId: string) => Promise<void>
-  onComment: (postId: string, content: string) => Promise<void>
+  onLike: (postId: string, updatedPost: PostType) => Promise<void>
+  onComment: (postId: string, updatedPost: PostType) => Promise<void>
   onShare: (postId: string) => void
 }
 
@@ -29,11 +43,12 @@ interface PostProps {
 const defaultUser: User = {
   _id: 'unknown',
   username: 'utilisateur',
-  profilePicture: '/default-avatar.svg'
+  profilePicture: '/default-avatar.svg',
+  role: 'user'
 }
 
 export default function Post({
-  post,
+  post: initialPost,
   currentUser,
   onLike,
   onComment,
@@ -47,10 +62,20 @@ export default function Post({
   }
   // Utiliser l'utilisateur par défaut si currentUser est null/undefined
   const safeCurrentUser = currentUser || defaultUser
-  const [showCommentForm, setShowCommentForm] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const getUserId = () => localStorage.getItem('userId') || ''
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
+  const [userId, setUserId] = useState<string | null>(null);
+  const [post, setPost] = useState<ExtendedPost>(initialPost);
+
+  if (!post.author) {
+    console.error('Author is null or undefined for post:', post._id);
+  }
+
+  const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
+  const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
+  const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
+  const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
+  const [showCommentForm, setShowCommentForm] = useState(false)
+  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
   const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
   const [likesCount, setLikesCount] = useState(post.likes.length)
   const [comments, setComments] = useState<any[]>([])
@@ -62,6 +87,11 @@ export default function Post({
   // Nombre de sous-commentaires affichés
   const displayedComments = 5
   const clickableRef = useRef<HTMLDivElement>(null)
+
+  // Récupérer l'userId au montage du composant
+  useEffect(() => {
+    fetchUserId().then(setUserId);
+  }, []);
 
   // Charger les commentaires au chargement initial
   useEffect(() => {
@@ -83,11 +113,12 @@ export default function Post({
     setLoadingComments(true)
     setCommentsError(null)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `/api/posts/${post._id}/comments`,
+        {
+          credentials: 'include',
         }
-      })
+      )
       if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
       const data = await response.json()
       setComments(data)
@@ -98,15 +129,10 @@ export default function Post({
     }
   }
 
-  const handleLike = async () => {
-    try {
-      // Cette fonction est maintenant utilisée comme callback pour le LikeButton
-      if (onLike) onLike(post._id.toString())
-    } catch (error) {
-      console.error('Erreur:', error)
-      alert('Une erreur est survenue')
-    }
-  }
+  const handleLike = (updatedPost: PostType) => {
+    setPost(updatedPost);
+    if (onLike) onLike(post._id.toString(), updatedPost);
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -114,29 +140,31 @@ export default function Post({
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
     if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
+    if (diffInSeconds < 3600) return 'Il y a ${Math.floor(diffInSeconds / 60)}m'
+    if (diffInSeconds < 86400) return 'Il y a ${Math.floor(diffInSeconds / 3600)}h'
+    if (diffInSeconds < 604800) return 'Il y a ${Math.floor(diffInSeconds / 86400)}j'
     return date.toLocaleDateString()
   }
 
   const refreshComments = async () => {
     try {
       setLoadingComments(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      setCommentsError(null)
+      const response = await fetch(
+        `/api/posts/${post._id}/comments`,
+        {
+          credentials: 'include',
         }
-      })
+      )
+      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
       const data = await response.json()
-      console.log('Commentaires rafraîchis:', data)
       setComments(data)
-      
-      // Mettre à jour le compteur de commentaires si necessaire
+      // Mettre à jour le compteur de commentaires si nécessaire
       if (data.length !== commentsCount) {
         setCommentsCount(data.length)
       }
     } catch (error) {
+      setCommentsError('Erreur lors du rafraîchissement des commentaires')
       console.error('Erreur lors du rafraîchissement des commentaires:', error)
     } finally {
       setLoadingComments(false)
@@ -150,9 +178,9 @@ export default function Post({
   }
   
   // Fonction pour gérer l'ajout d'un nouveau commentaire
-  const handleCommentSubmit = async (postId: string, content: string) => {
+  const handleCommentSubmit = async (postId: string, updatedPost: PostType) => {
     try {
-      const response = await onComment(postId, content)
+      const response = await onComment(postId, updatedPost)
       setShowCommentForm(false)
       
       // Actualiser les compteurs et commentaires
@@ -176,10 +204,8 @@ export default function Post({
     try {
       // Ajouter un paramètre skip pour la pagination
       const skip = comments.length;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/comments?skip=${skip}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await fetch(`/api/posts/${post._id}/comments?skip=${skip}`, {
+        credentials: 'include'
       });
       
       if (!response.ok) throw new Error('Erreur lors du chargement des commentaires');
@@ -199,6 +225,7 @@ export default function Post({
     }
   };
 
+
   return (
     <article className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-lg">
       <PostHeader
@@ -207,42 +234,60 @@ export default function Post({
         location={post.location}
       />
       <PostContent post={post} />
-      <PostActions
-        post={post}
-        currentUser={safeCurrentUser}
-        onLike={handleLike}
-        onComment={handleCommentSubmit}
-        onShare={(postId) => onShare(postId)}
-        onPostDeleted={(postId) => {
-          setIsDeleted(true);
-          // Si on est dans un contexte où le parent gère les suppressions
-          if (onLike) {
-            // On réutilise la fonction onLike comme callback général pour les mises à jour
-            onLike(post._id.toString());
-          }
-        }}
-        onPostUpdated={(updatedPost) => {
-          // Mise à jour du post dans l'interface
-          post.content = updatedPost.content;
-          post.media = updatedPost.media;
-          post.tags = updatedPost.tags;
-        }}
-      />
+      <div className="px-4 py-2 border-t border-gray-200">
+        <div className="flex space-x-6">
+              {/* Bouton Like */}
+              <div className="flex items-center gap-1">
+                <LikeButton 
+                  itemId={post._id.toString()} 
+                  itemType="post" 
+                  initialLikes={likesCount} 
+                  initialLikedStatus={post.likes.some((like:any) => (like._id || like) === userId)}
+                  onLikeSuccess={handleLike} 
+                />
+              </div>       <button 
+            className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" onClick={handleCommentClick}>
+            <MdChatBubbleOutline className="w-5 h-5" />
+            <span>{commentsCount}</span>
+          </button>
+          
+          <button 
+            className="flex items-center space-x-1 text-gray-500"
+            onClick={() => onShare(post._id.toString())}
+          >
+            <MdShare className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
       {/* Comments section - shown when expanded */}
       {showCommentForm && (
-        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <div className="px-3 sm:px-4 py-2">
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-              <PostForm
-                parentPostId={post._id}
-                onPostCreated={() => {
-                  refreshComments()
-                  // Increment comment counter
-                  setCommentsCount(prev => prev + 1)
-                  commentInputRef.current?.blur()
-                }}
-                placeholder="Écrire un commentaire..."
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <PostForm
+            parentPostId={post._id}
+            onPostCreated={() => {
+              refreshComments()
+              // Incrémenter le compteur de commentaires
+              setCommentsCount(prev => prev + 1)
+              commentInputRef.current?.blur()
+            }}
+          />
+          <div className="mt-6">
+            {loadingComments && <p className="text-center text-gray-500">Chargement des commentaires...</p>}
+            {commentsError && <p className="text-center text-red-500">{commentsError}</p>}
+            {!loadingComments && !commentsError && comments.length === 0 ? (
+              <p className="text-center text-gray-500">Aucun commentaire pour l'instant</p>
+            ) : (
+              <FlatComments 
+                parentId={post._id} 
+                formatDate={formatDate} 
+                allComments={comments} 
+                replyingCommentId={replyingCommentId}
+                setReplyingCommentId={setReplyingCommentId}
+                onLike={refreshComments}
+                expandedComments={expandedComments}
+                setExpandedComments={setExpandedComments}
+                currentUser={safeCurrentUser}
               />
             </div>
           </div>
@@ -283,9 +328,9 @@ export default function Post({
   )
 }
 
-function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
-  const getUserId = () => localStorage.getItem('userId') || ''
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === getUserId())
+function ThreadItem({ item, currentUser, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
+  const [userId, setUserId] = useState<string | null>(null);
+  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
   const isComment = !!item.parentPost
   const [isLiked, setIsLiked] = useState(isLikedByUser(item.likes || []))
   const [likesCount, setLikesCount] = useState(item.likes?.length || 0)
@@ -294,14 +339,24 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
   
-  const handleLike = () => {
-    // Rafraîchir les données si nécessaire
-    if (onLike) onLike();
-  };
+  // Récupérer l'userId au montage du composant
+  useEffect(() => {
+    fetchUserId().then(setUserId);
+  }, []);
 
   useEffect(() => {
     setIsLiked(isLikedByUser(item.likes || []))
   }, [item.likes])
+
+  const handleLike = (updatedPost: PostType) => {
+    setIsLiked(
+      updatedPost.likes.some((like: any) =>
+        (typeof like === 'object' ? like._id : like) === userId
+      )
+  );
+    setLikesCount(updatedPost.likes.length);
+    if (onLike) onLike(item._id.toString(), updatedPost);
+  };
 
   // Fonction pour ouvrir la modal avec le média sélectionné
   const openMediaModal = (src: string, alt: string = '', type: 'image' | 'video' = 'image') => {
@@ -329,15 +384,96 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 ${isComment ? "mb-2" : "mb-4"} rounded-lg shadow-md overflow-hidden`}>
-      <div className="flex flex-col">
-        <div className="px-4 py-3 flex gap-3 items-start">
-          <Image 
-            src={item.author?.profilePicture || '/default-avatar.svg'} 
-            alt={`Photo de profil de ${item.author?.username || 'utilisateur'}`} 
-            width={isComment ? 32 : 40} 
-            height={isComment ? 32 : 40} 
-            className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} 
+    <div className={isComment ? "flex gap-3 items-start mb-2" : "flex gap-3 items-start mb-4"}>
+      <Image 
+        src={item.author?.profilePicture || '/default-avatar.svg'} 
+        alt={`Photo de profil de ${item.author?.username || 'utilisateur'}`} 
+        width={isComment ? 32 : 40} 
+        height={isComment ? 32 : 40} 
+        className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} 
+      />
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-900">{item.author?.username || 'utilisateur'}</span>
+          <span className="text-xs text-gray-500">@{item.author?.username || 'utilisateur'}</span>
+          <span className="text-xs text-gray-400 ml-2">{formatDate(item.createdAt)}</span>
+        </div>
+        <div className="text-gray-800 whitespace-pre-line mt-1">{item.content}</div>
+        
+        {/* Affichage des médias (limité à 4) */}
+        {item.media && item.media.length > 0 && (
+          <div className={`mt-2 grid ${item.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+            {item.media.slice(0, 4).map((media: any, index: number) => {
+              const imageSrc = getMediaSrc(media, index);
+              return (
+                <div 
+                  key={index} 
+                  className="relative aspect-square cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Déterminer si c'est une image ou une vidéo
+                    const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
+                    openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
+                  }}
+                >
+                  {media.contentType?.startsWith('video/') ? (
+                    <div className="relative w-full h-full rounded-lg overflow-hidden">
+                      {/* Video thumbnail avec effet de preview */}
+                      <div className="w-full h-full relative">
+                        <video
+                          src={imageSrc}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          muted
+                          playsInline
+                          onLoadedMetadata={(e) => {
+                            // Générer une miniature à partir d'un moment intéressant
+                            const video = e.currentTarget;
+                            setTimeout(() => {
+                              try {
+                                // Mettre le curseur à ~1 seconde ou 25% de la vidéo pour une meilleure prévisualisation
+                                video.currentTime = Math.min(1, video.duration / 4);
+                              } catch (err) {}
+                            }, 50);
+                          }}
+                        />
+                        {/* Overlay avec effet de hover */}
+                        <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all flex items-center justify-center">
+                          <span className="flex items-center gap-1 text-white text-sm font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-2 py-1 rounded-md transition-all">
+                            <span className="text-sm">▶️</span> Vidéo
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Image
+                      src={imageSrc}
+                      alt={media.alt || `Media ${index + 1}`}
+                      fill
+                      className="object-cover rounded-lg"
+                    />
+                  )}
+                  {/* Indicateur de nombre total si plus de 4 médias */}
+                  {index === 3 && item.media && item.media.length > 4 && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                      +{item.media.length - 4}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Boutons d'action */}
+        <div className="flex items-center gap-4 mt-1 mb-2">
+          {/* Bouton Like */}
+          <LikeButton 
+            itemId={item._id.toString()} 
+            itemType={isComment ? 'comment' : 'post'} 
+            initialLikes={likesCount} 
+            initialLikedStatus={isLiked}
+            onLikeSuccess={handleLike} 
+            size={isComment ? "small" : "normal"}
           />
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -464,46 +600,16 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   )
 }
 
-// Fonction pour rendre les mentions cliquables dans le texte
-function renderTextWithMentions(text: string) {
-  if (!text) return null;
-  
-  // Expression régulière pour détecter les @mentions
-  const mentionRegex = /(@\w+)/g;
-  
-  // Diviser le texte en parties (texte normal + mentions)
-  const parts = text.split(mentionRegex);
-  
-  return parts.map((part, index) => {
-    // Si cette partie correspond à une mention
-    if (part.match(mentionRegex)) {
-      const username = part.substring(1); // Enlever le @ du début
-      return (
-        <Link 
-          key={index} 
-          href={`/(protected)/profile/${username}`} 
-          className="text-blue-600 dark:text-blue-400 hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {part}
-        </Link>
-      );
-    }
-    // Sinon, c'est du texte normal
-    return <span key={index}>{part}</span>;
-  });
-}
-
-function FlatComments({ parentId, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments, cardStyle = false }: { 
-  parentId: string | null; 
-  formatDate: (date: string) => string; 
-  allComments: any[]; 
-  replyingCommentId: string | null;
-  setReplyingCommentId: (id: string | null) => void; 
-  onLike?: () => void;
-  expandedComments: Array<{ id: string, maxDisplayed: number }>;
-  setExpandedComments: (comments: Array<{ id: string, maxDisplayed: number }>) => void;
-  cardStyle?: boolean; // Propriété pour activer le style de carte comme dans le feed
+function FlatComments({ parentId, currentUser, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments }: { 
+  parentId: string | null, 
+  formatDate: (date: string) => string, 
+  allComments: any[], 
+  replyingCommentId: string | null, 
+  setReplyingCommentId: (id: string | null) => void, 
+  onLike?: () => void,
+  expandedComments: Array<{ id: string, maxDisplayed: number }>,
+  setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
+  currentUser: User
 }) {
   // Nombre initial de sous-commentaires à afficher par défaut
   const maxDisplayedComments = 3;
@@ -528,6 +634,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
           <div key={comment._id} className={`relative group ${cardStyle ? 'bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4' : 'border-t border-gray-200 dark:border-gray-700 pt-4'}`}> 
             <ThreadItem
               item={comment}
+              currentUser={currentUser}
               formatDate={formatDate}
               repliesCount={repliesCount}
               onReply={(e: React.MouseEvent) => { 
@@ -584,7 +691,6 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                             parentPostId={reply._id}
                             placeholder={`Répondre à @${reply.author?.username || 'utilisateur'}...`}
                             onPostCreated={() => {
-                              // Fermer le formulaire de réponse
                               setReplyingCommentId(null);
                               // Rafraîchir les commentaires
                               if (onLike) onLike();

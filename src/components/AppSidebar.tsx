@@ -60,6 +60,30 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [optionsMenuOpen]);
   
+  // Éviter les erreurs d'hydratation
+  useEffect(() => {
+    setMounted(true);
+    // Récupérer l'info utilisateur via l'API (cookie JWT)
+    const fetchUserInfo = async () => {
+      try {
+        const response = await fetch('/api/users/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUserInfo(userData);
+        } else {
+          setUserInfo(null);
+        }
+      } catch (err) {
+        setUserInfo(null);
+        console.error('Erreur lors de la récupération des infos utilisateur:', err);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
   // Navigation principale
   const navItems = [
     { key: 'feed', label: "Accueil", icon: MdHome, href: '/feed' },
@@ -280,8 +304,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 Paramètres
               </Link>
               
-              <button 
-                onClick={handleLogout}
+              <button
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                  window.location.href = '/login';
+                }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                 role="menuitem"
               >

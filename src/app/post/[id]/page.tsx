@@ -15,9 +15,32 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
-  // État pour suivre les commentaires qui ont été développés et combien de réponses afficher
   const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const router = useRouter();
+
+  // Récupère l'utilisateur connecté au montage
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/me', { credentials: 'include' });
+        if (!response.ok) throw new Error('Utilisateur non authentifié');
+        const user = await response.json();
+        setCurrentUser({
+          ...user,
+          profilePicture: user.profilePicture || '/default-avatar.svg'
+        });
+      } catch (error) {
+        setCurrentUser({
+          _id: '',
+          username: 'utilisateur',
+          email: '',
+          profilePicture: '/default-avatar.svg'
+        });
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,32 +48,30 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       setError(null);
       try {
         // Récupération du post principal
-        const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        const resPost = await fetch(`/api/posts/${params.id}`, {
+          credentials: 'include'
         });
         if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
         const postData = await resPost.json();
         setPost(postData);
-        
+
         // Récupération des commentaires de premier niveau
-        const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        const resComments = await fetch(`/api/posts/${params.id}/comments`, {
+          credentials: 'include'
         });
         if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
         const commentsData = await resComments.json();
-        
+
         // Pour chaque commentaire de premier niveau, récupérer ses sous-commentaires
         const allComments = [...commentsData];
-        
-        // Récupérer les sous-commentaires pour chaque commentaire de premier niveau
+
         for (const comment of commentsData) {
           try {
-            const resSubComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${comment._id}/comments`, {
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            const resSubComments = await fetch(`/api/posts/${comment._id}/comments`, {
+              credentials: 'include'
             });
             if (resSubComments.ok) {
               const subCommentsData = await resSubComments.json();
-              // Ajouter les sous-commentaires à la liste complète
               allComments.push(...subCommentsData);
               console.log(`Récupéré ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
             }
@@ -58,7 +79,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
             console.error(`Erreur lors du chargement des sous-commentaires pour ${comment._id}:`, error);
           }
         }
-        
+
         console.log('Total de commentaires chargés:', allComments.length);
         console.log('Structure d\'un commentaire:', allComments.length > 0 ? allComments[0] : 'aucun commentaire');
         
@@ -99,25 +120,21 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshComments = async () => {
     try {
-      // Récupération des commentaires de premier niveau
-      const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      const resComments = await fetch(`/api/posts/${params.id}/comments`, {
+        credentials: 'include'
       });
       if (!resComments.ok) throw new Error('Erreur lors du chargement des commentaires');
       const commentsData = await resComments.json();
-      
-      // Pour chaque commentaire de premier niveau, récupérer ses sous-commentaires
+
       const allComments = [...commentsData];
-      
-      // Récupérer les sous-commentaires pour chaque commentaire de premier niveau
+
       for (const comment of commentsData) {
         try {
-          const resSubComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${comment._id}/comments`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          const resSubComments = await fetch(`/api/posts/${comment._id}/comments`, {
+            credentials: 'include'
           });
           if (resSubComments.ok) {
             const subCommentsData = await resSubComments.json();
-            // Ajouter les sous-commentaires à la liste complète
             allComments.push(...subCommentsData);
             console.log(`Rafraîchi ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
           }
@@ -125,7 +142,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
           console.error(`Erreur lors du chargement des sous-commentaires pour ${comment._id}:`, error);
         }
       }
-      
+
       console.log('Total de commentaires rafraîchis:', allComments.length);
       setComments(allComments);
     } catch (error) {
@@ -135,8 +152,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshPost = async () => {
     try {
-      const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      const resPost = await fetch(`/api/posts/${params.id}`, {
+        credentials: 'include'
       });
       if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
       const postData = await resPost.json();
@@ -144,7 +161,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     } catch {}
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
+  if (loading || !currentUser) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!post) return <div className="p-8 text-center text-gray-500">Aucun post trouvé</div>;
 
@@ -162,95 +179,45 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       <div className="flex flex-col md:flex-row">
         <AppSidebar className="hidden md:flex" />
-        
-        {/* Main content container with consistent width and spacing as feed */}
-        <main className="flex-1 max-w-4xl w-full mx-auto py-4 md:py-8 px-4 xl:px-0 xl:mr-72">
-          <div className="space-y-6">
-            {/* Back button with responsive spacing */}
-            <button 
-              onClick={() => router.back()} 
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline mb-4 sm:mb-6 inline-flex items-center transition-colors duration-200"
-              aria-label="Retour à la page précédente"
-            >
-              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm sm:text-base">Retour</span>
-            </button>
-
-            {/* Main post */}
-            {post && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-lg">
-                <Post 
-                  post={post}
-                  currentUser={currentUser}
-                  onLike={refreshPost}
-                  onComment={async (postId, content) => {
-                    await refreshComments();
-                    await refreshPost();
-                  }}
-                  onShare={(postId) => {
-                    console.log('Sharing post:', postId);
-                    // Implement share functionality here
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Comments section */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200">
-              {/* Comments header */}
-              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                  Commentaires {comments.length > 0 && `(${comments.length})`}
-                </h2>
-              </div>
-              
-              {/* Comments list */}
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {comments.length > 0 ? (
-                  comments.map(comment => (
-                    <div key={comment._id.toString()} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
-                      <Post
-                        post={comment}
-                        currentUser={currentUser}
-                        onLike={refreshComments}
-                        onComment={async (commentId, content) => {
-                          await refreshComments();
-                        }}
-                        onShare={(commentId) => {
-                          console.log('Sharing comment:', commentId);
-                          // Implement share functionality here
-                        }}
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-                    Aucun commentaire pour ce post
-                  </div>
-                )}
-              </div>
-              
-              {/* Fixed comment form at bottom */}
-              <div className="sticky bottom-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-100 dark:border-gray-700 p-4">
-                <div className="max-w-2xl mx-auto">
-                  <PostForm 
-                    parentPostId={post?._id} 
-                    onPostCreated={async () => {
-                      await refreshComments();
-                      await refreshPost();
-                      // Scroll to the new comment
-                      window.scrollTo({
-                        top: document.body.scrollHeight,
-                        behavior: 'smooth'
-                      });
-                    }} 
-                    placeholder="Ajouter un commentaire..." 
-                  />
-                </div>
-              </div>
-            </div>
+        <main className="flex-1 max-w-2xl mx-auto py-10 px-4 flex flex-col relative">
+          <div className="mb-4 flex items-center">
+            <button onClick={() => router.back()} className="text-blue-600 hover:underline">← Retour</button>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-blue-200 dark:border-blue-700 p-6 mb-6">
+            <ThreadItem
+              item={post}
+              formatDate={formatDate}
+              repliesCount={repliesCount}
+              onReply={() => setReplyingCommentId(post._id)}
+              replyingCommentId={replyingCommentId}
+              setReplyingCommentId={setReplyingCommentId}
+              isClickable={false}
+              onLike={refreshPost}
+              currentUser={currentUser}
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto pb-32">
+            <FlatComments 
+              parentId={post._id} 
+              formatDate={formatDate} 
+              allComments={comments} 
+              replyingCommentId={replyingCommentId} 
+              setReplyingCommentId={setReplyingCommentId} 
+              onLike={refreshComments} 
+              expandedComments={expandedComments}
+              setExpandedComments={setExpandedComments}
+              currentUser={currentUser}
+            />
+          </div>
+          <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pt-4 z-30">
+            <PostForm 
+              parentPostId={post._id} 
+              onPostCreated={() => {
+                refreshComments();
+                refreshPost();
+              }} 
+              placeholder="Répondre..." 
+            />
           </div>
         </main>
         
@@ -263,4 +230,4 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       </div>
     </div>
   );
-} 
+}

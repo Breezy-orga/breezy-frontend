@@ -13,46 +13,34 @@ interface PostListProps {
   userId?: string;
 }
 
-export default function PostList({ initialPosts = [], tab = 'all', userId }: PostListProps) {
-  const [posts, setPosts] = useState<PostType[]>(initialPosts)
-  const [loading, setLoading] = useState(!initialPosts.length)
+export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
+  const [posts, setPosts] = useState<PostType[]>(initialPosts || []);
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user: currentUser, loading: userLoading } = useCurrentUser();
 
-  useEffect(() => {
-    const shouldFetch = !initialPosts.length || 
-      (userId && initialPosts.some(p => {
-        const authorId = typeof p.author === 'string' ? p.author : p.author?._id;
-        return authorId !== userId;
-      }));
-      
-    if (shouldFetch) {
-      fetchPosts();
-    }
-  }, [userId])
+  const updatePostInState = (updatedPost: PostType) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post._id === updatedPost._id ? updatedPost : post
+      )
+    )
+  }
 
   const fetchPosts = async () => {
     try {
-      setLoading(true);
-      let url = userId 
-        ? API_ROUTES.POSTS.USER(userId)
-        : tab === 'following' 
-          ? API_ROUTES.POSTS.FEED(true)
-          : API_ROUTES.POSTS.FEED();
-          
-      const response = await api.get(url);
-      const fetchedPosts = Array.isArray(response.data) ? response.data : response.data.posts || [];
-      
-      // Si on a un userId, on filtre pour ne garder que les posts de cet utilisateur
-      const filteredPosts = userId 
-        ? fetchedPosts.filter((post: PostType) => {
-            const authorId = typeof post.author === 'string' ? post.author : post.author?._id;
-            return authorId === userId;
-          })
-        : fetchedPosts;
-        
-      setPosts(filteredPosts);
-      setError(null);
+      setLoading(true)
+      const response = await fetch(fetchUrl, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des messages')
+      }
+
+      const data = await response.json()
+      setPosts(data)
+      setError(null)
     } catch (error) {
       console.error('Erreur:', error);
       setError('Une erreur est survenue lors du chargement des messages');
@@ -61,12 +49,45 @@ export default function PostList({ initialPosts = [], tab = 'all', userId }: Pos
     }
   }
 
-  const handlePostCreated = (newPost: PostType) => {
-    setPosts((prevPosts) => [newPost, ...prevPosts])
+  useEffect(() => {
+    setPosts(initialPosts || []);
+  }, [initialPosts]);
+
+  useEffect(() => {
+    fetchPosts()
+  }, [fetchUrl])
+
+  useEffect(() => {
+    fetchCurrentUser()
+  }, [])
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('/api/users/me', {
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        throw new Error('Utilisateur non authentifié')
+      }
+      const user = await response.json()
+      setCurrentUser({
+        ...user,
+        profilePicture: user.profilePicture || '/default-avatar.svg',
+      })
+    } catch (error) {
+      setCurrentUser({
+        _id: '',
+        username: 'utilisateur',
+        email: '',
+        profilePicture: '/default-avatar.svg',
+        role: 'user',
+      })
+      console.error("Erreur lors de la récupération de l'utilisateur:", error)
+    }
   }
 
   const handlePostDeleted = (postId: string) => {
-    setPosts((prevPosts) => prevPosts.filter(post => post._id.toString() !== postId))
+    setPosts(prevPosts => prevPosts.filter(post => post._id.toString() !== postId))
   }
 
   if (loading) {
@@ -85,41 +106,43 @@ export default function PostList({ initialPosts = [], tab = 'all', userId }: Pos
     )
   }
 
-  if (!posts.length) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Aucun message à afficher
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      {posts.map(post => {
-        // Log pour debug et skip des posts qui causeraient une erreur
-        if (!post || !post._id) {
-          console.error('Post invalide détecté:', post)
-          return null
-        }
-        
-        return (
-          <Post
-            key={post._id.toString()}
-            post={post}
-            currentUser={currentUser || { _id: '', username: '', email: '', profilePicture: '/default-avatar.png' } as User}
-            onLike={async (postId) => {
-              await fetchPosts()
-            }}
-            onComment={async (postId, content) => {
-              await fetchPosts()
-            }}
-            onShare={(postId) => {
-              // Implémenter le partage
-              console.log('Partager le post:', postId)
-            }}
-          />
-        )
-      })}
+      {posts.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          Aucun message à afficher
+        </div>
+      ) : (
+        posts.map(post => {
+          if (!post || !post._id) {
+            console.error('Post invalide détecté:', post)
+            return null
+          }
+
+          return (
+            <Post
+              key={post._id.toString()}
+              post={post}
+              currentUser={currentUser || {
+                _id: '',
+                username: '',
+                email: '',
+                profilePicture: '/default-avatar.png',
+                role: 'user'
+              }}
+              onLike={async (postId, updatedPost) => {
+                updatePostInState(updatedPost)
+              }}
+              onComment={async (postId, updatedPost) => {
+                updatePostInState(updatedPost)
+              }}
+              onShare={(postId) => {
+                console.log('Partager le post:', postId)
+              }}
+            />
+          )
+        })
+      )}
     </div>
   )
-} 
+}

@@ -19,14 +19,22 @@ interface LanguageProviderProps {
   children: React.ReactNode
 }
 
+function setLanguageCookie(lang: Language) {
+  document.cookie = `language=${lang}; path=/; max-age=31536000`
+}
+function getLanguageCookie(): Language | null {
+  const match = document.cookie.match(/(?:^|; )language=(fr|en)/)
+  return match ? (match[1] as Language) : null
+}
+
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguage] = useState<Language>('fr')
   const [mounted, setMounted] = useState(false)
 
   // Éviter l'hydratation non concordante
   useEffect(() => {
-    // Récupérer la langue sauvegardée dans localStorage, si elle existe
-    const savedLanguage = localStorage.getItem('language') as Language | null
+    // Récupérer la langue sauvegardée dans le cookie, si elle existe
+    const savedLanguage = getLanguageCookie()
     if (savedLanguage && (savedLanguage === 'fr' || savedLanguage === 'en')) {
       setLanguage(savedLanguage)
     }
@@ -35,12 +43,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage)
-    localStorage.setItem('language', newLanguage)
+    setLanguageCookie(newLanguage)
   }
 
-  // Ne pas rendre l'application côté serveur
   if (!mounted) {
-    return <>{children}</>
+    return null
   }
 
   return (

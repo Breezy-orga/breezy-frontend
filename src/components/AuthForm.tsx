@@ -25,24 +25,34 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setError('')
 
     try {
-      // Use the correct API route based on the mode
-      const endpoint = getApiUrl(mode === 'login' 
-        ? API_ROUTES.AUTH.LOGIN 
-        : API_ROUTES.AUTH.REGISTER
-      );
+      const endpoint = mode === 'login'
+        ? '/api/auth/login'
+        : '/api/auth/register';
       // Préparer les données selon le mode
       const dataToSend = mode === 'login' 
         ? { identifier: formData.identifier, password: formData.password } 
         : formData;
+      console.log('Attempting to connect to:', endpoint);
+      const payload = mode === 'login'
+  ? { identifier: formData.identifier, password: formData.password }
+  : {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password
+    };
+      console.log('Payload envoyé:', payload);
       
-      const response = await axios.post(endpoint, dataToSend, {
-        withCredentials: true // Important for cookies to be sent
-      })
+      const response = await axios.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials : true,
+      });
       
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token)
-        router.push('/feed')
+      if (response.status === 200) {
+        router.push('/feed');
       }
+
     } catch (err: any) {
       console.error('Login error:', {
         status: err.response?.status,

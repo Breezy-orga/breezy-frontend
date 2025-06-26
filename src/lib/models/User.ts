@@ -2,7 +2,7 @@ export interface User {
   _id: string;
   username: string;
   email: string;
-  pseudonym?: string;  // Pseudonyme modifiable qui s'affiche à la place du username
+  role: 'user' | 'moderator' | 'admin';
   profilePicture?: string;
   bio?: string;
   followers: string[];
