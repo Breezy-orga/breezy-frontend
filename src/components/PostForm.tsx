@@ -222,6 +222,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
     if ((!content.trim() && !mediaData) || isSubmitting) return
 
     setIsSubmitting(true)
+    let newPost
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
         method: 'POST',
@@ -232,16 +233,17 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
         body: JSON.stringify({
           content: content.trim(),
           parentPost: parentPostId,
-          media: mediaData, // Déjà au format tableau maintenant
+          media: mediaData,
           tags: tags.length > 0 ? tags : undefined
         })
       })
-
       if (!response.ok) {
         throw new Error('Erreur lors de la publication')
       }
-      const newPost = await response.json()
-
+      newPost = await response.json()
+    }catch (error) {
+      alert('erreur lors de la création')}
+    try{
       setContent('')
       setMediaPreviews([])
       setMediaData([])
