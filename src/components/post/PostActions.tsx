@@ -1,7 +1,9 @@
+'use client'
 import {useEffect, useState } from 'react';
 import { MessageCircle, Share2 } from 'lucide-react';
 import { Post, User } from '@/types/models';
 import LikeButton from '../LikeButton';
+import { useTranslation } from 'react-i18next';
 
 interface PostActionsProps {
   post: Post;
@@ -22,6 +24,7 @@ export default function PostActions({
   const [likeCount, setLikeCount] = useState(post.likes.length);
   const [isCommenting, setIsCommenting] = useState(false);
   const [commentContent, setCommentContent] = useState('');
+  const { t } = useTranslation();
 
   // Synchronise l'état local si le post change (ex: après un like ailleurs)
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function PostActions({
           <textarea
             value={commentContent}
             onChange={(e) => setCommentContent(e.target.value)}
-            placeholder="Write a comment..."
+            placeholder={t("post.comment_placeholder")}
             className="w-full p-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={2}
           />
@@ -88,13 +91,13 @@ export default function PostActions({
               onClick={() => setIsCommenting(false)}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              Cancel
+              {t("post.cancel")}
             </button>
             <button
               onClick={handleComment}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
             >
-              Comment
+              {t("post.comment")}
             </button>
           </div>
         </div>

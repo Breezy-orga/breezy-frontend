@@ -3,9 +3,15 @@
 import LoginForm from '@/components/auth/LoginForm';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 import '../../i18n';
+import { ThemeToggle } from '@/components/ThemeToggle'
+
+
 
 export default function LoginPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-blue-50 via-white to-white text-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="flex flex-1">
@@ -36,12 +42,12 @@ export default function LoginPage() {
             {/* Registration link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Pas encore de compte ?{' '}
+                {t('login.no_account')}{' '}
                 <Link 
                   href="/register" 
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
                 >
-                  S'inscrire
+                  {t('login.signup')}
                 </Link>
               </p>
             </div>
@@ -53,11 +59,11 @@ export default function LoginPage() {
       <footer className="py-4 px-4 border-t border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto text-center text-sm text-gray-500 dark:text-gray-400">
           {new Date().getFullYear()} Breezy • 
-          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">À propos</Link> • 
-          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">Conditions</Link> • 
-          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">Confidentialité</Link>
+          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">{t('footer.about')}</Link> • 
+          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">{t('footer.terms')}</Link> • 
+          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">{t('footer.privacy')}</Link>
         </div>
       </footer>
     </div>
-  );
+  )
 }

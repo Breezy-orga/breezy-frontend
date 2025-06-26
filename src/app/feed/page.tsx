@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -14,10 +14,7 @@ import {
 import { FaRegSmile } from 'react-icons/fa';
 import PostForm from '@/components/PostForm';
 import PostList from '@/components/PostList';
-import LanguageSwitcher from '@/components/post/LanguageSwitcher';
-import { MdTranslate } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import '../../i18n'; 
 import 'flag-icons/css/flag-icons.min.css';
 import { Post as PostType } from '@/types/models'
 
@@ -168,7 +165,7 @@ function Post({ post }: { post: Post }) {
   const [comment, setComment] = useState('');
   const [showShare, setShowShare] = useState(false);
   const [filterTag, setFilterTag] = useState<string | null>(null);
-
+  const { t } = useTranslation();
   const handleReact = (type: keyof typeof reactions) => {
     setReactions(r => ({ ...r, [type]: r[type] + 1 }));
   };
@@ -178,15 +175,15 @@ function Post({ post }: { post: Post }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Image src={post.user?.avatar || '/default-avatar.png'} alt="Photo profil" width={40} height={40} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+            <Image src={post.user?.avatar || '/default-avatar.png'} alt={t('profile.profile_picture')} width={40} height={40} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
             {post.user?.isOnline && <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></span>}
           </div>
           <div>
             <span className="font-bold text-gray-900 dark:text-gray-100 text-base flex items-center gap-1">
-              {post.user?.username || 'Utilisateur inconnu'}
-              {post.user?.isPremium && <span className="ml-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-pink-400 text-xs text-white rounded-full font-bold">Premium</span>}
+              {post.user?.username || t('profile.unknown_user')}
+              {post.user?.isPremium && <span className="ml-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-pink-400 text-xs text-white rounded-full font-bold">{t('profile.premium')}</span>}
             </span>
-            <span className="text-gray-500 ml-2">@{post.user?.username || 'utilisateur'}</span>
+            <span className="text-gray-500 ml-2">@{post.user?.username || t('profile.unknown_username')}</span>
             <span className="text-gray-400 ml-2 text-sm">{post.date}</span>
           </div>
         </div>
@@ -200,9 +197,9 @@ function Post({ post }: { post: Post }) {
             </button>
             {showShare && (
               <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-40 animate-fade-in">
-                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdLink className="text-xl" /> Copier le lien</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdShare className="text-xl" /> Partager sur X</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdSend className="text-xl" /> Envoyer en message</button>
+                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdLink className="text-xl" /> {t('post.copy_link')}</button>
+                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdShare className="text-xl" /> {t('post.share_on_x')}</button>
+                <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 dark:text-gray-200 transition flex items-center gap-2"><MdSend className="text-xl" /> {t('post.send_message')}</button>
               </div>
             )}
           </div>
@@ -232,12 +229,12 @@ function Post({ post }: { post: Post }) {
       {showComment && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow mb-4 relative animate-fade-in">
           <Image src="/pp1.jpg" alt="Moi" width={32} height={32} className="rounded-full object-cover border border-gray-200 dark:border-gray-700" />
-          <textarea value={comment} onChange={e => setComment(e.target.value)} className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl p-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[40px] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-gray-50 dark:bg-gray-900" placeholder="Ajouter un commentaire..." />
-          <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-xl font-semibold shadow hover:opacity-90 transition text-base">Envoyer</button>
+          <textarea value={comment} onChange={e => setComment(e.target.value)} className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl p-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[40px] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-gray-50 dark:bg-gray-900" placeholder={t('post.add_comment')} />
+          <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-xl font-semibold shadow hover:opacity-90 transition text-base">{t('post.send')}</button>
         </div>
       )}
       {filterTag && (
-        <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">(Filtrage sur le tag <b>{filterTag}</b> — démo visuelle)</div>
+        <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">({t('post.filtering_on_tag', { tag: filterTag })}— {t('post.visual_demo')})</div>
       )}
     </div>
   );
@@ -275,42 +272,11 @@ function Follows() {
   );
 }
 
-function Sidebar() {
-  const [active, setActive] = useState('feed');
-    const { t } = useTranslation();
-
-  const navItems = [
-    { key: 'feed', labelKey: 'sidebar.home', icon: MdHome, href: '/feed' },
-    { key: 'profile', labelKey: 'sidebar.profile', icon: MdPerson, href: '/profile' },
-    { key: 'notifications', labelKey: 'sidebar.notifications', icon: MdNotifications, href: '/notifications' },
-    { key: 'messages', labelKey: 'sidebar.messages', icon: MdMail, href: '/messages' },
-  ];
-  return (
-    <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
-      <nav className="flex flex-col gap-2 text-base font-semibold">
-        {navItems.map(item => (
-          <button
-            key={item.key}
-            onClick={() => setActive(item.key)}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-150 group
-              ${active === item.key ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow font-bold scale-[1.04]' : 'text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50'}
-            `}
-          >
-            <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
-            <span>{t(item.labelKey)}</span>
-            {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
-          </button>
-        ))}
-      </nav>
-    </aside>
-  );
-}
-
 export default function FeedPage() {
   const [posts, setPosts] = useState<PostType[]>([])
   const [activeTab, setActiveTab] = useState<'all' | 'following'>('all');
   const [loading, setLoading] = useState(true)
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetch(`/api/posts/feed`)
       .then(res => res.json())
@@ -346,7 +312,7 @@ return (
           ? 'text-blue-600 dark:text-blue-400 font-semibold' 
           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
       >
-        Pour toi
+        {t('feed.for_you')}
         {activeTab === 'all' && (
           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
         )}
@@ -357,7 +323,7 @@ return (
           ? 'text-blue-600 dark:text-blue-400 font-semibold' 
           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
       >
-        Abonnement
+        {t('feed.following')}
         {activeTab === 'following' && (
           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
         )}
@@ -375,7 +341,3 @@ return (
 
 }
 
-// Animation utilitaire
-// Ajoute dans globals.css :
-// @keyframes fade-in { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: none;} }
-// .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.39,.58,.57,1) both; } 

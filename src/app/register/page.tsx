@@ -3,8 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import SignupForm from '@/components/auth/SignupForm';
+import { useTranslation } from 'react-i18next';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-blue-50 via-white to-white text-gray-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="flex flex-1">
@@ -40,7 +43,7 @@ export default function RegisterPage() {
                   href="/login" 
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
                 >
-                  Sign in
+                 {t("register.signin")}
                 </Link>
               </p>
             </div>
@@ -52,9 +55,11 @@ export default function RegisterPage() {
       <footer className="py-4 px-4 border-t border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto text-center text-sm text-gray-500 dark:text-gray-400">
           © {new Date().getFullYear()} Breezy • 
-          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">About</Link> • 
-          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">Terms</Link> • 
-          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300 ml-1">Privacy</Link>
+          <Link href="/about" className="hover:text-gray-700 transition-colors">{t("footer.about")}</Link>
+          <Link href="/terms" className="hover:text-gray-700 transition-colors">{t("footer.terms")}</Link>
+          <Link href="/privacy" className="hover:text-gray-700 transition-colors">{t("footer.privacy")}</Link>
+          <Link href="/contact" className="hover:text-gray-700 transition-colors">{t("footer.contact")}</Link>
+         
         </div>
       </footer>
     </div>
