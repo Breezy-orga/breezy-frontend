@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MdClose } from 'react-icons/md'
+import {useTranslation } from 'react-i18next'
 
 interface MediaModalProps {
   src: string
@@ -13,6 +14,7 @@ interface MediaModalProps {
 
 export default function MediaModal({ src, alt, isOpen, onClose, mediaType = 'image' }: MediaModalProps) {
   // Gérer la fermeture avec la touche Escape
+ const { t } = useTranslation()
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -49,7 +51,7 @@ export default function MediaModal({ src, alt, isOpen, onClose, mediaType = 'ima
         {mediaType === 'image' ? (
           <img 
             src={src} 
-            alt={alt || "Image en plein écran"} 
+            alt={alt || t("media.fullscreen_image")} 
             className="max-h-[90vh] max-w-full object-contain mx-auto"
             onClick={(e) => e.stopPropagation()}
           />
@@ -61,7 +63,7 @@ export default function MediaModal({ src, alt, isOpen, onClose, mediaType = 'ima
             className="max-h-[90vh] max-w-full mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            Votre navigateur ne prend pas en charge la lecture de vidéos.
+          {t("media.video_not_supported")}
           </video>
         )}
       </div>
