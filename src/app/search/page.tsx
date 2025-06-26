@@ -153,10 +153,10 @@ const handleLike = async (postId: string) => {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Recherche</h1>
+    <div className="flex flex-col w-full max-w-full md:max-w-2xl mx-auto px-2 py-4 sm:px-4">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Recherche</h1>
 
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col space-y-3 sm:space-y-4">
         <SearchBar 
           onSearch={handleSearch} 
           placeholder="Rechercher des tags ou des utilisateurs..." 
@@ -185,12 +185,12 @@ const handleLike = async (postId: string) => {
       
       {/* Section utilisateurs */}
       {users.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Utilisateurs</h2>
-          <div className="space-y-4">
+        <div className="mt-5 sm:mt-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Utilisateurs</h2>
+          <div className="space-y-3 sm:space-y-4">
             {users.map((user) => (
-              <div key={user._id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
-                <div className="relative h-14 w-14 rounded-full overflow-hidden mr-4">
+              <div key={user._id} className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
+                <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-full overflow-hidden mr-3 sm:mr-4">
                   <Image 
                     src={user.profilePicture || '/default-avatar.png'} 
                     alt={user.username}
@@ -199,15 +199,15 @@ const handleLike = async (postId: string) => {
                     className="object-cover"
                   />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-white">{user.username}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 dark:text-white truncate">{user.username}</h3>
                   {user.bio && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{user.bio}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{user.bio}</p>
                   )}
                 </div>
                 <Link 
                   href={`/profile/${user._id}`} 
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm ml-2"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs sm:text-sm ml-2"
                 >
                   Voir profil
                 </Link>
@@ -219,9 +219,9 @@ const handleLike = async (postId: string) => {
 
       {/* Section posts */}
       {posts.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Publications</h2>
-          <div className="space-y-4">
+        <div className="mt-5 sm:mt-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Publications</h2>
+          <div className="space-y-3 sm:space-y-4">
             {posts.map((post) => (
               <Post 
                 key={post._id} 

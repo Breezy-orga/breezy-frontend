@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import LikeButton from './LikeButton'
-import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
+import { MdFavorite,MdDelete, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
@@ -37,7 +37,8 @@ interface PostProps {
   onLike: (postId: string, updatedPost: PostType) => Promise<void>
   onComment: (postId: string, updatedPost: PostType) => Promise<void>
   onShare: (postId: string) => void
-}
+  onDelete?: (postId: string) => void
+ }
 
 // Utilisateur par défaut en cas d'absence
 const defaultUser: User = {
@@ -53,6 +54,7 @@ export default function Post({
   onLike,
   onComment,
   onShare,
+  onDelete,
 }: PostProps) {
   // Utiliser l'utilisateur par défaut si currentUser est null/undefined
   const safeCurrentUser = currentUser || defaultUser
@@ -251,6 +253,16 @@ export default function Post({
           >
             <MdShare className="w-5 h-5" />
           </button>
+
+          {userId === authorId && (
+            <button
+              className="flex items-center space-x-1 text-gray-500"
+              onClick={() => onDelete && onDelete(post._id.toString())}
+            >
+              <MdDelete className="w-5 h-5" />
+            </button>
+          )}
+
         </div>
       </div>
 

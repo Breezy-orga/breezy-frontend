@@ -50,12 +50,12 @@ export default function UserProfile({ userId }: Props) {
   useEffect(() => {
     const fetchList = async () => {
       try {
-        const targetId = userId || 'me'
+        const targetId = userId || currentUser?._id
         if (viewMode === 'followers') {
-          const res = await api.get(`/users/getById/${targetId}/followers`)
+          const res = await api.get(`/follow/${targetId}/followers`)
           setFollowers(res.data)
         } else if (viewMode === 'following') {
-          const res = await api.get(`/users/getById/${targetId}/following`)
+          const res = await api.get(`/follow/${targetId}/following`)
           setFollowing(res.data)
         }
       } catch (error) {
@@ -63,7 +63,7 @@ export default function UserProfile({ userId }: Props) {
       }
     }
     if (viewMode !== 'profile') fetchList()
-  }, [viewMode, userId])
+  }, [viewMode, userId, currentUser])
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -235,7 +235,6 @@ export default function UserProfile({ userId }: Props) {
           {(currentUser?.role === 'admin' && !isSelf) && (
             <button
               onClick={async () => {
-                // À remplacer par ta future route d'API
                 try {
                   const newRole = user.role === 'moderator' ? 'user' : 'moderator';
                   // await api.put(`/users/${user._id}/role`, { role: newRole });

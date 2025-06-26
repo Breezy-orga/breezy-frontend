@@ -7,9 +7,10 @@ import { Post as PostType, User } from '@/types/models'
 interface PostListProps {
   initialPosts?: PostType[]
   fetchUrl: string
+  onDelete?: (postId: string) => void
 }
 
-export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
+export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListProps) {
   const [posts, setPosts] = useState<PostType[]>(initialPosts || []);
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,9 +83,9 @@ export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
     }
   }
 
-  const handlePostDeleted = (postId: string) => {
-    setPosts(prevPosts => prevPosts.filter(post => post._id.toString() !== postId))
-  }
+  // const handlePostDeleted = (postId: string) => {
+  //   setPosts(prevPosts => prevPosts.filter(post => post._id.toString() !== postId))
+  // }
 
   if (loading) {
     return (
@@ -135,6 +136,7 @@ export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
               onShare={(postId) => {
                 console.log('Partager le post:', postId)
               }}
+              onDelete={onDelete}
             />
           )
         })

@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   MdAddCircle, MdEdit, MdAutoAwesome, MdPoll, MdEvent, 
   MdNotifications, MdPerson, MdSettings, MdLightMode, 
-  MdDarkMode, MdLogout, MdPersonAdd, MdShare, MdLink, 
+  MdDarkMode, MdLogout, MdPersonAdd, MdDelete, MdLink, 
   MdSend, MdExpandMore, MdHome, MdMail 
 } from 'react-icons/md';
 import { useTheme } from 'next-themes';

@@ -5,13 +5,18 @@ import Link from 'next/link'
 
 export default function FollowingList() {
   const [users, setUsers] = useState([])
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchFollowing = async () => {
-      const res = await api.get('/api/users/me/followers')
+    const fetchFollowers = async () => {
+      // Récupérer l'utilisateur connecté
+      const meRes = await api.get('/users/me')
+      setCurrentUserId(meRes.data._id)
+      // Puis ses followers
+      const res = await api.get(`/users/${meRes.data._id}/followers`)
       setUsers(res.data)
     }
-    fetchFollowing()
+    fetchFollowers()
   }, [])
 
   return (

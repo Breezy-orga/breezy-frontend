@@ -144,22 +144,22 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     } catch {}
   };
 
-  if (loading || !currentUser) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
-  if (!post) return <div className="p-8 text-center text-gray-500">Aucun post trouvé</div>;
+  if (loading || !currentUser) return <div className="p-6 text-center text-gray-500">Chargement...</div>;
+  if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
+  if (!post) return <div className="p-6 text-center text-gray-500">Aucun post trouvé</div>;
 
   const repliesCount = comments.filter(c => c.parentPost === post._id).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 w-full">
         <AppSidebar className="hidden md:flex" />
-        <main className="flex-1 max-w-2xl mx-auto py-10 px-4 flex flex-col relative">
-          <div className="mb-4 flex items-center">
-            <button onClick={() => router.back()} className="text-blue-600 hover:underline">← Retour</button>
+        <main className="flex-1 w-full max-w-full md:max-w-2xl mx-auto py-4 px-2 sm:py-8 sm:px-4 flex flex-col relative">
+          <div className="mb-2 sm:mb-4 flex items-center">
+            <button onClick={() => router.back()} className="text-blue-600 hover:underline text-sm sm:text-base">← Retour</button>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-blue-200 dark:border-blue-700 p-6 mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-md border border-blue-200 dark:border-blue-700 p-3 sm:p-6 mb-4 sm:mb-6">
             <ThreadItem
               item={post}
               formatDate={formatDate}
@@ -172,7 +172,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               currentUser={currentUser}
             />
           </div>
-          <div className="flex-1 overflow-y-auto pb-32">
+          <div className="flex-1 overflow-y-auto pb-24 sm:pb-32">
             <FlatComments 
               parentId={post._id} 
               formatDate={formatDate} 
@@ -185,7 +185,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               currentUser={currentUser}
             />
           </div>
-          <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pt-4 z-30">
+          <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pt-2 sm:pt-4 z-30">
             <PostForm 
               parentPostId={post._id} 
               onPostCreated={() => {

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format, formatDistance } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { MdDelete, MdDone, MdDoneAll } from 'react-icons/md';
+import { MdDone, MdDoneAll, MdDelete } from 'react-icons/md';
 
 export default function NotificationsPage() {
   const { 
@@ -67,10 +67,10 @@ export default function NotificationsPage() {
 
   const renderNotificationContent = (notification: Notification) => {
     return (
-      <div className="flex justify-between items-start">
-        <div className="flex items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+        <div className="flex items-start flex-1 min-w-0">
           <Link href={`/profile/${notification.sender._id}`}>
-            <div className="relative h-10 w-10 rounded-full overflow-hidden mr-3">
+            <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full overflow-hidden mr-2 sm:mr-3 flex-shrink-0">
               <Image 
                 src={notification.sender.profilePicture || '/default-avatar.png'} 
                 alt={notification.sender.username}
@@ -80,15 +80,15 @@ export default function NotificationsPage() {
               />
             </div>
           </Link>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-col">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
+              <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
                 {formatNotificationText(notification)}
               </p>
               {notification.post && (
                 <Link 
                   href={`/post/${notification.post._id}`} 
-                  className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 hover:text-blue-500 dark:hover:text-blue-400"
+                  className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-2 hover:text-blue-500 dark:hover:text-blue-400 break-words"
                 >
                   "{notification.post.content}"
                 </Link>
@@ -102,11 +102,11 @@ export default function NotificationsPage() {
             </div>
           </div>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-1 sm:space-x-2 mt-2 sm:mt-0">
           {!notification.read && (
             <button
               onClick={() => handleMarkAsRead(notification._id)}
-              className="p-1.5 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400"
+              className="p-1 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400"
               aria-label="Marquer comme lu"
             >
               <MdDone size={18} />
@@ -115,7 +115,7 @@ export default function NotificationsPage() {
           <button
             onClick={() => handleDeleteNotification(notification._id)}
             disabled={deleting === notification._id}
-            className={`p-1.5 ${
+            className={`p-1 ${
               deleting === notification._id 
                 ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
                 : 'text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400'
