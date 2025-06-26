@@ -20,7 +20,7 @@ export default function FollowingList() {
       {users.map((user: any) => (
         <div key={user._id} className="flex items-center gap-3 mb-3">
           <Image src={user.profilePicture || '/default-avatar.png'} alt="Avatar" width={32} height={32} className="rounded-full" />
-          <Link href={`/profile/${user._id}`} className="text-gray-900 dark:text-gray-100">@{user.username}</Link>
+          <Link href={`/(protected)/profile/${user._id}`} className="text-gray-900 dark:text-gray-100">@{user.username}</Link>
         </div>
       ))}
     </div>

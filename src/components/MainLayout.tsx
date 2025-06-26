@@ -15,8 +15,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   
-  // Vérifier si nous sommes sur les pages de login/register pour ne pas afficher les barres latérales
-  const isAuthPage = pathname === '/login' || pathname === '/register'
+  // Vérifier si nous sommes sur les pages d'authentification pour ne pas afficher les barres latérales
+  const isAuthPage = ['/login', '/signup', '/register'].includes(pathname)
   
   // Vérifier si nous sommes sur la page feed pour afficher la barre latérale droite
   const isFeedPage = pathname === '/feed'

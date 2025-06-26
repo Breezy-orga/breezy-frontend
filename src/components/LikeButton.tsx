@@ -46,9 +46,17 @@ export default function LikeButton({
       const endpoint = itemType === 'comment' 
         ? `/comments/${itemId}/like` 
         : `/posts/${itemId}/like`;
+        
+      // S'assurer qu'il n'y a pas de double /api dans l'URL
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const url = baseUrl.endsWith('/api') 
+        ? `${baseUrl}${endpoint}` 
+        : `${baseUrl}/api${endpoint}`;
+        
+      console.log(`Like ${itemType} (ID: ${itemId}), URL: ${url}`);
       
-      const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
-      console.log(`Like ${itemType} : ${url}`);
+      const token = localStorage.getItem('token');
+      console.log(`Token disponible: ${!!token}`);
       
       const response = await fetch(url, {
         method: 'POST',

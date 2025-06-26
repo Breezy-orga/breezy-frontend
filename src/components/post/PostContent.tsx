@@ -73,7 +73,7 @@ export default function PostContent({ post }: PostContentProps) {
       segments.push(
         <Link 
           key={`mention-${match.index}`}
-          href={`/profile/${username}`}
+          href={`/(protected)/profile/${username}`}
           className="text-blue-500 hover:text-blue-700 hover:underline"
         >
           @{username}

@@ -215,7 +215,7 @@ export default function SearchPage() {
                   )}
                 </div>
                 <Link 
-                  href={`/profile/${user._id}`} 
+                  href={`/(protected)/profile/${user._id}`} 
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm ml-2"
                 >
                   Voir profil

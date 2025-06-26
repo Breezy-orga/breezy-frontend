@@ -12,7 +12,7 @@ interface PostHeaderProps {
 export default function PostHeader({ author, createdAt, location }: PostHeaderProps) {
   return (
     <div className="flex items-center space-x-3 p-4">
-      <Link href={`/profile/${author._id}`}>
+      <Link href={`/(protected)/profile/${author._id}`}>
         <div className="relative h-10 w-10 rounded-full overflow-hidden">
           <Image
             src={author.profilePicture || '/default-avatar.svg'}
@@ -23,7 +23,7 @@ export default function PostHeader({ author, createdAt, location }: PostHeaderPr
         </div>
       </Link>
       <div className="flex-1">
-        <Link href={`/profile/${author._id}`}>
+        <Link href={`/(protected)/profile/${author._id}`}>
           <h3 className="font-semibold hover:underline">{author.username}</h3>
         </Link>
         <div className="flex items-center text-sm text-gray-500">

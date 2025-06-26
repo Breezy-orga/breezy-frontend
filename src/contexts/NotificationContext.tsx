@@ -147,13 +147,50 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   useEffect(() => {
-    // Récupérer les notifications au chargement
-    fetchNotifications();
+    // Only fetch notifications if user is authenticated
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+
+    let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 5000; // 5 seconds
+
+    const fetchWithRetry = async () => {
+      try {
+        await fetchNotifications();
+        retryCount = 0; // Reset retry count on success
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          setTimeout(fetchWithRetry, RETRY_DELAY * retryCount);
+        }
+      }
+    };
+
+    // Initial fetch
+    fetchWithRetry();
     
-    // Définir un intervalle pour actualiser les notifications
-    const interval = setInterval(fetchNotifications, 60000); // 1 minute
+    // Refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchWithRetry();
+      }
+    };
     
-    return () => clearInterval(interval);
+    // Check for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Poll every 5 minutes (300000ms) instead of every minute
+    const interval = setInterval(fetchWithRetry, 5 * 60 * 1000);
+    
+    // Cleanup
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   return (

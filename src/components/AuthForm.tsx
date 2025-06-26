@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
+import { API_ROUTES, getApiUrl } from '@/config/api.routes';
 
 interface AuthFormProps {
   mode: 'login' | 'register'
@@ -24,17 +25,19 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setError('')
 
     try {
-      // Créer les URLs d'authentification sans duplication du préfixe /api
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const endpoint = mode === 'login'
-        ? baseUrl.replace(/\/api$/, '') + '/api/auth/login'
-        : baseUrl.replace(/\/api$/, '') + '/api/auth/register';
+      // Use the correct API route based on the mode
+      const endpoint = getApiUrl(mode === 'login' 
+        ? API_ROUTES.AUTH.LOGIN 
+        : API_ROUTES.AUTH.REGISTER
+      );
       // Préparer les données selon le mode
       const dataToSend = mode === 'login' 
         ? { identifier: formData.identifier, password: formData.password } 
         : formData;
       
-      const response = await axios.post(endpoint, dataToSend)
+      const response = await axios.post(endpoint, dataToSend, {
+        withCredentials: true // Important for cookies to be sent
+      })
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token)

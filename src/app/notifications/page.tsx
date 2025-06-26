@@ -75,7 +75,7 @@ export default function NotificationsPage() {
     return (
       <div className="flex justify-between items-start">
         <div className="flex items-start">
-          <Link href={`/profile/${notification.sender._id}`}>
+          <Link href={`/(protected)/profile/${notification.sender._id}`}>
             <div className="relative h-10 w-10 rounded-full overflow-hidden mr-3">
               <Image 
                 src={notification.sender.profilePicture || '/default-avatar.png'} 

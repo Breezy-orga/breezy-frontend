@@ -4,10 +4,14 @@ export interface User {
   _id: string;
   username: string;
   email?: string;
-  profilePicture?: string;
-  followers?: string[];
-  following?: string[];
+  profilePicture?: string | null;
+  bannerImage?: string | null;
+  displayName?: string;
+  pseudonym?: string;
+  followers?: (string | User)[];
+  following?: (string | User)[];
   bio?: string;
+  role?: 'user' | 'admin' | 'moderator'; // Rôles utilisateurs avec une valeur par défaut
   createdAt?: string;
   updatedAt?: string;
 }

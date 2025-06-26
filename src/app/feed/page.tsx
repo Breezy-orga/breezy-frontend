@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   MdThumbUp, MdShare, MdLink, MdRepeat, 
-  MdChatBubbleOutline, MdComment, MdPersonAdd, MdSend 
+  MdChatBubbleOutline, MdComment, MdPersonAdd, MdSend,
+  MdHome, MdPerson, MdNotifications, MdMail
 } from 'react-icons/md';
 import { FaRegSmile } from 'react-icons/fa';
 import PostForm from '@/components/PostForm';
@@ -269,50 +270,15 @@ function Follows() {
   );
 }
 
-function Sidebar() {
-  const [active, setActive] = useState('feed');
-    const { t } = useTranslation();
-
-  const navItems = [
-    { key: 'feed', labelKey: 'sidebar.home', icon: MdHome, href: '/feed' },
-    { key: 'profile', labelKey: 'sidebar.profile', icon: MdPerson, href: '/profile' },
-    { key: 'notifications', labelKey: 'sidebar.notifications', icon: MdNotifications, href: '/notifications' },
-    { key: 'messages', labelKey: 'sidebar.messages', icon: MdMail, href: '/messages' },
-  ];
-  return (
-    <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-8">
-      <nav className="flex flex-col gap-2 text-base font-semibold">
-        {navItems.map(item => (
-          <button
-            key={item.key}
-            onClick={() => setActive(item.key)}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-150 group
-              ${active === item.key ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 shadow font-bold scale-[1.04]' : 'text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/50'}
-            `}
-          >
-            <item.icon className={`text-xl transition-all duration-150 ${active === item.key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300'}`} />
-            <span>{t(item.labelKey)}</span>
-            {item.key === 'notifications' && <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">3</span>}
-          </button>
-        ))}
-      </nav>
-    </aside>
-  );
-}
+// Sidebar est maintenant fourni par le composant MainLayout via AppSidebar
 
 export default function FeedPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'all' | 'following'>('all'); 
   const handlePostCreated = () => setRefreshKey((prev) => prev + 1);
 
-  // URL de l'API en fonction de l'onglet actif
-  const getFetchUrl = () => {
-    if (activeTab === 'following') {
-      return `${process.env.NEXT_PUBLIC_API_URL}/posts/feed?following=true`;
-    } else {
-      return `${process.env.NEXT_PUBLIC_API_URL}/posts/feed`;
-    }
-  };
+  // L'URL de l'API est maintenant gérée dans PostList via le paramètre 'tab'
+  // On ne construit plus l'URL ici.
 
   return (
     <div className="w-full font-sans text-gray-900 dark:text-white">
@@ -347,7 +313,7 @@ export default function FeedPage() {
       <div className="mt-4" key={`post-list-container-${refreshKey}-${activeTab}`}>
         <PostList
           key={`${refreshKey}-${activeTab}`}
-          fetchUrl={getFetchUrl()}
+          tab={activeTab}
         />
       </div>
     </div>

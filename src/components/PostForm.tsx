@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCurrentUser } from '@/context/CurrentUserContext'
 import Image from 'next/image'
 import { MdImage, MdClose, MdTag } from 'react-icons/md'
 import { v4 as uuidv4 } from 'uuid'
@@ -29,7 +30,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const [tags, setTags] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const { user, loading: userLoading } = useCurrentUser();
   
   // États pour la suggestion de mentions
   const [mentionQuery, setMentionQuery] = useState('')
@@ -41,19 +42,11 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const suggestionListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (response.ok) {
-          setUser(await response.json())
-        }
-      } catch {}
+    if (!userLoading && !user) {
+      router.push('/login')
     }
-    fetchUser()
-  }, [])
-  
+  }, [user, userLoading, router])
+
   // Fonction pour déboucer la recherche d'utilisateurs (réduit le nombre d'appels API)
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
@@ -262,7 +255,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-4 mb-6 border border-gray-100">
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-700">
       <div className="flex gap-3">
         <Image
           src={user?.username === 'daemon' ? '/me.jpg' : (user?.profilePicture || '/default-avatar.svg')}
@@ -300,7 +293,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                       onClick={() => insertMention(user.username)}
                       className={`flex items-center gap-2 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors ${index === selectedSuggestionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 dark:bg-gray-600">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
                         <Image 
                           src={user.profilePicture || '/default-avatar.svg'} 
                           alt={user.username}
@@ -317,7 +310,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
             )}
           </div>
           {mediaPreviews.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-2 gap-2 mt-2 bg-white dark:bg-gray-800 p-2 rounded-lg">
               {mediaPreviews.map((preview, index) => (
                 <div key={index} className="relative">
                   <div className="relative aspect-square">

@@ -39,6 +39,12 @@ export default function Post({
   onComment,
   onShare,
 }: PostProps) {
+  const [isDeleted, setIsDeleted] = useState(false)
+  
+  // Si le post a été supprimé, ne rien afficher
+  if (isDeleted) {
+    return null;
+  }
   // Utiliser l'utilisateur par défaut si currentUser est null/undefined
   const safeCurrentUser = currentUser || defaultUser
   const [showCommentForm, setShowCommentForm] = useState(false)
@@ -52,7 +58,7 @@ export default function Post({
   const [commentsError, setCommentsError] = useState<string | null>(null)
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null)
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)  // État pour suivre les commentaires qui ont été développés et combien de réponses afficher
-  const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([])
+  const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([])  
   // Nombre de sous-commentaires affichés
   const displayedComments = 5
   const clickableRef = useRef<HTMLDivElement>(null)
@@ -194,67 +200,81 @@ export default function Post({
   };
 
   return (
-    <article className="bg-white rounded-lg shadow-md overflow-hidden">
+    <article className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-lg">
       <PostHeader
         author={post.author as unknown as User || defaultUser}
         createdAt={new Date(post.createdAt)}
         location={post.location}
       />
       <PostContent post={post} />
-      <div className="px-4 py-2 border-t border-gray-200">
-        <div className="flex space-x-6">
-              {/* Bouton Like */}
-              <div className="flex items-center gap-1">
-                <LikeButton 
-                  itemId={post._id.toString()} 
-                  itemType="post" 
-                  initialLikes={likesCount} 
-                  initialLikedStatus={isLiked}
-                  onLikeSuccess={handleLike} 
-                />
-              </div>       <button 
-            className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" onClick={handleCommentClick}>
-            <MdChatBubbleOutline className="w-5 h-5" />
-            <span>{commentsCount}</span>
-          </button>
-          
-          <button 
-            className="flex items-center space-x-1 text-gray-500"
-            onClick={() => onShare(post._id.toString())}
-          >
-            <MdShare className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <PostActions
+        post={post}
+        currentUser={safeCurrentUser}
+        onLike={handleLike}
+        onComment={handleCommentSubmit}
+        onShare={(postId) => onShare(postId)}
+        onPostDeleted={(postId) => {
+          setIsDeleted(true);
+          // Si on est dans un contexte où le parent gère les suppressions
+          if (onLike) {
+            // On réutilise la fonction onLike comme callback général pour les mises à jour
+            onLike(post._id.toString());
+          }
+        }}
+        onPostUpdated={(updatedPost) => {
+          // Mise à jour du post dans l'interface
+          post.content = updatedPost.content;
+          post.media = updatedPost.media;
+          post.tags = updatedPost.tags;
+        }}
+      />
 
-      {/* Affichage des commentaires quand showCommentForm est true */}
+      {/* Comments section - shown when expanded */}
       {showCommentForm && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <PostForm
-            parentPostId={post._id}
-            onPostCreated={() => {
-              refreshComments()
-              // Incrémenter le compteur de commentaires
-              setCommentsCount(prev => prev + 1)
-              commentInputRef.current?.blur()
-            }}
-          />
-          <div className="mt-6">
-            {loadingComments && <p className="text-center text-gray-500">Chargement des commentaires...</p>}
-            {commentsError && <p className="text-center text-red-500">{commentsError}</p>}
-            {!loadingComments && !commentsError && comments.length === 0 ? (
-              <p className="text-center text-gray-500">Aucun commentaire pour l'instant</p>
-            ) : (
-              <FlatComments 
-                parentId={post._id} 
-                formatDate={formatDate} 
-                allComments={comments} 
-                replyingCommentId={replyingCommentId}
-                setReplyingCommentId={setReplyingCommentId}
-                onLike={refreshComments}
-                expandedComments={expandedComments}
-                setExpandedComments={setExpandedComments}
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <div className="px-3 sm:px-4 py-2">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <PostForm
+                parentPostId={post._id}
+                onPostCreated={() => {
+                  refreshComments()
+                  // Increment comment counter
+                  setCommentsCount(prev => prev + 1)
+                  commentInputRef.current?.blur()
+                }}
+                placeholder="Écrire un commentaire..."
               />
+            </div>
+          </div>
+          <div className="px-3 sm:px-4 pb-3">
+            {loadingComments && (
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-2">
+                Chargement des commentaires...
+              </p>
+            )}
+            {commentsError && (
+              <p className="text-center text-sm text-red-500 dark:text-red-400 py-2">
+                {commentsError}
+              </p>
+            )}
+            {!loadingComments && !commentsError && comments.length === 0 ? (
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+                Aucun commentaire pour l'instant
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <FlatComments 
+                  parentId={post._id} 
+                  formatDate={formatDate} 
+                  allComments={comments} 
+                  replyingCommentId={replyingCommentId}
+                  setReplyingCommentId={setReplyingCommentId}
+                  onLike={refreshComments}
+                  expandedComments={expandedComments}
+                  setExpandedComments={setExpandedComments}
+                  cardStyle={true}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -309,144 +329,128 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   };
 
   return (
-    <div className={isComment ? "flex gap-3 items-start mb-2" : "flex gap-3 items-start mb-4"}>
-      <Image 
-        src={item.author?.profilePicture || '/default-avatar.svg'} 
-        alt={`Photo de profil de ${item.author?.username || 'utilisateur'}`} 
-        width={isComment ? 32 : 40} 
-        height={isComment ? 32 : 40} 
-        className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} 
-      />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-900">{item.author?.username || 'utilisateur'}</span>
-          <span className="text-xs text-gray-500">@{item.author?.username || 'utilisateur'}</span>
-          <span className="text-xs text-gray-400 ml-2">{formatDate(item.createdAt)}</span>
-        </div>
-        <div className="text-gray-800 whitespace-pre-line mt-1">{item.content}</div>
-        
-        {/* Affichage des médias (limité à 4) */}
-        {item.media && item.media.length > 0 && (
-          <div className={`mt-2 grid ${item.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
-            {item.media.slice(0, 4).map((media: any, index: number) => {
-              const imageSrc = getMediaSrc(media, index);
-              return (
-                <div 
-                  key={index} 
-                  className="relative aspect-square cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Déterminer si c'est une image ou une vidéo
-                    const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
-                    openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
-                  }}
-                >
-                  {media.contentType?.startsWith('video/') ? (
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
-                      {/* Video thumbnail avec effet de preview */}
-                      <div className="w-full h-full relative">
-                        <video
-                          src={imageSrc}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          muted
-                          playsInline
-                          onLoadedMetadata={(e) => {
-                            // Générer une miniature à partir d'un moment intéressant
-                            const video = e.currentTarget;
-                            setTimeout(() => {
-                              try {
-                                // Mettre le curseur à ~1 seconde ou 25% de la vidéo pour une meilleure prévisualisation
-                                video.currentTime = Math.min(1, video.duration / 4);
-                              } catch (err) {}
-                            }, 50);
-                          }}
-                        />
-                        {/* Overlay avec effet de hover */}
-                        <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all flex items-center justify-center">
-                          <span className="flex items-center gap-1 text-white text-sm font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-2 py-1 rounded-md transition-all">
-                            <span className="text-sm">▶️</span> Vidéo
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <Image
-                      src={imageSrc}
-                      alt={media.alt || `Media ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                  )}
-                  {/* Indicateur de nombre total si plus de 4 médias */}
-                  {index === 3 && item.media && item.media.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                      +{item.media.length - 4}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        
-        {/* Boutons d'action */}
-        <div className="flex items-center gap-4 mt-1 mb-2">
-          {/* Bouton Like */}
-          <LikeButton 
-            itemId={item._id.toString()} 
-            itemType={isComment ? 'comment' : 'post'} 
-            initialLikes={likesCount} 
-            initialLikedStatus={isLiked}
-            onLikeSuccess={() => handleLike()} 
-            size={isComment ? "small" : "normal"}
+    <div className={`bg-white dark:bg-gray-800 ${isComment ? "mb-2" : "mb-4"} rounded-lg shadow-md overflow-hidden`}>
+      <div className="flex flex-col">
+        <div className="px-4 py-3 flex gap-3 items-start">
+          <Image 
+            src={item.author?.profilePicture || '/default-avatar.svg'} 
+            alt={`Photo de profil de ${item.author?.username || 'utilisateur'}`} 
+            width={isComment ? 32 : 40} 
+            height={isComment ? 32 : 40} 
+            className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} 
           />
-          
-          {/* Bouton Commenter */}
-          <button 
-            className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors duration-200" 
-            onClick={(e) => { 
-              e.preventDefault();
-              e.stopPropagation(); 
-              if (onReply) onReply(e); 
-            }}
-            aria-label="Commenter"
-            title="Commenter"
-          >
-            <MdChatBubbleOutline className={isComment ? "w-4 h-4" : "w-5 h-5"} />
-            <span>{repliesCount || 0}</span>
-          </button>
-          
-          {/* Bouton Republier */}
-          <button 
-            className="flex items-center gap-1 text-gray-500 hover:text-green-500 transition-colors duration-200"
-            aria-label="Republier"
-            title="Republier"
-            onClick={(e) => {
-              e.preventDefault(); 
-              e.stopPropagation();
-              alert('Fonctionnalité de republication à venir !'); 
-            }}
-          >
-            <MdRepeat className={isComment ? "w-4 h-4" : "w-5 h-5"} />
-          </button>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900 dark:text-white">{item.author?.username || 'utilisateur'}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">@{item.author?.username || 'utilisateur'}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formatDate(item.createdAt)}</span>
+            </div>
+            <div className="text-gray-800 dark:text-gray-200 whitespace-pre-line mt-1">{renderTextWithMentions(item.content)}</div>
+            
+            {/* Affichage des médias (limité à 4) */}
+            {item.media && item.media.length > 0 && (
+              <div className={`mt-2 grid ${item.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                {item.media.slice(0, 4).map((media: any, index: number) => {
+                  const imageSrc = getMediaSrc(media, index);
+                  return (
+                    <div 
+                      key={index} 
+                      className="relative aspect-square cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Déterminer si c'est une image ou une vidéo
+                        const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
+                        openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
+                      }}
+                    >
+                      <Image 
+                        src={imageSrc} 
+                        alt={media.alt || `Media ${index + 1}`} 
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            
+            {/* Bouton "Répondre" */}
+            {isCommentDisplay && !isComment && repliesCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="text-sm text-gray-500 mt-1 hover:text-blue-600 hover:underline"
+              >
+                Voir les {repliesCount} commentaires
+              </button>
+            )}
+          </div>
         </div>
         
-        {/* Afficher le formulaire de réponse si ce commentaire est sélectionné */}
-        {replyingCommentId === item._id && (
-          <div className="border-t border-gray-200 mt-2 pt-2">
-            <PostForm
-              parentPostId={item._id}
-              placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
-              onPostCreated={() => {
-                setReplyingCommentId(null);
-                if (onLike) onLike();
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex space-x-6">
+            {/* Bouton Like */}
+            <div className="flex items-center gap-1">
+              <LikeButton 
+                itemId={item._id.toString()} 
+                itemType={isComment ? 'comment' : 'post'} 
+                initialLikes={likesCount} 
+                initialLikedStatus={isLiked}
+                onLikeSuccess={() => handleLike()} 
+                size={isComment ? "small" : "normal"}
+              />
+            </div>
+            
+            {/* Bouton Commenter */}
+            <button 
+              className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" 
+              onClick={(e) => { 
+                e.preventDefault();
+                e.stopPropagation(); 
+                if (onReply) onReply(e); 
               }}
-            />
+              aria-label="Commenter"
+              title="Commenter"
+            >
+              <MdChatBubbleOutline className="w-5 h-5" />
+              <span>{repliesCount || 0}</span>
+            </button>
+            
+            {/* Bouton Republier */}
+            <button 
+              className="flex items-center space-x-1 text-gray-500"
+              aria-label="Republier"
+              title="Republier"
+              onClick={(e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                alert('Fonctionnalité de republication à venir !'); 
+              }}
+            >
+              <MdRepeat className="w-5 h-5" />
+            </button>
           </div>
-        )}
-        
-        {children}
+        </div>
       </div>
+      
+      {/* Formulaire de réponse */}
+      {replyingCommentId === item._id && (
+        <div className="ml-8 mt-2 pl-4">
+          <PostForm
+            parentPostId={item._id}
+            placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
+            onPostCreated={() => {
+              setReplyingCommentId(null);
+              if (onLike) onLike();
+            }}
+          />
+        </div>
+      )}
+      
+      {children}
       
       {/* Modal pour afficher les médias en grand */}
       <MediaModal
@@ -460,21 +464,52 @@ function ThreadItem({ item, formatDate, repliesCount, onReply, replyingCommentId
   )
 }
 
-function FlatComments({ parentId, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments }: { 
-  parentId: string | null, 
-  formatDate: (date: string) => string, 
-  allComments: any[], 
-  replyingCommentId: string | null, 
-  setReplyingCommentId: (id: string | null) => void, 
-  onLike?: () => void,
-  expandedComments: Array<{ id: string, maxDisplayed: number }>,
-  setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
+// Fonction pour rendre les mentions cliquables dans le texte
+function renderTextWithMentions(text: string) {
+  if (!text) return null;
+  
+  // Expression régulière pour détecter les @mentions
+  const mentionRegex = /(@\w+)/g;
+  
+  // Diviser le texte en parties (texte normal + mentions)
+  const parts = text.split(mentionRegex);
+  
+  return parts.map((part, index) => {
+    // Si cette partie correspond à une mention
+    if (part.match(mentionRegex)) {
+      const username = part.substring(1); // Enlever le @ du début
+      return (
+        <Link 
+          key={index} 
+          href={`/(protected)/profile/${username}`} 
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    // Sinon, c'est du texte normal
+    return <span key={index}>{part}</span>;
+  });
+}
+
+function FlatComments({ parentId, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments, cardStyle = false }: { 
+  parentId: string | null; 
+  formatDate: (date: string) => string; 
+  allComments: any[]; 
+  replyingCommentId: string | null;
+  setReplyingCommentId: (id: string | null) => void; 
+  onLike?: () => void;
+  expandedComments: Array<{ id: string, maxDisplayed: number }>;
+  setExpandedComments: (comments: Array<{ id: string, maxDisplayed: number }>) => void;
+  cardStyle?: boolean; // Propriété pour activer le style de carte comme dans le feed
 }) {
   // Nombre initial de sous-commentaires à afficher par défaut
   const maxDisplayedComments = 3;
   
   // Filtrer les commentaires directs (commentaires de premier niveau pour ce post)
-  const comments = allComments.filter(c => c.parentPost === parentId)
+  const comments = allComments.filter(c => c.parentPost === parentId);
   
   if (!comments.length) return null
   
@@ -482,7 +517,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
   console.log('Tous les commentaires disponibles:', allComments.length)
   
   return (
-    <div className="space-y-3">
+    <div className="space-y-4"> 
       {comments.map(comment => {
         // Recherche des commentaires enfants pour ce commentaire
         const childComments = allComments.filter(c => c.parentPost === comment._id)
@@ -490,9 +525,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
         const repliesCount = childComments.length
         
         return (
-          <div key={comment._id} className="border-t border-gray-200 pt-3 relative group">
-            
-            {/* Commentaire principal */}
+          <div key={comment._id} className={`relative group ${cardStyle ? 'bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4' : 'border-t border-gray-200 dark:border-gray-700 pt-4'}`}> 
             <ThreadItem
               item={comment}
               formatDate={formatDate}
@@ -509,7 +542,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
             >
               {/* Formulaire de réponse pour ce commentaire */}
               {replyingCommentId === comment._id && (
-                <div className="ml-8 mt-2 pl-4">
+                <div className="mt-3">
                   <PostForm
                     parentPostId={comment._id}
                     placeholder={`Répondre à @${comment.author?.username || 'utilisateur'}...`}
@@ -525,10 +558,10 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
               
               {/* Afficher les réponses avec une indentation */}
               {repliesCount > 0 && (
-                <div className="ml-8 mt-2 border-l-2 border-gray-200 pl-4 space-y-3">
+                <div className="mt-3 pl-2 space-y-3">
                   {/* Afficher les sous-commentaires */}
                   {childComments.slice(0, expandedComments?.find(item => item.id === comment._id)?.maxDisplayed || maxDisplayedComments).map(reply => (
-                    <div key={reply._id} className="relative group">
+                    <div key={reply._id} className={`relative group ${cardStyle ? 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border-l-2 border-blue-300 dark:border-blue-600 pl-3 py-2' : 'border-l-2 border-gray-200 dark:border-gray-700 pl-4'}`}>
                       <ThreadItem
                         item={reply}
                         formatDate={formatDate}
@@ -546,7 +579,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                       
                       {/* Formulaire de réponse à un sous-commentaire */}
                       {replyingCommentId === reply._id && (
-                        <div className="mt-2 pl-4">
+                        <div className="mt-2">
                           <PostForm
                             parentPostId={reply._id}
                             placeholder={`Répondre à @${reply.author?.username || 'utilisateur'}...`}
@@ -567,7 +600,7 @@ function FlatComments({ parentId, formatDate, allComments, replyingCommentId, se
                    (!expandedComments.some(item => item.id === comment._id) || 
                     (expandedComments.find(item => item.id === comment._id)?.maxDisplayed ?? 0) < repliesCount) && (
                     <button 
-                      className="text-blue-500 hover:text-blue-600 text-sm font-medium mt-2"
+                      className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium mt-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();

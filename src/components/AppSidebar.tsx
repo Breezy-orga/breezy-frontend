@@ -22,6 +22,8 @@ import {
 import { useLanguage } from './LanguageProvider'
 import NotificationBadge from './NotificationBadge'
 import { useNotifications } from '../contexts/NotificationContext'
+import { authApi } from '@/lib/api'
+import { useCurrentUser } from '@/context/CurrentUserContext'
 
 interface AppSidebarProps {
   className?: string
@@ -35,8 +37,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   
   // Language provider hook
   const { language, setLanguage } = useLanguage()
-  const [userInfo, setUserInfo] = useState<any>(null)
-  const [mounted, setMounted] = useState(false)
+  const { user: userInfo, loading: userLoading } = useCurrentUser();
 
   // Fermer le menu d'options lorsqu'on clique ailleurs
   useEffect(() => {
@@ -59,47 +60,34 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [optionsMenuOpen]);
   
-  // Éviter les erreurs d'hydratation
-  useEffect(() => {
-    setMounted(true)
-    // Récupérer l'info utilisateur du localStorage ou API
-    const fetchUserInfo = async () => {
-      try {
-        // Essayer d'abord de récupérer depuis localStorage
-        const storedUser = localStorage.getItem('userInfo')
-        if (storedUser) {
-          setUserInfo(JSON.parse(storedUser))
-          return
-        }
-        
-        // Sinon, essayer de récupérer depuis l'API
-        const token = localStorage.getItem('token')
-        if (token) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-          if (response.ok) {
-            const userData = await response.json()
-            setUserInfo(userData)
-            localStorage.setItem('userInfo', JSON.stringify(userData))
-          }
-        }
-      } catch (err) {
-        console.error('Erreur lors de la récupération des infos utilisateur:', err)
-      }
-    }
-    
-    fetchUserInfo()
-  }, [])
-
   // Navigation principale
   const navItems = [
     { key: 'feed', label: "Accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
+    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },  // Points to protected profile
     { key: 'search', label: 'Rechercher', icon: MdSearch, href: '/search' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
     { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
   ];
+
+  // Gestion de la déconnexion
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userInfo');
+      window.location.href = '/login';
+    }
+  };
 
   const isActive = (path: string) => {
     return pathname === path ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'
@@ -119,7 +107,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           <div className="flex items-center space-x-3">
             <div className="relative h-12 w-12 rounded-full overflow-hidden ring-2 ring-white/50 dark:ring-gray-700/50">
               <Image 
-                src={userInfo?.avatar || '/default-avatar.png'} 
+                src={userInfo?.profilePicture || '/default-avatar.png'} 
                 alt="Avatar"
                 width={48}
                 height={48}
@@ -149,74 +137,75 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
       {/* Navigation principale */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto">
         <ul className="space-y-1">
-          <li>
-            <Link 
-              href="/feed" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/feed' 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdHome className="w-5 h-5 mr-3" />
-              Accueil
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/search" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname.startsWith('/search')
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdSearch className="w-5 h-5 mr-3" />
-              Rechercher
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/notifications" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/notifications'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <div className="relative">
-                <MdNotifications className="w-5 h-5 mr-3" />
-                <NotificationBadge className="min-w-4 h-4" />
-              </div>
-              Notifications
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/messages" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/messages'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdMail className="w-5 h-5 mr-3" />
-              Messages
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/profile" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/profile'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdPerson className="w-5 h-5 mr-3" />
-              Profil
-            </Link>
-          </li>
+          {!['/login', '/signup'].includes(pathname) && (
+            <>
+              <li>
+                <Link 
+                  href="/feed" 
+                  className={`flex items-center px-4 py-3 rounded-lg ${
+                    pathname === '/feed' 
+                      ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <MdHome className="w-5 h-5 mr-3" />
+                  Accueil
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/search" 
+                  className={`flex items-center px-4 py-3 rounded-lg ${
+                    pathname.startsWith('/search')
+                      ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <MdSearch className="w-5 h-5 mr-3" />
+                  Rechercher
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/notifications" 
+                  className={`flex items-center px-4 py-3 rounded-lg ${
+                    pathname === '/notifications'
+                      ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <div className="relative">
+                    <MdNotifications className="w-5 h-5 mr-3" />
+                    <NotificationBadge className="min-w-4 h-4" />
+                  </div>
+                  Notifications
+                </Link>
+              </li>
+              {/* Temporarily disabled until messages feature is implemented */}
+              <li>
+                <span 
+                  className="flex items-center px-4 py-3 rounded-lg text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                  title="Messages coming soon"
+                >
+                  <MdMail className="w-5 h-5 mr-3" />
+                  Messages (soon)
+                </span>
+              </li>
+              <li>
+                <Link 
+                  href="/profile" 
+                  className={`flex items-center px-4 py-3 rounded-lg ${
+                    pathname === '/profile' || pathname.startsWith('/profile/')
+                      ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <MdPerson className="w-5 h-5 mr-3" />
+                  Mon Profil
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
 
@@ -292,11 +281,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               </Link>
               
               <button 
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('userInfo');
-                  window.location.href = '/login';
-                }}
+                onClick={handleLogout}
                 className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                 role="menuitem"
               >

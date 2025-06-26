@@ -1,102 +1,63 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useCurrentUser } from '@/context/CurrentUserContext'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
+import api from '@/lib/axios';
+import { API_ROUTES } from '@/config/api';
 
 interface PostListProps {
-  initialPosts?: PostType[]
-  fetchUrl: string
+  initialPosts?: PostType[];
+  tab?: 'all' | 'following';
+  userId?: string;
 }
 
-export default function PostList({ initialPosts = [], fetchUrl }: PostListProps) {
+export default function PostList({ initialPosts = [], tab = 'all', userId }: PostListProps) {
   const [posts, setPosts] = useState<PostType[]>(initialPosts)
   const [loading, setLoading] = useState(!initialPosts.length)
   const [error, setError] = useState<string | null>(null)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const { user: currentUser, loading: userLoading } = useCurrentUser();
 
   useEffect(() => {
-    if (!initialPosts.length) {
-      fetchPosts()
-    }
-    // Récupérer l'utilisateur courant
-    const userId = localStorage.getItem('userId')
-    if (userId) {
-      fetchUser(userId)
-    }
-  }, [])
-
-  const fetchUser = async (userId: string) => {
-    if (!userId) {
-      console.warn('Aucun ID utilisateur fourni pour la récupération')
-      return
-    }
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+    const shouldFetch = !initialPosts.length || 
+      (userId && initialPosts.some(p => {
+        const authorId = typeof p.author === 'string' ? p.author : p.author?._id;
+        return authorId !== userId;
+      }));
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.warn('Utilisateur non trouvé, utilisation d\'un utilisateur par défaut')
-          // Créer un utilisateur par défaut pour éviter les erreurs
-          setCurrentUser({
-            _id: userId,
-            username: 'utilisateur',
-            profilePicture: '/default-avatar.svg'
-          })
-          return
-        }
-        throw new Error(`Erreur HTTP: ${response.status}`)
-      }
-      
-      const user = await response.json()
-      if (!user) {
-        throw new Error('Aucune donnée utilisateur reçue')
-      }
-      
-      // S'assurer que l'utilisateur a une photo de profil
-      const userWithDefaultAvatar = {
-        ...user,
-        profilePicture: user.profilePicture || '/default-avatar.svg'
-      }
-      
-      setCurrentUser(userWithDefaultAvatar)
-    } catch (error) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', error)
-      // En cas d'erreur, définir un utilisateur par défaut
-      setCurrentUser({
-        _id: userId,
-        username: 'utilisateur',
-        profilePicture: '/default-avatar.svg'
-      })
+    if (shouldFetch) {
+      fetchPosts();
     }
-  }
+  }, [userId])
 
   const fetchPosts = async () => {
     try {
-      setLoading(true)
-      const response = await fetch(fetchUrl, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des messages')
-      }
-
-      const data = await response.json()
-      setPosts(data)
-      setError(null)
+      setLoading(true);
+      let url = userId 
+        ? API_ROUTES.POSTS.USER(userId)
+        : tab === 'following' 
+          ? API_ROUTES.POSTS.FEED(true)
+          : API_ROUTES.POSTS.FEED();
+          
+      const response = await api.get(url);
+      const fetchedPosts = Array.isArray(response.data) ? response.data : response.data.posts || [];
+      
+      // Si on a un userId, on filtre pour ne garder que les posts de cet utilisateur
+      const filteredPosts = userId 
+        ? fetchedPosts.filter((post: PostType) => {
+            const authorId = typeof post.author === 'string' ? post.author : post.author?._id;
+            return authorId === userId;
+          })
+        : fetchedPosts;
+        
+      setPosts(filteredPosts);
+      setError(null);
     } catch (error) {
-      console.error('Erreur:', error)
-      setError('Une erreur est survenue lors du chargement des messages')
+      console.error('Erreur:', error);
+      setError('Une erreur est survenue lors du chargement des messages');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 

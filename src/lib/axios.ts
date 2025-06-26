@@ -15,15 +15,17 @@ const api = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`
+      const token = localStorage.getItem('token');
+      // Toujours forcer l'en-tête Authorization pour toutes les requêtes
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers['Authorization'] = `Bearer ${token}`;
       }
     }
-    return config
+    return config;
   },
   (error: AxiosError) => {
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
 )
 
