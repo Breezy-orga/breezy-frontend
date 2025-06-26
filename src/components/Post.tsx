@@ -326,6 +326,7 @@ function ThreadItem({ item, currentUser, formatDate, repliesCount, onReply, repl
     setModalType(type);
     setModalOpen(true);
   };
+  const {t} = useTranslation()
 
   // Fonction pour obtenir la source du média (URL ou base64)
   const getMediaSrc = (media: any, index: number): string => {

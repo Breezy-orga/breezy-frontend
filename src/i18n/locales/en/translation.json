@@ -23,7 +23,15 @@
     "unfollow": "Unfollow",
     "posts": "Posts",
     "public": "Public profile",
-    "title": "My profile"
+    "title": "My profile",
+    "promote_moderator": "Promote to moderator",
+    "demote_user": "Demote to user",
+    "delete_account": "Delete this account",
+    "delete_confirm": "Delete this account? This action is irreversible.",
+    "delete_success": "Account deleted!",
+    "delete_error": "Error deleting the account.",
+    "role_change_demo": "(Demo) Role will change to: {{role}}",
+    "role_change_error": "Error changing role."
   },
   "rightbar": {
     "trends": "Trends for you",

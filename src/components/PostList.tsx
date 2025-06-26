@@ -108,7 +108,7 @@ export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
     <div className="space-y-4">
       {posts.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Aucun message à afficher
+          {t("post.no_posts")}
         </div>
       ) : (
         posts.map(post => {

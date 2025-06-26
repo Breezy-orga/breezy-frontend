@@ -116,13 +116,13 @@ export default function UserProfile({ userId }: Props) {
               onClick={() => setViewMode('followers')}
               className={`px-4 py-2 ${viewMode === 'followers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              {t("profile.followers", { count: user.followers.length })}
+              {t("profile.followers", { count: user?.followers?.length ?? 0 })}
             </button>
             <button
               onClick={() => setViewMode('following')}
               className={`px-4 py-2 ${viewMode === 'following' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              {t("profile.following", { count: user.following.length })}
+              {t("profile.following", { count: user?.following?.length ?? 0 })}
             </button>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function UserProfile({ userId }: Props) {
               <h2 className="text-xl font-semibold">@{user.username}</h2>
               <p className="text-gray-600 dark:text-gray-300 mt-2">{user.bio || t("profile.no_bio")}</p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-               {t("profile.member_since", { date: new Date(user.createdAt).toLocaleDateString() })}
+                {t("profile.member_since", { date: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '' })}
               </div>
 
               <div className="mt-2 text-sm space-x-4">
@@ -188,14 +188,14 @@ export default function UserProfile({ userId }: Props) {
                   onClick={() => setViewMode('followers')}
                   className="hover:underline text-black dark:text-white"
                 >
-                   <strong>{user.followers.length}</strong> {t("profile.followers_short", { count: user.followers.length })}
+                   <strong>{user.followers?.length ?? 0}</strong> {t("profile.followers_short", { count: user.followers?.length ?? 0 })}
                 </button>
                 <span>·</span>
                 <button
                   onClick={() => setViewMode('following')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.following.length}</strong> {t("profile.following_short", { count: user.following.length })} 
+                  <strong>{user.following?.length ?? 0}</strong> {t("profile.following_short", { count: user.following?.length ?? 0 })}
                 </button>
               </div>
 
@@ -217,7 +217,7 @@ export default function UserProfile({ userId }: Props) {
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentUser?.following.includes(user._id) ? t('profile.unfollow') : t('profile.follow')}
+                  {(currentUser?.following ?? []).includes(user._id) ? t('profile.unfollow') : t('profile.follow')}
                 </button>
               )}
             </>
@@ -225,42 +225,42 @@ export default function UserProfile({ userId }: Props) {
           {(currentUser?.role === 'admin' && !isSelf) && (
             <button
               onClick={async () => {
-                // À remplacer par ta future route d'API
+                // Déterminer le nouveau rôle
+                const newRole = user.role === 'moderator' ? 'user' : 'moderator';
                 try {
-                  const newRole = user.role === 'moderator' ? 'user' : 'moderator';
                   // await api.put(`/users/${user._id}/role`, { role: newRole });
                   alert(`(Démo) Le rôle passera à : ${newRole}`);
                 } catch (err) {
-                  alert("Erreur lors du changement de rôle.");
+                  alert(t("profile.role_change_error"));
                 }
               }}
               className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
             >
-              {user.role === 'moderator' ? 'Rétrograder en utilisateur' : 'Promouvoir en modérateur'}
+              {user.role === 'moderator' ? t('profile.demote_user') : t('profile.promote_moderator')}
             </button>
           )}
           {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
             <button
               onClick={async () => {
-                if (confirm("Supprimer ce compte ? Cette action est irréversible.")) {
+                if (confirm(t("profile.delete_confirm"))) {
                   try {
                     await api.delete(`/users/${user._id}`);
-                    alert("Compte supprimé !");
+                    alert(t("profile.delete_success"));
                     window.location.href = "/";
                   } catch (err) {
-                    alert("Erreur lors de la suppression du compte.");
+                    alert(t("profile.delete_error"));
                   }
                 }
               }}
               className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
             >
-              Supprimer ce compte
+              {t('profile.delete_account')}
             </button>
           ) : null}
         </div>
       </div>
 
-      <h2 className="text-xl font-bold mb-4">Publications</h2>
+      <h2 className="text-xl font-bold mb-4">{t("profile.posts")}</h2>
       <PostList fetchUrl={`/api/posts/user/${user._id}`} />
     </div>
   )

@@ -23,7 +23,15 @@
     "unfollow": "Se désabonner",
     "posts": "Publications",
     "public": "Profil public",
-    "mtitle": "Mon profil"
+    "mtitle": "Mon profil",
+    "promote_moderator": "Promouvoir en modérateur",
+    "demote_user": "Rétrograder en utilisateur",
+    "delete_account": "Supprimer ce compte",
+    "delete_confirm": "Supprimer ce compte ? Cette action est irréversible.",
+    "delete_success": "Compte supprimé !",
+    "delete_error": "Erreur lors de la suppression du compte.",
+    "role_change_demo": "(Démo) Le rôle passera à : {{role}}",
+    "role_change_error": "Erreur lors du changement de rôle."
   },
   "post": {
     "share": "Partager",
