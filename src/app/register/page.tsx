@@ -27,19 +27,24 @@ export default function Register() {
     setError("");
     setSuccess("");
     try {
-      const res = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, form);
-      if (res.status === 201) {
-        setSuccess(t("register.success"));
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(form),
+      });
+
+      if (response.status === 201) {
+        setSuccess("Account created! You can now sign in.");
         setTimeout(() => router.push("/login"), 1500);
+      } else {
+        const data = await response.json();
+        setError(data?.message || "Registration failed");
       }
     } catch (err: any) {
-      if (err.response?.data?.errors) {
-        // Handle validation errors
-        const errorMessages = err.response.data.errors.map((error: any) => error.msg).join(', ');
-        setError(errorMessages);
-      } else {
-        setError(err.response?.data?.message || t("register.failed"));
-      }
+      setError(t('general.loading'));
     } finally {
       setLoading(false);
     }

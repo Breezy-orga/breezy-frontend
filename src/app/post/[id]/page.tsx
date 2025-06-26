@@ -15,9 +15,32 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
-  // État pour suivre les commentaires qui ont été développés et combien de réponses afficher
   const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const router = useRouter();
+
+  // Récupère l'utilisateur connecté au montage
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/me', { credentials: 'include' });
+        if (!response.ok) throw new Error('Utilisateur non authentifié');
+        const user = await response.json();
+        setCurrentUser({
+          ...user,
+          profilePicture: user.profilePicture || '/default-avatar.svg'
+        });
+      } catch (error) {
+        setCurrentUser({
+          _id: '',
+          username: 'utilisateur',
+          email: '',
+          profilePicture: '/default-avatar.svg'
+        });
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,32 +52,30 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
           token = localStorage.getItem('token') || '';
         }
         // Récupération du post principal
-        const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        const resPost = await fetch(`/api/posts/${params.id}`, {
+          credentials: 'include'
         });
         if (!resPost.ok) throw new Error(t('post.error_loading_post'));
         const postData = await resPost.json();
         setPost(postData);
-        
+
         // Récupération des commentaires de premier niveau
-        const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        const resComments = await fetch(`/api/posts/${params.id}/comments`, {
+          credentials: 'include'
         });
         if (!resComments.ok) throw new Error(t('post.error_loading_comments'));
         const commentsData = await resComments.json();
-        
+
         // Pour chaque commentaire de premier niveau, récupérer ses sous-commentaires
         const allComments = [...commentsData];
-        
-        // Récupérer les sous-commentaires pour chaque commentaire de premier niveau
+
         for (const comment of commentsData) {
           try {
-            const resSubComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${comment._id}/comments`, {
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            const resSubComments = await fetch(`/api/posts/${comment._id}/comments`, {
+              credentials: 'include'
             });
             if (resSubComments.ok) {
               const subCommentsData = await resSubComments.json();
-              // Ajouter les sous-commentaires à la liste complète
               allComments.push(...subCommentsData);
               console.log(`Récupéré ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
             }
@@ -62,7 +83,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
             console.error(`${t('post.error_loading_subcomments', { id: comment._id })}:`, error);
           }
         }
-        
+
         console.log('Total de commentaires chargés:', allComments.length);
         setComments(allComments);
       } catch (e: any) {
@@ -90,29 +111,21 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshComments = async () => {
     try {
-      let token = '';
-      if (typeof window !== 'undefined') {
-        token = localStorage.getItem('token') || '';
-      }
-      // Récupération des commentaires de premier niveau
-      const resComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}/comments`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      const resComments = await fetch(`/api/posts/${params.id}/comments`, {
+        credentials: 'include'
       });
       if (!resComments.ok) throw new Error(t('post.error_loading_comments'));
       const commentsData = await resComments.json();
-      
-      // Pour chaque commentaire de premier niveau, récupérer ses sous-commentaires
+
       const allComments = [...commentsData];
-      
-      // Récupérer les sous-commentaires pour chaque commentaire de premier niveau
+
       for (const comment of commentsData) {
         try {
-          const resSubComments = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${comment._id}/comments`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          const resSubComments = await fetch(`/api/posts/${comment._id}/comments`, {
+            credentials: 'include'
           });
           if (resSubComments.ok) {
             const subCommentsData = await resSubComments.json();
-            // Ajouter les sous-commentaires à la liste complète
             allComments.push(...subCommentsData);
             console.log(`Rafraîchi ${subCommentsData.length} sous-commentaires pour le commentaire ${comment._id}`);
           }
@@ -120,7 +133,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
           console.error(`${t('post.error_loading_subcomments', { id: comment._id })}:`, error);
         }
       }
-      
+
       console.log('Total de commentaires rafraîchis:', allComments.length);
       setComments(allComments);
     } catch (error) {
@@ -130,12 +143,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
 
   const refreshPost = async () => {
     try {
-      let token = '';
-      if (typeof window !== 'undefined') {
-        token = localStorage.getItem('token') || '';
-      }
-      const resPost = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${params.id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      const resPost = await fetch(`/api/posts/${params.id}`, {
+        credentials: 'include'
       });
       if (!resPost.ok) throw new Error(t('post.error_loading_post'));
       const postData = await resPost.json();
@@ -143,7 +152,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     } catch {}
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">{t('general.loading')}</div>;
+  if (loading || !currentUser) return <div className="p-8 text-center text-gray-500">{t('general.loading')}</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!post) return <div className="p-8 text-center text-gray-500">{t('post.not_found')}</div>;
 
@@ -168,6 +177,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               setReplyingCommentId={setReplyingCommentId}
               isClickable={false}
               onLike={refreshPost}
+              currentUser={currentUser}
             />
           </div>
           <div className="flex-1 overflow-y-auto pb-32">
@@ -180,13 +190,13 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               onLike={refreshComments} 
               expandedComments={expandedComments}
               setExpandedComments={setExpandedComments}
+              currentUser={currentUser}
             />
           </div>
           <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pt-4 z-30">
             <PostForm 
               parentPostId={post._id} 
               onPostCreated={() => {
-                // Rafraîchir les commentaires après la création d'un nouveau commentaire
                 refreshComments();
                 refreshPost();
               }} 

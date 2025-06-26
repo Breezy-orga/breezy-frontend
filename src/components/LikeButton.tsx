@@ -2,15 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { MdFavorite, MdFavoriteBorder } from 'react-icons/md';
+
 import { useTranslation } from 'react-i18next';
+
+import type { Post as PostType } from '@/types/models';
+
 interface LikeButtonProps {
   itemId: string;
   itemType: 'post' | 'comment';
   initialLikes: number;
   initialLikedStatus: boolean;
-  onLikeSuccess?: () => void;
+  onLikeSuccess?: (updatedPost: PostType) => void;
   size?: 'small' | 'normal';
 }
+
+const fetchUserId = async (): Promise<string | null> => {
+  try {
+    const res = await fetch('/api/users/me', {
+      credentials: 'include'
+    });
+    console.log(res.status);
+    if (!res.ok) throw new Error('Échec récupération userId');
+    const data = await res.json();
+    return data._id || null;
+  } catch (err) {
+    console.error('Erreur fetchUserId:', err);
+    return null;
+  }
+};
+
 
 /**
  * Composant réutilisable pour gérer les likes sur les posts et commentaires
@@ -28,9 +48,12 @@ export default function LikeButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const { t } = useTranslation();
 
+  const [userId, setUserId] = useState<string | null>(null);
+
 
   // Synchronise l'état du composant avec les props si elles changent
   useEffect(() => {
+    fetchUserId().then(setUserId);
     setIsLiked(initialLikedStatus);
     setLikesCount(initialLikes);
   }, [initialLikedStatus, initialLikes]);
@@ -38,36 +61,40 @@ export default function LikeButton({
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
-    
-    try {
-      // Construire l'URL en fonction du type d'item
-      const endpoint = itemType === 'comment' 
-        ? `/comments/${itemId}/like` 
-        : `/posts/${itemId}/like`;
-      
-      const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
-      console.log(`Like ${itemType} : ${url}`);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(url, {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+
+    // Mise à jour locale immédiate du like et compteur
+    if (isLiked) {
+      setIsLiked(false);
+      setLikesCount((prev) => prev - 1);
+    } else {
+      setIsLiked(true);
+      setLikesCount((prev) => prev + 1);
+    }
+
+    try {
+      const endpoint =
+        itemType === 'comment'
+          ? `api/comments/${itemId}/like`
+          : `api/posts/${itemId}/like`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error(`Erreur lors du like: ${response.status} ${response.statusText}`);
       }
+
+      // if (onLikeSuccess) {
+      //   const updatedPost = await response.json();
+      //   onLikeSuccess(updatedPost);
+      // }
       
-      // Mettre à jour l'état local
-      setIsLiked(!isLiked);
-      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-      
-      // Notifier le composant parent si besoin
-      if (onLikeSuccess) onLikeSuccess();
     } catch (error) {
       console.error('Erreur lors du like:', error);
     } finally {
@@ -75,8 +102,10 @@ export default function LikeButton({
     }
   };
 
+
   return (
-    <button 
+    <button
+      type="button" 
       className={`flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors duration-200 ${isProcessing ? 'opacity-70' : ''}`}
       onClick={handleLike}
       disabled={isProcessing}

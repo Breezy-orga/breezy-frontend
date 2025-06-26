@@ -111,8 +111,14 @@ export function Follows() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await api.get('/users/all')
-        setSuggestions(res.data)
+        const res = await api.get('/users/suggestions')
+        setSuggestions((res.data as SuggestedUser[]).map(u => ({
+          _id: u._id,
+          username: u.username,
+          profilePicture: u.profilePicture || '/default-avatar.png',
+          isFollowing: !!u.isFollowing,
+          role: u.role || 'user',
+        })))
       } catch (error) {
         console.error('Erreur lors de la récupération des utilisateurs :', error)
       } finally {
@@ -125,15 +131,15 @@ export function Follows() {
 
   const handleFollowToggle = async (userId: string) => {
     try {
-      const res = await api.post(`/users/${userId}/follow`)
-      const updated = suggestions.map(user =>
-        user._id === userId ? { ...user, isFollowing: res.data.following } : user
-      )
-      setSuggestions(updated)
+      const res = await api.post(`/users/${userId}/follow`);
+      // Si on vient de suivre, on retire la suggestion
+      setSuggestions(prev =>
+        prev.filter(user => user._id !== userId)
+      );
     } catch (error) {
-      console.error('Erreur lors du (un)follow :', error)
+      console.error('Erreur lors du (un)follow :', error);
     }
-  }
+  };
 
   
   return (

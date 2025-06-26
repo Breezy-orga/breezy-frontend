@@ -11,7 +11,7 @@ export default function FollowingList() {
 
   useEffect(() => {
     const fetchFollowing = async () => {
-      const res = await api.get('/users/me/followers')
+      const res = await api.get('/api/users/me/followers')
       setUsers(res.data)
     }
     fetchFollowing()
