@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Post from '@/components/Post';
-import Link from 'next/link';
-import PostForm from '@/components/PostForm';
-import { Follows } from '@/components/LayoutParts';
+import { ThreadItem } from '../../../components/Post';
+import PostForm from '../../../components/PostForm';
+import CommentsList from '../../../components/CommentsList';
+// Layout components removed as per user request
 import AppSidebar from '@/components/AppSidebar';
 import { User } from '@/types/models';
 
@@ -23,7 +23,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/users/me', { credentials: 'include' });
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiBaseUrl}/profile/me`, { credentials: 'include' });
         if (!response.ok) throw new Error('Utilisateur non authentifié');
         const user = await response.json();
         setCurrentUser({
@@ -176,8 +177,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-      <div className="flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 flex flex-col font-sans text-gray-900 dark:text-gray-100">
+      <div className="flex flex-1 w-full">
         <AppSidebar className="hidden md:flex" />
         <main className="flex-1 max-w-2xl mx-auto py-10 px-4 flex flex-col relative">
           <div className="mb-4 flex items-center">
@@ -196,17 +197,14 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               currentUser={currentUser}
             />
           </div>
-          <div className="flex-1 overflow-y-auto pb-32">
-            <FlatComments 
-              parentId={post._id} 
-              formatDate={formatDate} 
-              allComments={comments} 
-              replyingCommentId={replyingCommentId} 
-              setReplyingCommentId={setReplyingCommentId} 
-              onLike={refreshComments} 
-              expandedComments={expandedComments}
-              setExpandedComments={setExpandedComments}
+          <div className="flex-1 overflow-y-auto pb-24 sm:pb-32">
+            <CommentsList 
+              comments={comments}
               currentUser={currentUser}
+              onCommentUpdate={refreshComments}
+              onCommentDelete={refreshComments}
+              formatDate={formatDate}
+              maxDepth={3}
             />
           </div>
           <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-gray-900/90 to-transparent pt-4 z-30">

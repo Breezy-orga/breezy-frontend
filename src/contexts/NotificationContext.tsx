@@ -52,7 +52,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setError(null);
 
     try {
-      const response = await fetch('/api/notifications', {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/notifications`, {
         credentials: 'include'
       });
 
@@ -78,7 +79,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (typeof window === 'undefined') return;
     
     try {
-      const response = await fetch(`api/notifications/${notificationId}/read`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/notifications/${notificationId}/read`, {
         method: 'PUT',
         credentials: 'include'
       });
@@ -108,7 +110,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     
     
     try {
-      const response = await fetch(`api/notifications/read-all`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/notifications/read-all`, {
         method: 'PUT',
         credentials: 'include'
       });

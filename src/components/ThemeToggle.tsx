@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react'
 import { MdLightMode, MdDarkMode, MdOutlineAutoAwesome } from 'react-icons/md'
 import { useTheme } from 'next-themes'
+import { Moon, Sun, Monitor } from 'lucide-react'
+import { MdLightMode, MdDarkMode, MdOutlineAutoAwesome } from 'react-icons/md'
+import { Button } from './ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+import { useTranslation } from 'react-i18next'
 
 type Theme = 'light' | 'dark' | 'system'
 

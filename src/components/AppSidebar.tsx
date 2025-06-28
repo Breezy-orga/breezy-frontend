@@ -35,10 +35,21 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   
-  // Language provider hook
-  const { language, setLanguage } = useLanguage()
-  const { user: userInfo, loading: userLoading } = useCurrentUser();
-
+  // Language hook
+  const { i18n, t } = useTranslation()
+  const currentLanguage = i18n.language || 'fr'
+  const { user: userInfo, isLoading } = useUser()
+  const [mounted, setMounted] = useState(false)
+  
+  // Debug i18n
+  useEffect(() => {
+    console.log('i18n debug:', {
+      language: i18n.language,
+      isInitialized: i18n.isInitialized,
+      hasResources: !!i18n.options?.resources,
+      testTranslation: t('sidebar.feed')
+    })
+  }, [i18n.language, t])
   // Fermer le menu d'options lorsqu'on clique ailleurs
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -284,14 +295,14 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               
               <button 
                 onClick={() => {
-                  setLanguage(language === 'fr' ? 'en' : 'fr');
+                  i18n.changeLanguage(currentLanguage === 'fr' ? 'en' : 'fr');
                   setOptionsMenuOpen(false);
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
                 role="menuitem"
               >
-                <MdLanguage className="w-5 h-5 mr-3" />
-                {language === 'fr' ? 'English' : 'Français'}
+                <span className={`fi fi-${currentLanguage === 'fr' ? 'gb' : 'fr'}`}></span>
+                <span className="ml-2">{currentLanguage === 'fr' ? t('sidebar.english') : t('sidebar.french')}</span>
               </button>
               
               <Link 
@@ -306,7 +317,8 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               
               <button
                 onClick={async () => {
-                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                  await fetch(`${apiBaseUrl}/auth/logout`, { method: 'POST', credentials: 'include' });
                   window.location.href = '/login';
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"

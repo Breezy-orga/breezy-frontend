@@ -76,7 +76,8 @@ export default function SearchPage() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/users/me', {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiBaseUrl}/profile/me`, {
           credentials: 'include',
         });
         if (response.ok) {

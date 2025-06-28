@@ -15,7 +15,8 @@ interface LikeButtonProps {
 
 const fetchUserId = async (): Promise<string | null> => {
   try {
-    const res = await fetch('/api/users/me', {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const res = await fetch(`${apiBaseUrl}/profile/me`, {
       credentials: 'include'
     });
     console.log(res.status);
@@ -74,13 +75,16 @@ export default function LikeButton({
     }
 
     try {
-      const endpoint =
-        itemType === 'comment'
-          ? `api/comments/${itemId}/like`
-          : `api/posts/${itemId}/like`;
+      const endpoint = itemType === 'comment'
+        ? `/api/comments/${itemId}/like`
+        : `/api/posts/${itemId}/like`;
+
+      // Pour les commentaires, on utilise toujours POST (le backend gère le toggle)
+      // Pour les posts, on garde le système POST/DELETE
+      const method = itemType === 'comment' ? 'POST' : (newIsLiked ? 'POST' : 'DELETE');
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method,
         credentials: 'include',
       });
 

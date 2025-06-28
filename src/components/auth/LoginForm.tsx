@@ -57,7 +57,8 @@ export default function LoginForm() {
     try {
       console.log('Tentative de connexion avec:', { ...requestData, password: '***' });
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/auth/login`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

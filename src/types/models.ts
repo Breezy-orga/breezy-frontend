@@ -19,19 +19,24 @@ export interface SuggestedUser extends Omit<User, 'email' | 'createdAt' | 'updat
 }
 
 export interface Media {
-  url: string;
+  _id?: string;
+  filename?: string;
+  url?: string; // Optionnel pour la compatibilité
   type: 'image' | 'video';
   alt?: string;
-  base64?: string; // Ajout du support pour les images en Base64
-  contentType?: string; // Ajout du type de contenu pour le décodage
+  base64?: string; // Support pour les images en Base64
+  contentType?: string; // Type de contenu pour le décodage
 }
 
 export interface Comment {
   _id: string;
   content: string;
   author: User | string;
-  postId: string;
-  likes: string[];
+  medias?: Media[];
+  comments: Array<string | Comment>;
+  parentPost?: string | null;
+  isComment?: boolean;
+  isReply?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,10 +45,11 @@ export interface Post {
   _id: string;
   content: string;
   author: User | string;
-  media?: Media[];
-  images?: string[];  // URLs des images pour la compatibilité avec PostContent
-  likes: string[];
-  comments: Comment[] | string[];
+  medias?: Media[];
+  parentPost: string;
+  parentComment?: string;
+  replies?: Comment[];
+  repliesCount?: number;
   isLiked?: boolean;
   isSaved?: boolean;
   location?: string;

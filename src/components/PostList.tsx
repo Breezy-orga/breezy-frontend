@@ -63,7 +63,7 @@ export default function PostList({ fetchUrl, initialPosts }: PostListProps) {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('/api/users/me', {
+      const response = await fetch(`/api/profile/me`, {
         credentials: 'include',
       })
       if (!response.ok) {

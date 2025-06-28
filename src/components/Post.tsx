@@ -1,745 +1,864 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import LikeButton from './LikeButton'
-import { MdFavorite, MdFavoriteBorder, MdChatBubbleOutline, MdShare, MdMoreHoriz, MdRepeat } from 'react-icons/md'
-import PostForm from './PostForm'
-import PostHeader from './post/PostHeader'
-import PostContent from './post/PostContent'
-import PostActions from './post/PostActions'
-import MediaModal from './ImageModal';
-import type { Post as PostType, User } from '@/types/models'
+import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+import { 
+  MdFavorite, 
+  MdFavoriteBorder, 
+  MdComment, 
+  MdShare, 
+  MdMoreVert,
+  MdDelete,
+  MdEdit,
+  MdSend,
+  MdExpandMore,
+  MdExpandLess 
+} from 'react-icons/md'
 
-// Type étendu pour ajouter des propriétés temporaires en attendant la mise à jour du backend
-interface ExtendedPost extends PostType {
-  commentsCount?: number;
+import { Post as PostType, Comment, User, Media } from '@/types/models'
+import { useUser } from '@/contexts/UserContext'
+import LikeButton from './LikeButton'
+
+// Utility function to get media source URL
+const getMediaSrc = (media: Media): string => {
+  // If there's a direct URL, use it
+  if (media.url) {
+    return media.url
+  }
+  
+  // If there's base64 data, convert it to data URL
+  if (media.base64 && media.contentType) {
+    return `data:${media.contentType};base64,${media.base64}`
+  }
+  
+  // Fallback for legacy data structure
+  if ((media as any).data) {
+    return (media as any).data
+  }
+  
+  return ''
 }
 
-const fetchUserId = async (): Promise<string | null> => {
-  try {
-    const res = await fetch('/api/users/me', {
-      credentials: 'include'
-    });
-    if (!res.ok) throw new Error('Échec récupération userId');
-    const data = await res.json();
-    return data._id || null;
-  } catch (err) {
-    console.error('Erreur fetchUserId:', err);
-    return null;
+// Utility function to determine media type from contentType or URL
+const getMediaType = (media: Media): 'image' | 'video' => {
+  // If type is explicitly set, use it
+  if (media.type) {
+    return media.type
   }
+  
+  // Determine from contentType
+  if (media.contentType) {
+    return media.contentType.startsWith('video/') ? 'video' : 'image'
+  }
+  
+  // Determine from URL extension
+  if (media.url) {
+    const ext = media.url.toLowerCase().split('.').pop()
+    if (ext && ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext)) {
+      return 'video'
+    }
+  }
+  
+  // Default to image
+  return 'image'
 }
 
 interface PostProps {
-  post: ExtendedPost
+  post: PostType
+  currentUser?: User | null
+  onLike?: (postId: string, updatedPost: PostType) => void
+  onComment?: (postId: string, comment: string) => Promise<void>
+  onDelete?: (postId: string) => void
+  onEdit?: (postId: string, newContent: string) => void
+  onShare?: (post: PostType) => void
+  isClickable?: boolean
+  showComments?: boolean
+  maxCommentsToShow?: number
+}
+
+interface CommentComponentProps {
+  comment: Comment
   currentUser: User | null
-  onLike: (postId: string, updatedPost: PostType) => Promise<void>
-  onComment: (postId: string, updatedPost: PostType) => Promise<void>
-  onShare: (postId: string) => void
+  onReply: (parentId: string, content: string) => Promise<void>
+  onLike: (commentId: string) => void
+  onDelete?: (commentId: string) => void
+  depth?: number
+  formatDate: (date: string) => string
 }
 
-// Utilisateur par défaut en cas d'absence
-const defaultUser: User = {
-  _id: 'unknown',
-  username: 'utilisateur',
-  profilePicture: '/default-avatar.svg',
-  role: 'user'
-}
-
-export default function Post({
-  post: initialPost,
+const CommentComponent: React.FC<CommentComponentProps> = ({
+  comment,
   currentUser,
+  onReply,
+  onLike,
+  onDelete,
+  depth = 0,
+  formatDate
+}) => {
+  const [isReplying, setIsReplying] = useState(false)
+  const [replyContent, setReplyContent] = useState('')
+  const [showReplies, setShowReplies] = useState(depth < 2)
+  const { t } = useTranslation()
+
+  const author = typeof comment.author === 'object' ? comment.author : null
+  const isOwnComment = currentUser?._id === author?._id
+  const likesCount = Array.isArray(comment.likes) ? comment.likes.length : 0
+  const isLiked = currentUser && Array.isArray(comment.likes) 
+    ? comment.likes.some(like => 
+        typeof like === 'string' ? like === currentUser._id : like._id === currentUser._id
+      )
+    : false
+
+  const handleReply = async () => {
+    if (!replyContent.trim()) return
+    
+    try {
+      await onReply(comment._id, replyContent)
+      setReplyContent('')
+      setIsReplying(false)
+    } catch (error) {
+      console.error('Error posting reply:', error)
+    }
+  }
+
+  const marginLeft = Math.min(depth * 20, 60)
+
+  return (
+    <div className="border-l-2 border-gray-100" style={{ marginLeft: `${marginLeft}px` }}>
+      <div className="flex space-x-3 p-3">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          <Image
+            src={author?.profilePicture || '/default-avatar.png'}
+            alt={author?.username || 'User'}
+            width={32}
+            height={32}
+            className="rounded-full object-cover"
+          />
+        </div>
+
+        {/* Comment Content */}
+        <div className="flex-1 min-w-0">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <Link 
+                href={`/profile/${author?._id}`}
+                className="font-semibold text-sm text-gray-900 hover:text-blue-600"
+              >
+                {author?.displayName || author?.username}
+              </Link>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">
+                  {formatDate(comment.createdAt)}
+                </span>
+                {isOwnComment && onDelete && (
+                  <button
+                    onClick={() => onDelete(comment._id)}
+                    className="text-gray-400 hover:text-red-500 p-1"
+                  >
+                    <MdDelete size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+              {comment.content}
+            </p>
+
+            {/* Comment Media */}
+            {comment.medias && comment.medias.length > 0 && (
+              <div className="mt-2 grid gap-2" 
+                   style={{ gridTemplateColumns: `repeat(${Math.min(comment.medias.length, 2)}, 1fr)` }}>
+                {comment.medias.map((media, index) => {
+                  const mediaSrc = getMediaSrc(media)
+                  if (!mediaSrc) return null
+                  
+                  const mediaType = getMediaType(media)
+                  
+                  return (
+                    <div key={index} className="relative rounded-lg overflow-hidden">
+                      {mediaType === 'image' ? (
+                        <Image
+                          src={mediaSrc}
+                          alt={media.alt || 'Comment image'}
+                          width={200}
+                          height={200}
+                          className="w-full h-auto object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={mediaSrc}
+                          controls
+                          className="w-full h-auto rounded-lg"
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Comment Actions */}
+          <div className="flex items-center space-x-4 mt-2 text-sm">
+            <button
+              onClick={() => onLike(comment._id)}
+              className={`flex items-center space-x-1 hover:text-red-500 transition-colors ${
+                isLiked ? 'text-red-500' : 'text-gray-500'
+              }`}
+            >
+              {isLiked ? <MdFavorite size={16} /> : <MdFavoriteBorder size={16} />}
+              <span>{likesCount}</span>
+            </button>
+
+            <button
+              onClick={() => setIsReplying(!isReplying)}
+              className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors"
+            >
+              <MdComment size={16} />
+              <span>{t('post.reply')}</span>
+            </button>
+
+            {comment.replies && comment.replies.length > 0 && (
+              <button
+                onClick={() => setShowReplies(!showReplies)}
+                className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors"
+              >
+                {showReplies ? <MdExpandLess size={16} /> : <MdExpandMore size={16} />}
+                <span>{comment.replies.length} {t('post.replies')}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Reply Form */}
+          {isReplying && (
+            <div className="mt-3 flex space-x-2">
+              <Image
+                src={currentUser?.profilePicture || '/default-avatar.png'}
+                alt="Your avatar"
+                width={24}
+                height={24}
+                className="rounded-full object-cover flex-shrink-0"
+              />
+              <div className="flex-1 flex space-x-2">
+                <input
+                  type="text"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder={t('post.writeReply')}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleReply()}
+                />
+                <button
+                  onClick={handleReply}
+                  disabled={!replyContent.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  <MdSend size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Nested Replies */}
+          {showReplies && comment.replies && comment.replies.length > 0 && (
+            <div className="mt-2">
+              {comment.replies.map((reply) => (
+                <CommentComponent
+                  key={reply._id}
+                  comment={reply}
+                  currentUser={currentUser}
+                  onReply={onReply}
+                  onLike={onLike}
+                  onDelete={onDelete}
+                  depth={depth + 1}
+                  formatDate={formatDate}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const Post: React.FC<PostProps> = ({
+  post,
+  currentUser: propCurrentUser,
   onLike,
   onComment,
+  onDelete,
+  onEdit,
   onShare,
-}: PostProps) {
-  const [isDeleted, setIsDeleted] = useState(false)
-  
-  // Si le post a été supprimé, ne rien afficher
-  if (isDeleted) {
-    return null;
-  }
-  // Utiliser l'utilisateur par défaut si currentUser est null/undefined
-  const safeCurrentUser = currentUser || defaultUser
-  const commentInputRef = useRef<HTMLTextAreaElement>(null)
-  const [userId, setUserId] = useState<string | null>(null);
-  const [post, setPost] = useState<ExtendedPost>(initialPost);
+  isClickable = true,
+  showComments = true,
+  maxCommentsToShow = 3
+}) => {
+  const { user: contextUser } = useUser()
+  const currentUser = propCurrentUser || contextUser
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [showAllComments, setShowAllComments] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [localPost, setLocalPost] = useState(post)
+  const router = useRouter()
+  const { t } = useTranslation()
 
-  if (!post.author) {
-    console.error('Author is null or undefined for post:', post._id);
-  }
-
-  const authorObject = post.author && typeof post.author !== 'string' ? post.author as unknown as User : null;
-  const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
-  const authorUsername = typeof post.author === 'string' ? 'Utilisateur' : (authorObject?.username || 'Inconnu');
-  const authorProfilePicture = typeof post.author === 'string' ? '/default-avatar.png' : (authorObject?.profilePicture || '/default-avatar.png');
-  const [showCommentForm, setShowCommentForm] = useState(false)
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
-  const [isLiked, setIsLiked] = useState(isLikedByUser(post.likes))
-  const [likesCount, setLikesCount] = useState(post.likes.length)
-  const [comments, setComments] = useState<any[]>([])
-  const [loadingComments, setLoadingComments] = useState(false)
-  const [commentsError, setCommentsError] = useState<string | null>(null)
-  const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null)
-  const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)  // État pour suivre les commentaires qui ont été développés et combien de réponses afficher
-  const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([])  
-  // Nombre de sous-commentaires affichés
-  const displayedComments = 5
-  const clickableRef = useRef<HTMLDivElement>(null)
-
-  // Récupérer l'userId au montage du composant
+  // Update local post when prop changes
   useEffect(() => {
-    fetchUserId().then(setUserId);
-  }, []);
+    setLocalPost(post)
+  }, [post])
 
-  // Charger les commentaires au chargement initial
-  useEffect(() => {
-    fetchComments()
-  }, [])
-  
-  // Mettre à jour le compteur de commentaires
-  useEffect(() => {
-    if (post.commentsCount !== undefined) {
-      setCommentsCount(post.commentsCount)
-    }
-  }, [post.commentsCount])
+  const author = typeof localPost.author === 'object' ? localPost.author : null
+  const isOwnPost = currentUser?._id === author?._id
+  const likesCount = Array.isArray(localPost.likes) ? localPost.likes.length : 0
+  const commentsArray = Array.isArray(localPost.comments) 
+    ? localPost.comments.filter(c => typeof c === 'object') as Comment[]
+    : []
+  const commentsCount = commentsArray.length
 
-  useEffect(() => {
-    setIsLiked(isLikedByUser(post.likes))
-  }, [post.likes])
-
-  const fetchComments = async () => {
-    setLoadingComments(true)
-    setCommentsError(null)
-    try {
-      const response = await fetch(
-        `/api/posts/${post._id}/comments`,
-        {
-          credentials: 'include',
-        }
+  const isLiked = currentUser && Array.isArray(localPost.likes) 
+    ? localPost.likes.some(like => 
+        typeof like === 'string' ? like === currentUser._id : like._id === currentUser._id
       )
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
-      const data = await response.json()
-      setComments(data)
-    } catch (e) {
-      setCommentsError('Impossible de charger les commentaires')
-    } finally {
-      setLoadingComments(false)
-    }
-  }
-
-  const handleLike = (updatedPost: PostType) => {
-    setPost(updatedPost);
-    if (onLike) onLike(post._id.toString(), updatedPost);
-  };
+    : false
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return 'Il y a ${Math.floor(diffInSeconds / 60)}m'
-    if (diffInSeconds < 86400) return 'Il y a ${Math.floor(diffInSeconds / 3600)}h'
-    if (diffInSeconds < 604800) return 'Il y a ${Math.floor(diffInSeconds / 86400)}j'
+    if (diffInSeconds < 60) return t('time.justNow')
+    if (diffInSeconds < 3600) return t('time.minutesAgo', { count: Math.floor(diffInSeconds / 60) })
+    if (diffInSeconds < 86400) return t('time.hoursAgo', { count: Math.floor(diffInSeconds / 3600) })
+    if (diffInSeconds < 604800) return t('time.daysAgo', { count: Math.floor(diffInSeconds / 86400) })
+    
     return date.toLocaleDateString()
   }
 
-  const refreshComments = async () => {
+  const handlePostClick = () => {
+    if (isClickable && !isExpanded) {
+      router.push(`/post/${localPost._id}`)
+    }
+  }
+
+  const handleLike = async () => {
+    if (!currentUser) return
+
     try {
-      setLoadingComments(true)
-      setCommentsError(null)
-      const response = await fetch(
-        `/api/posts/${post._id}/comments`,
-        {
-          credentials: 'include',
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      const response = await fetch(`${apiBaseUrl}/posts/${localPost._id}/like`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         }
-      )
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires')
-      const data = await response.json()
-      setComments(data)
-      // Mettre à jour le compteur de commentaires si nécessaire
-      if (data.length !== commentsCount) {
-        setCommentsCount(data.length)
+      })
+
+      if (response.ok) {
+        const updatedPost = await response.json()
+        setLocalPost(updatedPost)
+        if (onLike) {
+          onLike(localPost._id, updatedPost)
+        }
       }
     } catch (error) {
-      setCommentsError('Erreur lors du rafraîchissement des commentaires')
-      console.error('Erreur lors du rafraîchissement des commentaires:', error)
-    } finally {
-      setLoadingComments(false)
+      console.error('Error liking post:', error)
     }
   }
 
-  // Fonction pour gérer le clic sur le bouton commentaire
-  const handleCommentClick = () => {
-    // Rediriger vers la page détaillée du post
-    window.location.href = `/post/${post._id}`
-  }
-  
-  // Fonction pour gérer l'ajout d'un nouveau commentaire
-  const handleCommentSubmit = async (postId: string, updatedPost: PostType) => {
-    try {
-      const response = await onComment(postId, updatedPost)
-      setShowCommentForm(false)
-      
-      // Actualiser les compteurs et commentaires
-      setCommentsCount(prev => prev + 1)
-      
-      // Rafraîchir la liste des commentaires et fermer le formulaire de réponse
-      await refreshComments()
-      setReplyingCommentId(null)
-    } catch (error) {
-      console.error('Erreur lors de la publication du commentaire:', error)
+  const handleShare = async () => {
+    // If onShare prop is provided, use it
+    if (onShare) {
+      onShare(localPost)
+      return
+    }
+
+    // Otherwise, use the default sharing behavior
+    const url = `${window.location.origin}/post/${localPost._id}`
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${author?.displayName || author?.username}'s post`,
+          text: localPost.content,
+          url: url
+        })
+      } catch (error) {
+        console.error('Error sharing:', error)
+      }
+    } else {
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(url)
+        // You could show a toast notification here
+        alert(t('post.linkCopied'))
+      } catch (error) {
+        console.error('Error copying to clipboard:', error)
+      }
     }
   }
 
-  // Fonction pour charger plus de commentaires depuis l'API
-  const loadMoreComments = async () => {
-    if (loadingComments) return;
-    
-    setLoadingComments(true);
-    setCommentsError(null);
-    
+  const handleCommentLike = async (commentId: string) => {
+    if (!currentUser) return
+
     try {
-      // Ajouter un paramètre skip pour la pagination
-      const skip = comments.length;
-      const response = await fetch(`/api/posts/${post._id}/comments?skip=${skip}`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      const response = await fetch(`${apiBaseUrl}/comments/${commentId}/like`, {
+        method: 'POST',
         credentials: 'include'
-      });
-      
-      if (!response.ok) throw new Error('Erreur lors du chargement des commentaires');
-      
-      const newComments = await response.json();
-      if (newComments.length > 0) {
-        setComments([...comments, ...newComments]);
-        
-        // Mettre à jour expandedComments si nécessaire
-        // Ex: remplacer par votre logique spécifique d'étalement des commentaires
-      }
-    } catch (e) {
-      setCommentsError('Impossible de charger plus de commentaires');
-      console.error('Erreur lors du chargement des commentaires:', e);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
+      })
 
+      if (response.ok) {
+        // Refresh post to get updated comments
+        const postResponse = await fetch(`${apiBaseUrl}/posts/${localPost._id}`, {
+          credentials: 'include'
+        })
+        if (postResponse.ok) {
+          const updatedPost = await postResponse.json()
+          setLocalPost(updatedPost)
+        }
+      }
+    } catch (error) {
+      console.error('Error liking comment:', error)
+    }
+  }
+
+  const handleReply = async (parentId: string, content: string) => {
+    if (!currentUser) return
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      const response = await fetch(`${apiBaseUrl}/comments`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content,
+          parentPost: localPost._id,
+          parentComment: parentId
+        })
+      })
+
+      if (response.ok) {
+        // Refresh post to get updated comments
+        const postResponse = await fetch(`${apiBaseUrl}/posts/${localPost._id}`, {
+          credentials: 'include'
+        })
+        if (postResponse.ok) {
+          const updatedPost = await postResponse.json()
+          setLocalPost(updatedPost)
+        }
+      }
+    } catch (error) {
+      console.error('Error posting reply:', error)
+    }
+  }
+
+  const visibleComments = showAllComments 
+    ? commentsArray 
+    : commentsArray.slice(0, maxCommentsToShow)
 
   return (
-    <article className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-lg">
-      <PostHeader
-        author={post.author as unknown as User || defaultUser}
-        createdAt={new Date(post.createdAt)}
-        location={post.location}
-      />
-      <PostContent post={post} />
-      <div className="px-4 py-2 border-t border-gray-200">
-        <div className="flex space-x-6">
-              {/* Bouton Like */}
-              <div className="flex items-center gap-1">
-                <LikeButton 
-                  itemId={post._id.toString()} 
-                  itemType="post" 
-                  initialLikes={likesCount} 
-                  initialLikedStatus={post.likes.some((like:any) => (like._id || like) === userId)}
-                  onLikeSuccess={handleLike} 
-                />
-              </div>       <button 
-            className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" onClick={handleCommentClick}>
-            <MdChatBubbleOutline className="w-5 h-5" />
-            <span>{commentsCount}</span>
-          </button>
+    <article className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      {/* Post Header */}
+      <div className="p-4 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Link href={`/profile/${author?._id}`}>
+              <Image
+                src={author?.profilePicture || '/default-avatar.png'}
+                alt={author?.username || 'User'}
+                width={48}
+                height={48}
+                className="rounded-full object-cover hover:opacity-80 transition-opacity"
+              />
+            </Link>
+            <div>
+              <Link 
+                href={`/profile/${author?._id}`}
+                className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                {author?.displayName || author?.username}
+              </Link>
+              {author?.isVerified && (
+                <span className="ml-1 text-blue-500" title="Verified">✓</span>
+              )}
+              <p className="text-sm text-gray-500">
+                {formatDate(localPost.createdAt)}
+              </p>
+            </div>
+          </div>
           
-          <button 
-            className="flex items-center space-x-1 text-gray-500"
-            onClick={() => onShare(post._id.toString())}
+          {/* Post Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+            >
+              <MdMoreVert size={20} />
+            </button>
+            
+            {showMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                {isOwnPost && onEdit && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false)
+                      // Implement edit functionality
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <MdEdit size={16} />
+                    <span>{t('post.edit')}</span>
+                  </button>
+                )}
+                {isOwnPost && onDelete && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false)
+                      onDelete(localPost._id)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                  >
+                    <MdDelete size={16} />
+                    <span>{t('post.delete')}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    handleShare()
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <MdShare size={16} />
+                  <span>{t('post.share')}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Post Content */}
+      <div 
+        className={`px-4 ${isClickable ? 'cursor-pointer' : ''}`}
+        onClick={handlePostClick}
+      >
+        <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+          {localPost.content}
+        </p>
+
+        {/* Post Tags */}
+        {localPost.tags && localPost.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {localPost.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="text-blue-500 hover:text-blue-600 cursor-pointer text-sm"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Post Media */}
+        {localPost.medias && localPost.medias.length > 0 && (
+          <div className="mt-3">
+            <div 
+              className={`grid gap-2 rounded-lg overflow-hidden ${
+                localPost.medias.length === 1 
+                  ? 'grid-cols-1' 
+                  : localPost.medias.length === 2 
+                  ? 'grid-cols-2' 
+                  : 'grid-cols-2'
+              }`}
+            >
+              {localPost.medias.map((media, index) => {
+                const mediaSrc = getMediaSrc(media)
+                if (!mediaSrc) return null
+                
+                const mediaType = getMediaType(media)
+                
+                return (
+                  <div key={index} className="relative group">
+                    {mediaType === 'image' ? (
+                      <Image
+                        src={mediaSrc}
+                        alt={media.alt || 'Post image'}
+                        width={600}
+                        height={400}
+                        className="w-full h-auto object-cover rounded-lg group-hover:opacity-95 transition-opacity"
+                      />
+                    ) : (
+                      <video
+                        src={mediaSrc}
+                        controls
+                        className="w-full h-auto rounded-lg"
+                        preload="metadata"
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Post Actions */}
+      <div className="px-4 py-3 border-t border-gray-100">
+        <div className="flex items-center space-x-6">
+          <button
+            onClick={handleLike}
+            className={`flex items-center space-x-2 hover:text-red-500 transition-colors ${
+              isLiked ? 'text-red-500' : 'text-gray-500'
+            }`}
           >
-            <MdShare className="w-5 h-5" />
+            {isLiked ? <MdFavorite size={20} /> : <MdFavoriteBorder size={20} />}
+            <span className="text-sm font-medium">{likesCount}</span>
+          </button>
+
+          <button
+            onClick={() => router.push(`/post/${localPost._id}`)}
+            className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
+          >
+            <MdComment size={20} />
+            <span className="text-sm font-medium">{commentsCount}</span>
           </button>
         </div>
       </div>
 
-      {/* Comments section - shown when expanded */}
-      {showCommentForm && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <PostForm
-            parentPostId={post._id}
-            onPostCreated={() => {
-              refreshComments()
-              // Incrémenter le compteur de commentaires
-              setCommentsCount(prev => prev + 1)
-              commentInputRef.current?.blur()
-            }}
-          />
-          <div className="mt-6">
-            {loadingComments && <p className="text-center text-gray-500">Chargement des commentaires...</p>}
-            {commentsError && <p className="text-center text-red-500">{commentsError}</p>}
-            {!loadingComments && !commentsError && comments.length === 0 ? (
-              <p className="text-center text-gray-500">Aucun commentaire pour l'instant</p>
-            ) : (
-              <FlatComments 
-                parentId={post._id} 
-                formatDate={formatDate} 
-                allComments={comments} 
-                replyingCommentId={replyingCommentId}
-                setReplyingCommentId={setReplyingCommentId}
-                onLike={refreshComments}
-                expandedComments={expandedComments}
-                setExpandedComments={setExpandedComments}
-                currentUser={safeCurrentUser}
-              />
+      {/* Comments Section */}
+      {showComments && commentsArray.length > 0 && (
+        <div className="border-t border-gray-100">
+          {visibleComments.map((comment) => (
+            <CommentComponent
+              key={comment._id}
+              comment={comment}
+              currentUser={currentUser}
+              onReply={handleReply}
+              onLike={handleCommentLike}
+              onDelete={onDelete}
+              formatDate={formatDate}
+            />
+          ))}
+
+          {commentsArray.length > maxCommentsToShow && !showAllComments && (
+            <div className="p-4 text-center">
+              <button
+                onClick={() => setShowAllComments(true)}
+                className="text-blue-500 hover:text-blue-600 text-sm font-medium"
+              >
+                {t('post.viewAllComments', { count: commentsArray.length - maxCommentsToShow })}
+              </button>
             </div>
-          </div>
-          <div className="px-3 sm:px-4 pb-3">
-            {loadingComments && (
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-2">
-                Chargement des commentaires...
-              </p>
-            )}
-            {commentsError && (
-              <p className="text-center text-sm text-red-500 dark:text-red-400 py-2">
-                {commentsError}
-              </p>
-            )}
-            {!loadingComments && !commentsError && comments.length === 0 ? (
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-                Aucun commentaire pour l'instant
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <FlatComments 
-                  parentId={post._id} 
-                  formatDate={formatDate} 
-                  allComments={comments} 
-                  replyingCommentId={replyingCommentId}
-                  setReplyingCommentId={setReplyingCommentId}
-                  onLike={refreshComments}
-                  expandedComments={expandedComments}
-                  setExpandedComments={setExpandedComments}
-                  cardStyle={true}
-                />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
     </article>
   )
 }
 
-function ThreadItem({ item, currentUser, formatDate, repliesCount, onReply, replyingCommentId, setReplyingCommentId, children, onLike, isCommentDisplay = true }: any) {
-  const [userId, setUserId] = useState<string | null>(null);
-  const isLikedByUser = (likes: any[]) => likes.some(like => (like._id || like) === userId)
-  const isComment = !!item.parentPost
-  const [isLiked, setIsLiked] = useState(isLikedByUser(item.likes || []))
-  const [likesCount, setLikesCount] = useState(item.likes?.length || 0)
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalSrc, setModalSrc] = useState<string>('');
-  const [modalAlt, setModalAlt] = useState<string>('');
-  const [modalType, setModalType] = useState<'image' | 'video'>('image');
+export default Post
+
+// Additional components for compatibility with existing pages
+
+export interface ThreadItemProps {
+  item: PostType | Comment
+  currentUser: User | null
+  formatDate: (date: string) => string
+  repliesCount?: number
+  onReply?: (e: React.MouseEvent) => void
+  replyingCommentId?: string | null
+  setReplyingCommentId?: (id: string | null) => void
+  children?: React.ReactNode
+  onLike?: (postId: string, updatedPost: PostType | Comment) => void
+  onComment?: (postId: string, comment: string) => Promise<void>
+  onDelete?: (postId: string) => void
+  onEdit?: (updatedItem: PostType | Comment) => void
+  onShare?: (post: PostType) => void
+  isComment?: boolean
+  isReply?: boolean
+  isClickable?: boolean
+}
+
+export const ThreadItem: React.FC<ThreadItemProps> = ({
+  item,
+  currentUser,
+  formatDate,
+  repliesCount = 0,
+  onReply,
+  replyingCommentId,
+  setReplyingCommentId,
+  onLike,
+  onComment,
+  onDelete,
+  onEdit,
+  onShare,
+  isComment = false,
+  isReply = false,
+  isClickable = true
+}) => {
+  // Use the main Post component for posts, or a simplified version for comments
+  if (!isComment && 'author' in item) {
+    // Create an adapter for the onEdit function to match Post's signature
+    const handlePostEdit = onEdit ? (postId: string, newContent: string) => {
+      // For now, we'll need to handle this differently since we only have the post ID
+      // This would typically require fetching the updated post or handling the update differently
+      console.warn('Post editing not fully implemented in ThreadItem')
+    } : undefined
+
+    return (
+      <Post
+        post={item as PostType}
+        currentUser={currentUser}
+        onLike={onLike}
+        onComment={onComment}
+        onDelete={onDelete}
+        onEdit={handlePostEdit}
+        onShare={onShare}
+        isClickable={isClickable}
+        showComments={false}
+      />
+    )
+  }
+
+  // For comments, use the CommentComponent
+  const comment = item as Comment
   
-  // Récupérer l'userId au montage du composant
-  useEffect(() => {
-    fetchUserId().then(setUserId);
-  }, []);
+  const handleCommentLike = async (commentId: string) => {
+    if (onLike) {
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+        const response = await fetch(`${apiBaseUrl}/comments/${commentId}/like`, {
+          method: 'POST',
+          credentials: 'include'
+        })
 
-  useEffect(() => {
-    setIsLiked(isLikedByUser(item.likes || []))
-  }, [item.likes])
-
-  const handleLike = (updatedPost: PostType) => {
-    setIsLiked(
-      updatedPost.likes.some((like: any) =>
-        (typeof like === 'object' ? like._id : like) === userId
-      )
-  );
-    setLikesCount(updatedPost.likes.length);
-    if (onLike) onLike(item._id.toString(), updatedPost);
-  };
-
-  // Fonction pour ouvrir la modal avec le média sélectionné
-  const openMediaModal = (src: string, alt: string = '', type: 'image' | 'video' = 'image') => {
-    setModalSrc(src);
-    setModalAlt(alt);
-    setModalType(type);
-    setModalOpen(true);
-  };
-
-  // Fonction pour obtenir la source du média (URL ou base64)
-  const getMediaSrc = (media: any, index: number): string => {
-    if (media.base64) {
-      // Si l'image est en base64, on la décode directement
-      return `data:${media.contentType || 'image/jpeg'};base64,${media.base64}`;
+        if (response.ok) {
+          const updatedComment = await response.json()
+          onLike(commentId, updatedComment)
+        }
+      } catch (error) {
+        console.error('Error liking comment:', error)
+      }
     }
-    
-    // Si c'est une URL externe complète
-    if (media.url && (media.url.startsWith('http://') || media.url.startsWith('https://'))) {
-      return media.url;
+  }
+
+  const handleReply = async (parentId: string, content: string) => {
+    if (onComment) {
+      await onComment(parentId, content)
     }
-    
-    // Sinon, on utilise la nouvelle route API avec postId et index
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    return `${apiBaseUrl}/media/post/${item._id}/media/${index}?format=raw`;
-  };
+  }
 
   return (
-    <div className={isComment ? "flex gap-3 items-start mb-2" : "flex gap-3 items-start mb-4"}>
-      <Image 
-        src={item.author?.profilePicture || '/default-avatar.svg'} 
-        alt={`Photo de profil de ${item.author?.username || 'utilisateur'}`} 
-        width={isComment ? 32 : 40} 
-        height={isComment ? 32 : 40} 
-        className={isComment ? "w-8 h-8 rounded-full object-cover" : "w-10 h-10 rounded-full object-cover"} 
-      />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-900">{item.author?.username || 'utilisateur'}</span>
-          <span className="text-xs text-gray-500">@{item.author?.username || 'utilisateur'}</span>
-          <span className="text-xs text-gray-400 ml-2">{formatDate(item.createdAt)}</span>
-        </div>
-        <div className="text-gray-800 whitespace-pre-line mt-1">{item.content}</div>
-        
-        {/* Affichage des médias (limité à 4) */}
-        {item.media && item.media.length > 0 && (
-          <div className={`mt-2 grid ${item.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
-            {item.media.slice(0, 4).map((media: any, index: number) => {
-              const imageSrc = getMediaSrc(media, index);
-              return (
-                <div 
-                  key={index} 
-                  className="relative aspect-square cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Déterminer si c'est une image ou une vidéo
-                    const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
-                    openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
-                  }}
-                >
-                  {media.contentType?.startsWith('video/') ? (
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
-                      {/* Video thumbnail avec effet de preview */}
-                      <div className="w-full h-full relative">
-                        <video
-                          src={imageSrc}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          muted
-                          playsInline
-                          onLoadedMetadata={(e) => {
-                            // Générer une miniature à partir d'un moment intéressant
-                            const video = e.currentTarget;
-                            setTimeout(() => {
-                              try {
-                                // Mettre le curseur à ~1 seconde ou 25% de la vidéo pour une meilleure prévisualisation
-                                video.currentTime = Math.min(1, video.duration / 4);
-                              } catch (err) {}
-                            }, 50);
-                          }}
-                        />
-                        {/* Overlay avec effet de hover */}
-                        <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all flex items-center justify-center">
-                          <span className="flex items-center gap-1 text-white text-sm font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-2 py-1 rounded-md transition-all">
-                            <span className="text-sm">▶️</span> Vidéo
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <Image
-                      src={imageSrc}
-                      alt={media.alt || `Media ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                  )}
-                  {/* Indicateur de nombre total si plus de 4 médias */}
-                  {index === 3 && item.media && item.media.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                      +{item.media.length - 4}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        
-        {/* Boutons d'action */}
-        <div className="flex items-center gap-4 mt-1 mb-2">
-          {/* Bouton Like */}
-          <LikeButton 
-            itemId={item._id.toString()} 
-            itemType={isComment ? 'comment' : 'post'} 
-            initialLikes={likesCount} 
-            initialLikedStatus={isLiked}
-            onLikeSuccess={handleLike} 
-            size={isComment ? "small" : "normal"}
-          />
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-900 dark:text-white">{item.author?.username || 'utilisateur'}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">@{item.author?.username || 'utilisateur'}</span>
-              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formatDate(item.createdAt)}</span>
-            </div>
-            <div className="text-gray-800 dark:text-gray-200 whitespace-pre-line mt-1">{renderTextWithMentions(item.content)}</div>
-            
-            {/* Affichage des médias (limité à 4) */}
-            {item.media && item.media.length > 0 && (
-              <div className={`mt-2 grid ${item.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
-                {item.media.slice(0, 4).map((media: any, index: number) => {
-                  const imageSrc = getMediaSrc(media, index);
-                  return (
-                    <div 
-                      key={index} 
-                      className="relative aspect-square cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Déterminer si c'est une image ou une vidéo
-                        const type = media.contentType?.startsWith('video/') ? 'video' : 'image';
-                        openMediaModal(imageSrc, media.alt || `Media ${index + 1}`, type);
-                      }}
-                    >
-                      <Image 
-                        src={imageSrc} 
-                        alt={media.alt || `Media ${index + 1}`} 
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            
-            {/* Bouton "Répondre" */}
-            {isCommentDisplay && !isComment && repliesCount > 0 && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="text-sm text-gray-500 mt-1 hover:text-blue-600 hover:underline"
-              >
-                Voir les {repliesCount} commentaires
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex space-x-6">
-            {/* Bouton Like */}
-            <div className="flex items-center gap-1">
-              <LikeButton 
-                itemId={item._id.toString()} 
-                itemType={isComment ? 'comment' : 'post'} 
-                initialLikes={likesCount} 
-                initialLikedStatus={isLiked}
-                onLikeSuccess={() => handleLike()} 
-                size={isComment ? "small" : "normal"}
-              />
-            </div>
-            
-            {/* Bouton Commenter */}
-            <button 
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition-colors" 
-              onClick={(e) => { 
-                e.preventDefault();
-                e.stopPropagation(); 
-                if (onReply) onReply(e); 
-              }}
-              aria-label="Commenter"
-              title="Commenter"
-            >
-              <MdChatBubbleOutline className="w-5 h-5" />
-              <span>{repliesCount || 0}</span>
-            </button>
-            
-            {/* Bouton Republier */}
-            <button 
-              className="flex items-center space-x-1 text-gray-500"
-              aria-label="Republier"
-              title="Republier"
-              onClick={(e) => {
-                e.preventDefault(); 
-                e.stopPropagation();
-                alert('Fonctionnalité de republication à venir !'); 
-              }}
-            >
-              <MdRepeat className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+    <CommentComponent
+      comment={comment}
+      currentUser={currentUser}
+      onReply={handleReply}
+      onLike={handleCommentLike}
+      onDelete={onDelete}
+      formatDate={formatDate}
+      depth={0}
+    />
+  )
+}
+
+export interface FlatCommentsProps {
+  parentId: string
+  formatDate: (date: string) => string
+  allComments: Comment[]
+  replyingCommentId: string | null
+  setReplyingCommentId: (id: string | null) => void
+  onLike?: (postId: string, updatedPost: PostType | Comment) => void
+  onComment?: (postId: string, comment: string) => Promise<void>
+  onDelete?: (postId: string) => void
+  onEdit?: (updatedItem: PostType | Comment) => void
+  expandedComments?: Array<{ id: string; maxDisplayed: number }>
+  setExpandedComments?: React.Dispatch<React.SetStateAction<Array<{ id: string; maxDisplayed: number }>>>
+  currentUser: User | null
+}
+
+export const FlatComments: React.FC<FlatCommentsProps> = ({
+  parentId,
+  formatDate,
+  allComments,
+  replyingCommentId,
+  setReplyingCommentId,
+  onLike,
+  onComment,
+  onDelete,
+  onEdit,
+  expandedComments = [],
+  setExpandedComments,
+  currentUser
+}) => {
+  const { t } = useTranslation()
+
+  // Filter comments that belong to this parent
+  const directComments = allComments.filter(comment => 
+    comment.parentPost === parentId || comment.parentComment === parentId
+  )
+
+  const handleCommentLike = async (commentId: string) => {
+    if (onLike) {
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+        const response = await fetch(`${apiBaseUrl}/comments/${commentId}/like`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          const updatedComment = await response.json()
+          onLike(commentId, updatedComment)
+        }
+      } catch (error) {
+        console.error('Error liking comment:', error)
+      }
+    }
+  }
+
+  const handleReply = async (commentParentId: string, content: string) => {
+    if (onComment) {
+      await onComment(commentParentId, content)
+    }
+  }
+
+  if (directComments.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        {t('post.noComments')}
       </div>
-      
-      {/* Formulaire de réponse */}
-      {replyingCommentId === item._id && (
-        <div className="ml-8 mt-2 pl-4">
-          <PostForm
-            parentPostId={item._id}
-            placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
-            onPostCreated={() => {
-              setReplyingCommentId(null);
-              if (onLike) onLike();
-            }}
-          />
-        </div>
-      )}
-      
-      {children}
-      
-      {/* Modal pour afficher les médias en grand */}
-      <MediaModal
-        isOpen={modalOpen}
-        src={modalSrc}
-        alt={modalAlt}
-        mediaType={modalType}
-        onClose={() => setModalOpen(false)}
-      />
-    </div>
-  )
-}
+    )
+  }
 
-function FlatComments({ parentId, currentUser, formatDate, allComments, replyingCommentId, setReplyingCommentId, onLike, expandedComments, setExpandedComments }: { 
-  parentId: string | null, 
-  formatDate: (date: string) => string, 
-  allComments: any[], 
-  replyingCommentId: string | null, 
-  setReplyingCommentId: (id: string | null) => void, 
-  onLike?: () => void,
-  expandedComments: Array<{ id: string, maxDisplayed: number }>,
-  setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
-  currentUser: User
-}) {
-  // Nombre initial de sous-commentaires à afficher par défaut
-  const maxDisplayedComments = 3;
-  
-  // Filtrer les commentaires directs (commentaires de premier niveau pour ce post)
-  const comments = allComments.filter(c => c.parentPost === parentId);
-  
-  if (!comments.length) return null
-  
-  console.log('Affichage des commentaires:', comments.length, 'pour parent:', parentId)
-  console.log('Tous les commentaires disponibles:', allComments.length)
-  
   return (
-    <div className="space-y-4"> 
-      {comments.map(comment => {
-        // Recherche des commentaires enfants pour ce commentaire
-        const childComments = allComments.filter(c => c.parentPost === comment._id)
-        console.log(`Commentaire ${comment._id} a ${childComments.length} réponses`)
-        const repliesCount = childComments.length
-        
-        return (
-          <div key={comment._id} className={`relative group ${cardStyle ? 'bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4' : 'border-t border-gray-200 dark:border-gray-700 pt-4'}`}> 
-            <ThreadItem
-              item={comment}
-              currentUser={currentUser}
-              formatDate={formatDate}
-              repliesCount={repliesCount}
-              onReply={(e: React.MouseEvent) => { 
-                e.stopPropagation(); 
-                setReplyingCommentId(comment._id);
-                console.log('Répondre au commentaire:', comment._id);
-              }}
-              replyingCommentId={replyingCommentId}
-              setReplyingCommentId={setReplyingCommentId}
-              onLike={onLike}
-              isComment={false}
-            >
-              {/* Formulaire de réponse pour ce commentaire */}
-              {replyingCommentId === comment._id && (
-                <div className="mt-3">
-                  <PostForm
-                    parentPostId={comment._id}
-                    placeholder={`Répondre à @${comment.author?.username || 'utilisateur'}...`}
-                    onPostCreated={() => {
-                      // Fermer le formulaire de réponse
-                      setReplyingCommentId(null);
-                      // Rafraîchir les commentaires
-                      if (onLike) onLike();
-                    }}
-                  />
-                </div>
-              )}
-              
-              {/* Afficher les réponses avec une indentation */}
-              {repliesCount > 0 && (
-                <div className="mt-3 pl-2 space-y-3">
-                  {/* Afficher les sous-commentaires */}
-                  {childComments.slice(0, expandedComments?.find(item => item.id === comment._id)?.maxDisplayed || maxDisplayedComments).map(reply => (
-                    <div key={reply._id} className={`relative group ${cardStyle ? 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border-l-2 border-blue-300 dark:border-blue-600 pl-3 py-2' : 'border-l-2 border-gray-200 dark:border-gray-700 pl-4'}`}>
-                      <ThreadItem
-                        item={reply}
-                        formatDate={formatDate}
-                        repliesCount={allComments.filter(c => c.parentPost === reply._id).length}
-                        onReply={(e: React.MouseEvent) => { 
-                          e.stopPropagation(); 
-                          setReplyingCommentId(reply._id);
-                          console.log('Répondre au sous-commentaire:', reply._id);
-                        }}
-                        replyingCommentId={replyingCommentId}
-                        setReplyingCommentId={setReplyingCommentId}
-                        onLike={onLike}
-                        isComment={true}
-                      />
-                      
-                      {/* Formulaire de réponse à un sous-commentaire */}
-                      {replyingCommentId === reply._id && (
-                        <div className="mt-2">
-                          <PostForm
-                            parentPostId={reply._id}
-                            placeholder={`Répondre à @${reply.author?.username || 'utilisateur'}...`}
-                            onPostCreated={() => {
-                              setReplyingCommentId(null);
-                              // Rafraîchir les commentaires
-                              if (onLike) onLike();
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Bouton "Afficher plus" si nécessaire et s'il reste des commentaires à afficher */}
-                  {repliesCount > maxDisplayedComments && 
-                   (!expandedComments.some(item => item.id === comment._id) || 
-                    (expandedComments.find(item => item.id === comment._id)?.maxDisplayed ?? 0) < repliesCount) && (
-                    <button 
-                      className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium mt-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        console.log('Afficher plus de commentaires pour:', comment._id);
-                        
-                        // Au lieu de rediriger, on va augmenter le nombre de commentaires à afficher
-                        const commentIndex = expandedComments.findIndex(item => item.id === comment._id);
-                        if (commentIndex !== -1) {
-                          // Mettre à jour le nombre de commentaires affichés pour ce commentaire spécifique
-                          // Pour afficher tous les commentaires
-                          const newExpandedComments = [...expandedComments];
-                          newExpandedComments[commentIndex] = { ...newExpandedComments[commentIndex], maxDisplayed: repliesCount };
-                          console.log('Mise à jour des commentaires étendus:', newExpandedComments);
-                          setExpandedComments(newExpandedComments);
-                        } else {
-                          // Ajouter ce commentaire aux commentaires étendus
-                          const newExpandedComments = [...expandedComments, { id: comment._id, maxDisplayed: repliesCount }];
-                          console.log('Ajout aux commentaires étendus:', newExpandedComments);
-                          setExpandedComments(newExpandedComments);
-                        }
-                      }}
-                    >
-                      Afficher plus de commentaires ({repliesCount - maxDisplayedComments})
-                    </button>
-                  )}
-                </div>
-              )}
-            </ThreadItem>
-          </div>
-        )
-      })}
+    <div className="space-y-2">
+      {directComments.map((comment) => (
+        <ThreadItem
+          key={comment._id}
+          item={comment}
+          currentUser={currentUser}
+          formatDate={formatDate}
+          repliesCount={0}
+          onLike={onLike}
+          onComment={onComment}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          isComment={true}
+          isClickable={false}
+        />
+      ))}
     </div>
   )
 }
-
-export { ThreadItem, FlatComments } 

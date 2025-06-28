@@ -15,9 +15,19 @@ i18n
       en: { translation: translationEN },
       fr: { translation: translationFR },
     },
-    lng: 'fr',
     fallbackLng: 'fr',
+    debug: process.env.NODE_ENV === 'development',
+    detection: {
+      order: ['localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage', 'sessionStorage'],
+      lookupLocalStorage: 'i18nextLng',
+      lookupSessionStorage: 'i18nextLng'
+    },
+    supportedLngs: ['en', 'fr'],
     interpolation: { escapeValue: false },
+    react: {
+      useSuspense: false
+    }
   });
 
 export default i18n;

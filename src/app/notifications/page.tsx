@@ -33,7 +33,8 @@ export default function NotificationsPage() {
     setDeleting(id);
     
     try {
-      const response = await fetch(`api/notifications/${id}`, {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiBaseUrl}/notifications/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
