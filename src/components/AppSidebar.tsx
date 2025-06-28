@@ -88,7 +88,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     { key: 'feed', label: "Accueil", icon: MdHome, href: '/feed' },
     { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
     { key: 'search', label: 'Rechercher', icon: MdSearch, href: '/search' },
-    { key: 'messages', label: 'Messages', icon: MdMail, href: '/messages' },
+    { key: 'messagerie', label: 'Messages', icon: MdMail, href: '/messagerie' },
     { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
   ];
 
@@ -184,9 +184,9 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           </li>
           <li>
             <Link 
-              href="/messages" 
+              href="/messagerie" 
               className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/messages'
+                pathname === '/messagerie'
                   ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
                   : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
               }`}
