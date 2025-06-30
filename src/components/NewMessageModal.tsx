@@ -116,8 +116,8 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
               onClick={handleSend}
               disabled={sending}
               className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {sending ? "Message envoyé" : "Message non envoyé"}
+            >Envoyer
+             {/* {sending ? "Message envoyé" : "Message non envoyé"} */}
             </button>
           </>
         ) : (
