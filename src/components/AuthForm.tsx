@@ -80,9 +80,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
       ) : (
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Join Breezy
+            Rejoindre Breezy
           </h2>
-          <p className="text-gray-500 mt-2">Create your account</p>
+          <p className="text-gray-500 mt-2">Créez votre compte</p>
         </div>
       )}
 
@@ -98,11 +98,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {mode === 'register' && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Username</label>
+            <label className="text-sm font-medium text-gray-700">Nom d'utilisateur</label>
             <input
               type="text"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Enter your username"
+              placeholder="Entrez votre nom d'utilisateur"
               value={formData.username}
               onChange={(e) => setFormData({...formData, username: e.target.value})}
               required
@@ -111,11 +111,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
         )}
         {mode === 'login' ? (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Email or Username</label>
+            <label className="text-sm font-medium text-gray-700">Email ou Nom d'utilisateur</label>
             <input
               type="text"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Enter your email or username"
+              placeholder="Entrez votre email ou nom d'utilisateur"
               value={formData.identifier}
               onChange={(e) => setFormData({...formData, identifier: e.target.value})}
               required
@@ -127,7 +127,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             <input
               type="email"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Enter your email"
+              placeholder="Entrez votre email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
@@ -135,11 +135,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         )}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Password</label>
+          <label className="text-sm font-medium text-gray-700">Mot de passe</label>
           <input
             type="password"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Enter your password"
+            placeholder="Entrez votre mot de passe"
             value={formData.password}
             onChange={(e) => {
               setFormData({...formData, password: e.target.value});
@@ -153,13 +153,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
           type="submit"
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:opacity-90 transition-all transform hover:scale-[1.02] focus:scale-[0.98]"
         >
-          {mode === 'login' ? 'Sign In' : 'Create Account'}
+          {mode === 'login' ? 'Se connecter' : 'Créer un compte'}
         </button>
         {mode === 'login' && (
           <>
             <div className="flex items-center my-6">
               <div className="flex-1 h-px bg-gray-300" />
-              <span className="mx-4 text-gray-500 font-medium">or</span>
+              <span className="mx-4 text-gray-500 font-medium">ou</span>
               <div className="flex-1 h-px bg-gray-300" />
             </div>
             <button
@@ -175,7 +175,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   <path fill="#EA4335" d="M43.6 20.5h-1.9V20H24v8h11.3c-1.1 3-4.1 5.5-7.3 5.5-4.2 0-7.7-3.5-7.7-7.7 0-.6.1-1.2.2-1.8l-6.5-5C7.2 23.1 7 23.5 7 24c0 7.2 5.8 13 13 13 6.6 0 12-5.4 12-12 0-.8-.1-1.5-.2-2.2z"/>
                 </g>
               </svg>
-              <span className="text-gray-700 font-medium">Continue with Google</span>
+              <span className="text-gray-700 font-medium">Continuer avec Google</span>
             </button>
           </>
         )}
