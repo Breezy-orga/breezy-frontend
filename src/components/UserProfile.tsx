@@ -211,7 +211,8 @@ export default function UserProfile({ userId }: Props) {
                 <button
                   onClick={() => setIsEditing(true)}
                   className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
+                   style={{ backgroundColor: "#2563eb", color: "#fff" }} // bleu Tailwind 600
+ >
                   Modifier mon profil
                 </button>
               )}
@@ -262,7 +263,8 @@ export default function UserProfile({ userId }: Props) {
                 }
               }}
               className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-            >
+              style={{ backgroundColor: "#dc2626", color: "#fff" }} // rouge Tailwind 600
+          >
               Supprimer ce compte
             </button>
           ) : null}
