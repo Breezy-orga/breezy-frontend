@@ -205,12 +205,12 @@ const handleLike = async (postId: string) => {
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{user.bio}</p>
                   )}
                 </div>
-                <Link 
-                  href={`/profile/${user._id}`} 
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs sm:text-sm ml-2"
-                >
-                  Voir profil
-                </Link>
+               <Link 
+  href={`/profile/${user._id}`} 
+  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-md text-xs sm:text-sm ml-2 shadow-md border border-blue-300 dark:border-blue-400 dark:shadow-lg dark:text-white dark:drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
+>
+  Voir profil
+</Link>
               </div>
             ))}
           </div>

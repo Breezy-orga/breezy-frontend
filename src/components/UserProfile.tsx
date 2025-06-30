@@ -220,11 +220,26 @@ export default function UserProfile({ userId }: Props) {
               {!isSelf && (
                 <button
                   onClick={handleFollowToggle}
-                  className={`mt-4 inline-block px-4 py-2 rounded-lg transition font-semibold ${
+                  className="mt-4 inline-block px-4 py-2 rounded-lg transition font-semibold"
+                  style={
                     (currentUser?.following ?? []).includes(user._id)
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
+                      ? { backgroundColor: "#fee2e2", color: "#dc2626" } // rouge-100 bg, rouge-600 texte
+                      : { backgroundColor: "#2563eb", color: "#fff" }    // bleu-600 bg, blanc texte
+                  }
+                  onMouseOver={e => {
+                    if ((currentUser?.following ?? []).includes(user._id)) {
+                      e.currentTarget.style.backgroundColor = "#fecaca"; // rouge-200
+                    } else {
+                      e.currentTarget.style.backgroundColor = "#1d4ed8"; // bleu-700
+                    }
+                  }}
+                  onMouseOut={e => {
+                    if ((currentUser?.following ?? []).includes(user._id)) {
+                      e.currentTarget.style.backgroundColor = "#fee2e2";
+                    } else {
+                      e.currentTarget.style.backgroundColor = "#2563eb";
+                    }
+                  }}
                 >
                   {(currentUser?.following ?? []).includes(user._id)
                     ? 'Se désabonner'
