@@ -72,7 +72,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+    <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
       {mode === 'login' ? (
         <div className="flex justify-center mb-8">
           <Image src="/logo_breezy.png" alt="Breezy logo" width={60} height={60} priority className="drop-shadow-lg" />
@@ -82,12 +82,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Rejoindre Breezy
           </h2>
-          <p className="text-gray-500 mt-2">Créez votre compte</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Créez votre compte</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 flex items-center">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-300 p-4 rounded-xl mb-6 flex items-center">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -98,10 +98,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {mode === 'register' && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Nom d'utilisateur</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Nom d'utilisateur</label>
             <input
               type="text"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
               placeholder="Entrez votre nom d'utilisateur"
               value={formData.username}
               onChange={(e) => setFormData({...formData, username: e.target.value})}
@@ -111,10 +111,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
         )}
         {mode === 'login' ? (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Email ou Nom d'utilisateur</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email ou Nom d'utilisateur</label>
             <input
               type="text"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
               placeholder="Entrez votre email ou nom d'utilisateur"
               value={formData.identifier}
               onChange={(e) => setFormData({...formData, identifier: e.target.value})}
@@ -123,10 +123,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Email</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
             <input
               type="email"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
               placeholder="Entrez votre email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -135,10 +135,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         )}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Mot de passe</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Mot de passe</label>
           <input
             type="password"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
             placeholder="Entrez votre mot de passe"
             value={formData.password}
             onChange={(e) => {
@@ -158,13 +158,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
         {mode === 'login' && (
           <>
             <div className="flex items-center my-6">
-              <div className="flex-1 h-px bg-gray-300" />
-              <span className="mx-4 text-gray-500 font-medium">ou</span>
-              <div className="flex-1 h-px bg-gray-300" />
+              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
+              <span className="mx-4 text-gray-500 dark:text-gray-400 font-medium">ou</span>
+              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
             </div>
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 px-4 bg-white hover:bg-gray-50 transition-all transform hover:scale-[1.02] focus:scale-[0.98] shadow-sm"
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-700 rounded-xl py-3 px-4 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all transform hover:scale-[1.02] focus:scale-[0.98] shadow-sm text-gray-700 dark:text-gray-200"
               onClick={() => signIn('google')}
             >
               <svg width="20" height="20" viewBox="0 0 48 48" className="mr-2">
@@ -175,11 +175,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   <path fill="#EA4335" d="M43.6 20.5h-1.9V20H24v8h11.3c-1.1 3-4.1 5.5-7.3 5.5-4.2 0-7.7-3.5-7.7-7.7 0-.6.1-1.2.2-1.8l-6.5-5C7.2 23.1 7 23.5 7 24c0 7.2 5.8 13 13 13 6.6 0 12-5.4 12-12 0-.8-.1-1.5-.2-2.2z"/>
                 </g>
               </svg>
-              <span className="text-gray-700 font-medium">Continuer avec Google</span>
+              <span className="text-gray-700 dark:text-gray-200 font-medium">Continuer avec Google</span>
             </button>
           </>
         )}
       </form>
     </div>
   )
-} 
+}
