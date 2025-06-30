@@ -260,6 +260,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
               </button>
               
+              {/*
               <button 
                 onClick={() => {
                   setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -271,6 +272,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 <MdLanguage className="w-5 h-5 mr-3" />
                 {language === 'fr' ? 'English' : 'Français'}
               </button>
+              */}
               
               <Link 
                 href="/settings" 
