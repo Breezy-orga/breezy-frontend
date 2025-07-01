@@ -44,7 +44,7 @@ export default function LoginPage() {
             <span className="text-gray-500 dark:text-gray-300">Don't have an account? </span>
             <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Sign up</Link>
           </div>
-        </footer>
+        </div>
       </div>
       {/* Footer */}
       <footer className="py-6 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm

@@ -158,12 +158,6 @@ export default function Register() {
         </div>
       </div>
       {/* Footer */}
-      <footer className="py-6 px-4 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/70 backdrop-blur-sm relative">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">A propos</Link>
-          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Conditions</Link>
-          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Confidentialité</Link>
-          <Link href="/contact" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Contact</Link>
       <footer className="py-6 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm
         dark:bg-gray-900/80 dark:border-gray-800 dark:text-gray-400 transition-colors">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
