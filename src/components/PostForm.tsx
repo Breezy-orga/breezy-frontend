@@ -16,9 +16,8 @@ interface PostFormProps {
 
 export default function PostForm({ onPostCreated, parentPostId, placeholder = "Quoi de neuf ?" }: PostFormProps) {
   const [content, setContent] = useState('')
-  // Tableaux pour gérer plusieurs médias (max 4)
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
-  const [mediaTypes, setMediaTypes] = useState<('image' | 'video')[]>([]) // Nouveau état pour suivre le type de média
+  const [mediaTypes, setMediaTypes] = useState<('image' | 'video')[]>([])
   const [mediaData, setMediaData] = useState<{
     filename: string;
     base64: string;
@@ -32,19 +31,18 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   
-  // États pour la suggestion de mentions
+  // Mentions
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionSuggestions, setMentionSuggestions] = useState<Array<{_id: string; username: string; profilePicture?: string}>>([])
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false)
   const [cursorPosition, setCursorPosition] = useState(0)
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0) // Index de la suggestion sélectionnée avec clavier
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // ✅ Proxy passe par Next.js → Express → authMiddleware
         const response = await fetch('/api/users/me', {
           credentials: 'include'
         })
@@ -55,132 +53,116 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
         console.error('Échec récupération utilisateur')
       }
     }
-
     fetchUser()
   }, [])
-  
-  // Fonction pour déboucer la recherche d'utilisateurs (réduit le nombre d'appels API)
+
+  // Mention auto-suggest
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
       if (query.length < 2) {
-        console.log('Query trop courte, minimum 2 caractères');
+        setMentionSuggestions([])
         return;
       }
-      
       try {
-        console.log('Appel API pour recherche utilisateurs:', query);
-        const apiUrl = `api/users/search?query=${encodeURIComponent(query)}`;
-        console.log('URL API:', apiUrl);
-        
-        const response = await fetch(
-          apiUrl,
-          {
-            credentials: 'include'
-          }
-        );
-        
+        const apiUrl = `/api/users/search?query=${encodeURIComponent(query)}`;
+        const response = await fetch(apiUrl, { credentials: 'include' });
         if (response.ok) {
-          const data = await response.json();
-          console.log('Résultats de recherche:', data.length, 'utilisateurs trouvés');
-          setMentionSuggestions(data);
+          setMentionSuggestions(await response.json());
         } else {
-          console.error('Erreur API:', response.status, response.statusText);
           setMentionSuggestions([]);
         }
-      } catch (error) {
-        console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+      } catch {
         setMentionSuggestions([]);
       }
     }, 300),
     []
   );
   
-  // Gère le changement de texte et détecte les mentions
+  // Gère le changement de texte + détection mentions
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    
-    // Sauvegarde la position du curseur
-    if (textareaRef.current) {
-      setCursorPosition(textareaRef.current.selectionStart);
-    }
-    
-    // Détecte si on est en train de saisir une mention
+
+    // position du curseur
+    if (textareaRef.current) setCursorPosition(textareaRef.current.selectionStart);
+
+    // Détection mention
     const cursorPos = textareaRef.current?.selectionStart || 0;
     const contentBeforeCursor = newContent.substring(0, cursorPos);
-    // Débogage: afficher dans la console pour vérifier
-    console.log('Curseur:', cursorPos, 'Texte avant curseur:', contentBeforeCursor);
-    
-    const match = contentBeforeCursor.match(/@([\w.-]*)$/); // Trouve le dernier @mot avant le curseur
-    console.log('Détection de mentions:', match ? `Trouvé "${match[0]}"` : 'Aucune correspondance');
-    
+    const match = contentBeforeCursor.match(/@([\w.-]*)$/);
     if (match) {
-      const query = match[1]; // Le texte après @ mais avant le curseur
-      console.log('Recherche utilisateurs pour:', query);
+      const query = match[1];
       setMentionQuery(query);
       setShowMentionSuggestions(true);
-      setSelectedSuggestionIndex(0); // Réinitialise la sélection quand la requête change
+      setSelectedSuggestionIndex(0);
       debouncedSearch(query);
     } else {
       setShowMentionSuggestions(false);
       setMentionSuggestions([]);
     }
   };
-  
-  // Insère une mention dans le content à la position du curseur
+
+  // Gestion navigation suggestions avec le clavier
+  useEffect(() => {
+    if (!showMentionSuggestions) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (mentionSuggestions.length === 0) return;
+      if (e.key === 'ArrowDown') {
+        setSelectedSuggestionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        setSelectedSuggestionIndex((prev) => (prev - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        if (mentionSuggestions[selectedSuggestionIndex]) {
+          insertMention(mentionSuggestions[selectedSuggestionIndex].username);
+          e.preventDefault();
+        }
+      } else if (e.key === 'Escape') {
+        setShowMentionSuggestions(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showMentionSuggestions, mentionSuggestions, selectedSuggestionIndex, content]);
+
+  // Insère la mention dans le champ texte à la position du curseur
   const insertMention = (username: string) => {
     if (!textareaRef.current) return;
-    
     const cursorPos = textareaRef.current.selectionStart;
     const textBeforeCursor = content.substring(0, cursorPos);
-    
-    // Trouve le dernier @ dans le texte avant le curseur
     const lastAtPos = textBeforeCursor.lastIndexOf('@');
     if (lastAtPos === -1) return;
-    
-    // Remplace le texte depuis @ jusqu'au curseur par la mention
-    const newContent = 
-      content.substring(0, lastAtPos) + 
-      `@${username} ` + 
+    const newContent =
+      content.substring(0, lastAtPos) +
+      `@${username} ` +
       content.substring(cursorPos);
-    
     setContent(newContent);
     setShowMentionSuggestions(false);
-    
-    // Focus le textarea après avoir inséré la mention
     setTimeout(() => {
       if (textareaRef.current) {
-        const newCursorPos = lastAtPos + username.length + 2; // +2 pour @ et l'espace
+        const newCursorPos = lastAtPos + username.length + 2;
         textareaRef.current.focus();
         textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
       }
     }, 0);
   };
 
+  // Upload média
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    
-    // Vérifier si le nombre maximum de médias a été atteint
     if (mediaData.length >= 4) {
       alert('Maximum 4 médias par publication')
       return
     }
-    
     if (file) {
-      // Déterminer si c'est une image ou une vidéo
       const isVideo = file.type.startsWith('video/');
-      
       const reader = new FileReader()
       reader.onloadend = () => {
-        // Récupère la partie base64 sans le préfixe "data:image/jpeg;base64," ou "data:video/mp4;base64,"
         const base64Result = reader.result as string
         const base64Data = base64Result.split(',')[1]
-        
-        // Générer un nom de fichier unique
         const filename = `${Date.now()}-${uuidv4().substring(0, 8)}`
-        
-        // Stocker le media et sa prévisualisation
-        setMediaPreviews([...mediaPreviews, base64Result]) // Conserve le format complet pour l'affichage
+        setMediaPreviews([...mediaPreviews, base64Result])
         setMediaTypes([...mediaTypes, isVideo ? 'video' : 'image'])
         setMediaData([...mediaData, {
           filename,
@@ -193,7 +175,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   }
 
   const removeMedia = (index: number) => {
-    // Supprimer un média spécifique par son index
     const newPreviews = [...mediaPreviews]
     const newData = [...mediaData]
     const newTypes = [...mediaTypes]
@@ -203,8 +184,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
     setMediaPreviews(newPreviews)
     setMediaData(newData)
     setMediaTypes(newTypes)
-    
-    // Réinitialiser le champ de fichier si plus de médias
     if (newData.length === 0 && fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -223,7 +202,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if ((!content.trim() && !mediaData) || isSubmitting) return
+    if ((!content.trim() && !mediaData.length) || isSubmitting) return
 
     setIsSubmitting(true)
     let newPost
@@ -241,27 +220,25 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
           tags: tags.length > 0 ? tags : undefined
         })
       })
-      if (!response.ok) {
-        throw new Error('Erreur lors de la publication')
-      }
+      if (!response.ok) throw new Error('Erreur lors de la publication')
       newPost = await response.json()
-    }catch (error) {
-      alert('erreur lors de la création')}
-    try{
+    } catch (error) {
+      alert('Erreur lors de la création')
+    }
+    try {
       setContent('')
       setMediaPreviews([])
       setMediaData([])
-      setMediaTypes([]) // Réinitialiser les types de média
+      setMediaTypes([])
       setTags([])
       setShowTagInput(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      if (onPostCreated) {
+      if (onPostCreated && newPost) {
         onPostCreated(newPost)
       }
     } catch (error) {
-      console.error('Erreur:', error)
       alert('Une erreur est survenue lors de la publication')
     } finally {
       setIsSubmitting(false)
@@ -269,7 +246,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-4 mb-6 border border-gray-100">
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-800">
       <div className="flex gap-3">
         <Image
           src={user?.username === 'daemon' ? '/me.jpg' : (user?.profilePicture || '/default-avatar.svg')}
@@ -289,8 +266,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               className="w-full bg-transparent border-none focus:ring-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               rows={3}
             />
-            
-            {/* Dropdown de suggestions de mentions - Augmenter z-index et afficher même sans résultats */}
             {showMentionSuggestions && (
               <div 
                 ref={suggestionListRef}
@@ -335,20 +310,14 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                           className="w-full h-full object-contain"
                           controls
                           onLoadedMetadata={(e) => {
-                            // Générer une miniature à partir de la première frame
                             const video = e.currentTarget;
-                            
-                            // Attendre un peu pour être sûr que la vidéo est chargée
                             setTimeout(() => {
                               try {
-                                // Définir la position sur 1 seconde ou au début si la vidéo est plus courte
                                 video.currentTime = Math.min(1, video.duration / 4);
-                              } catch (err) {
-                                console.error('Erreur lors de la définition du currentTime:', err);
-                              }
+                              } catch {}
                             }, 100);
                           }}
-                          poster={preview} // Utiliser le preview comme fallback
+                          poster={preview}
                         />
                         <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md flex items-center gap-1">
                           <span className="text-white font-bold">▶</span> Vidéo
@@ -372,7 +341,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                   </div>
                 </div>
               ))}
-              {/* Indicateur du nombre de médias */}
               <div className="mt-1 text-sm text-gray-500">
                 {mediaPreviews.length}/4 médias
               </div>
@@ -450,7 +418,14 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               <button
                 type="submit"
                 disabled={(!content.trim() && mediaData.length === 0) || isSubmitting}
-                className="px-4 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="
+                  px-4 py-2 
+                  bg-blue-500 hover:bg-blue-600 
+                  dark:bg-blue-500 dark:hover:bg-blue-600
+                  text-white rounded-full font-medium
+                  disabled:opacity-50 disabled:cursor-not-allowed 
+                  transition-colors
+                "
               >
                 {isSubmitting ? 'Publication...' : 'Publier'}
               </button>
