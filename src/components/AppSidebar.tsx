@@ -22,6 +22,7 @@ import {
 import { useLanguage } from './LanguageProvider'
 import NotificationBadge from './NotificationBadge'
 import { useNotifications } from '../contexts/NotificationContext'
+import { useTranslation } from 'react-i18next'
 
 interface AppSidebarProps {
   className?: string
@@ -33,11 +34,18 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   
-  // Language provider hook
-  const { language, setLanguage } = useLanguage()
+  const { i18n, t } = useTranslation()
+  const currentLanguage = i18n.language || 'fr'
   const [userInfo, setUserInfo] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
-
+   useEffect(() => {
+    console.log('i18n debug:', {
+      language: i18n.language,
+      isInitialized: i18n.isInitialized,
+      hasResources: !!i18n.options?.resources,
+      testTranslation: t('sidebar.feed')
+    })
+  }, [i18n.language, t])
   // Fermer le menu d'options lorsqu'on clique ailleurs
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -85,11 +93,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
 
   // Navigation principale
   const navItems = [
-    { key: 'feed', label: "Accueil", icon: MdHome, href: '/feed' },
-    { key: 'profile', label: 'Profil', icon: MdPerson, href: '/profile' },
-    { key: 'search', label: 'Rechercher', icon: MdSearch, href: '/search' },
-    { key: 'messagerie', label: 'Messages', icon: MdMail, href: '/messagerie' },
-    { key: 'notifications', label: 'Notifications', icon: MdNotifications, href: '/notifications' },
+    { key: 'feed', label: t('sidebar.home'), icon: MdHome, href: '/feed' },
+    { key: 'profile', label: t('sidebar.profile'), icon: MdPerson, href: '/profile' },
+    { key: 'search', label: t('sidebar.search'), icon: MdSearch, href: '/search' },
+    { key: 'messagerie', label: t('sidebar.messages'), icon: MdMail, href: '/messagerie' },
+    { key: 'notifications', label: t('sidebar.notifications'), icon: MdNotifications, href: '/notifications' },
   ];
 
   const isActive = (path: string) => {
@@ -140,74 +148,21 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
       {/* Navigation principale */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto">
         <ul className="space-y-1">
-          <li>
-            <Link 
-              href="/feed" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/feed' 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdHome className="w-5 h-5 mr-3" />
-              Accueil
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/search" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname.startsWith('/search')
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdSearch className="w-5 h-5 mr-3" />
-              Rechercher
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/notifications" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/notifications'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <div className="relative">
-                <MdNotifications className="w-5 h-5 mr-3" />
-                <NotificationBadge className="min-w-4 h-4" />
-              </div>
-              Notifications
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/messagerie" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/messagerie'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdMail className="w-5 h-5 mr-3" />
-              Messages
-            </Link>
-          </li>
-          <li>
-            <Link 
-              href="/profile" 
-              className={`flex items-center px-4 py-3 rounded-lg ${
-                pathname === '/profile'
-                  ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <MdPerson className="w-5 h-5 mr-3" />
-              Profil
-            </Link>
-          </li>
+          {navItems.map(item => (
+            <li key={item.key}>
+              <Link
+                href={item.href}
+                className={`flex items-center px-4 py-3 rounded-lg ${
+                  (item.key === 'search' ? pathname.startsWith('/search') : pathname === item.href)
+                    ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -223,7 +178,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           >
             <div className="flex items-center">
               <MdSettings className="w-5 h-5 mr-3" />
-              Options
+              {t('sidebar.options')}
             </div>
             <svg
               className={`w-5 h-5 ml-2 transition-transform ${optionsMenuOpen ? 'transform rotate-180' : ''}`}
@@ -257,21 +212,22 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 role="menuitem"
               >
                 <MdBrightness4 className="w-5 h-5 mr-3" />
-                {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+                {theme === 'dark' ? t('sidebar.light_mode') : t('sidebar.dark_mode')}
               </button>
               
               {
-              <button 
+                   <button 
                 onClick={() => {
-                  setLanguage(language === 'fr' ? 'en' : 'fr');
+                  i18n.changeLanguage(currentLanguage === 'fr' ? 'en' : 'fr');
                   setOptionsMenuOpen(false);
                 }}
                 className="w-full flex items-center px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
                 role="menuitem"
               >
-                <MdLanguage className="w-5 h-5 mr-3" />
-                {language === 'fr' ? 'English' : 'Français'}
+                <span className={`fi fi-${currentLanguage === 'fr' ? 'gb' : 'fr'}`}></span>
+                <span className="ml-2">{currentLanguage === 'fr' ? t('sidebar.english') : t('sidebar.french')}</span>
               </button>
+              
               }
               
               <Link 
@@ -281,7 +237,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 onClick={() => setOptionsMenuOpen(false)}
               >
                 <MdSettings className="w-5 h-5 mr-3" />
-                Paramètres
+                {t('sidebar.settings')}
               </Link>
               
               <button
@@ -293,7 +249,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 role="menuitem"
               >
                 <MdLogout className="w-5 h-5 mr-3" />
-                Déconnexion
+                {t('sidebar.logout')}
               </button>
             </div>
           )}

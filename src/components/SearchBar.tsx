@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MdSearch, MdClose } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -8,7 +9,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ onSearch, placeholder = 'Rechercher des tags...' }: SearchBarProps) {
   const [query, setQuery] = useState('');
-
+  const { t } = useTranslation();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -46,7 +47,7 @@ export default function SearchBar({ onSearch, placeholder = 'Rechercher des tags
           type="submit"
           className="absolute right-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
         >
-          Rechercher
+          {t('search.button')}
         </button>
       </div>
     </form>

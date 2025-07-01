@@ -6,12 +6,14 @@ import { User } from '@/types/models'
 import PostList from './PostList'
 import Link from 'next/link'
 import { MdArrowBack } from 'react-icons/md'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   userId?: string
 }
 
 export default function UserProfile({ userId }: Props) {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,13 +41,13 @@ export default function UserProfile({ userId }: Props) {
           bio: userRes.data.bio || ''
         })
       } catch (err) {
-        setError('Erreur lors du chargement du profil')
+        setError(t('profile.load_error'))
       } finally {
         setLoading(false)
       }
     }
     fetchData()
-  }, [userId])
+  }, [userId, t])
 
   useEffect(() => {
     const fetchList = async () => {
@@ -59,11 +61,11 @@ export default function UserProfile({ userId }: Props) {
           setFollowing(res.data)
         }
       } catch (error) {
-        console.error("Erreur lors du chargement des abonnés/abonnements :", error)
+        console.error(t('profile.follow_error'), error)
       }
     }
     if (viewMode !== 'profile') fetchList()
-  }, [viewMode, userId, currentUser])
+  }, [viewMode, userId, currentUser, t])
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,7 +74,7 @@ export default function UserProfile({ userId }: Props) {
       setUser(res.data)
       setIsEditing(false)
     } catch {
-      alert('Erreur lors de la mise à jour du profil')
+      alert(t('profile.update_error'))
     }
   }
 
@@ -93,16 +95,15 @@ export default function UserProfile({ userId }: Props) {
   }
 
 
-  if (loading) return <div className="text-center p-4">Chargement...</div>
+  if (loading) return <div className="text-center p-4">{t('profile.loading')}</div>
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>
-  if (!user) return <div className="text-center p-4">Utilisateur introuvable</div>
+  if (!user) return <div className="text-center p-4">{t('profile.not_found')}</div>
 
   // ----------------------------
   // AFFICHAGE DES FOLLOWERS/FOLLOWING
   // ----------------------------
   if (viewMode !== 'profile') {
     const list = viewMode === 'followers' ? followers : following
-
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <div className="flex items-center mb-4">
@@ -114,20 +115,19 @@ export default function UserProfile({ userId }: Props) {
               onClick={() => setViewMode('followers')}
               className={`px-4 py-2 ${viewMode === 'followers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonné{(user.followers?.length ?? 0) > 1 ? 's' : ''} ({user.followers?.length ?? 0})
+              {t('profile.followers', { count: user.followers?.length ?? 0 })}
             </button>
             <button
               onClick={() => setViewMode('following')}
               className={`px-4 py-2 ${viewMode === 'following' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              Abonnement{(user.following?.length ?? 0) > 1 ? 's' : ''} ({user.following?.length ?? 0})
+              {t('profile.following', { count: user.following?.length ?? 0 })}
             </button>
           </div>
         </div>
-
         <div className="space-y-3 mt-6">
           {list.length === 0 ? (
-            <p className="text-gray-500">Aucun résultat.</p>
+            <p className="text-gray-500">{t('profile.no_results')}</p>
           ) : (
             list.map((u: any) => (
               <div key={u._id} className="flex items-center gap-3">
@@ -160,24 +160,24 @@ export default function UserProfile({ userId }: Props) {
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
-                placeholder="Nom d'utilisateur"
+                placeholder={t('profile.username_placeholder')}
               />
               <textarea
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
-                placeholder="Biographie"
+                placeholder={t('profile.bio_placeholder')}
               />
               <div className="flex gap-2">
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Enregistrer
+                  {t('profile.save')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
                 >
-                  Annuler
+                  {t('profile.cancel')}
                 </button>
               </div>
             </form>
@@ -185,38 +185,35 @@ export default function UserProfile({ userId }: Props) {
             <>
               <h2 className="text-xl font-semibold">@{user.username}</h2>
               <p className="text-gray-600 dark:text-gray-300 mt-2">
-                {user.bio || 'Aucune biographie renseignée.'}
+                {user.bio || t('profile.no_bio')}
               </p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Membre depuis le {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'date inconnue'}
+                {t('profile.member_since', { date: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : t('profile.unknown_date') })}
               </div>
-
               <div className="mt-2 text-sm space-x-4">
                 <button
                   onClick={() => setViewMode('followers')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.followers?.length ?? 0}</strong> abonné{(user.followers?.length ?? 0) > 1 ? 's' : ''}
+                  <strong>{user.followers?.length ?? 0}</strong> {t('profile.followers_short', { count: user.followers?.length ?? 0 })}
                 </button>
                 <span>·</span>
                 <button
                   onClick={() => setViewMode('following')}
                   className="hover:underline text-black dark:text-white"
                 >
-                  <strong>{user.following?.length ?? 0}</strong> abonnement{(user.following?.length ?? 0) > 1 ? 's' : ''}
+                  <strong>{user.following?.length ?? 0}</strong> {t('profile.following_short', { count: user.following?.length ?? 0 })}
                 </button>
               </div>
-
               {isSelf && !isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
                   className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                   style={{ backgroundColor: "#2563eb", color: "#fff" }} // bleu Tailwind 600
- >
-                  Modifier mon profil
+                  style={{ backgroundColor: "#2563eb", color: "#fff" }}
+                >
+                  {t('profile.edit_profile')}
                 </button>
               )}
-
               {!isSelf && (
                 <button
                   onClick={handleFollowToggle}
@@ -242,8 +239,8 @@ export default function UserProfile({ userId }: Props) {
                   }}
                 >
                   {(currentUser?.following ?? []).includes(user._id)
-                    ? 'Se désabonner'
-                    : 'Suivre'}
+                    ? t('profile.unfollow')
+                    : t('profile.follow')}
                 </button>
               )}
             </>
@@ -254,39 +251,38 @@ export default function UserProfile({ userId }: Props) {
                 try {
                   const newRole = user.role === 'moderator' ? 'user' : 'moderator';
                   // await api.put(`/users/${user._id}/role`, { role: newRole });
-                  alert(`(Démo) Le rôle passera à : ${newRole}`);
+                  alert(t('profile.role_demo', { role: newRole }))
                 } catch (err) {
-                  alert("Erreur lors du changement de rôle.");
+                  alert(t('profile.role_error'))
                 }
               }}
               className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
             >
-              {user.role === 'moderator' ? 'Rétrograder en utilisateur' : 'Promouvoir en modérateur'}
+              {user.role === 'moderator' ? t('profile.demote') : t('profile.promote')}
             </button>
           )}
           {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
             <button
               onClick={async () => {
-                if (confirm("Supprimer ce compte ? Cette action est irréversible.")) {
+                if (confirm(t('profile.delete_confirm'))) {
                   try {
                     await api.delete(`/users/${user._id}`);
-                    alert("Compte supprimé !");
+                    alert(t('profile.delete_success'));
                     window.location.href = "/";
                   } catch (err) {
-                    alert("Erreur lors de la suppression du compte.");
+                    alert(t('profile.delete_error'));
                   }
                 }
               }}
               className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
               style={{ backgroundColor: "#dc2626", color: "#fff" }} // rouge Tailwind 600
           >
-              Supprimer ce compte
+              {t('profile.delete_account')}
             </button>
           ) : null}
         </div>
       </div>
-
-      <h2 className="text-xl font-bold mb-4">Publications</h2>
+      <h2 className="text-xl font-bold mb-4">{t('profile.posts')}</h2>
       <PostList fetchUrl={`/api/posts/user/${user._id}`} />
     </div>
   )

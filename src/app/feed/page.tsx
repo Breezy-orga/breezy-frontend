@@ -307,7 +307,7 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<PostType[]>([])
   const [activeTab, setActiveTab] = useState<'all' | 'following'>('all');
   const [loading, setLoading] = useState(true)
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetch(`/api/posts/feed`)
       .then(res => res.json())

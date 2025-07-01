@@ -3,7 +3,15 @@
     "home": "Page d'accueil",
     "profile": "Profil",
     "notifications": "Notifications",
-    "messages": "Messages"
+    "messages": "Messages",
+    "search": "Rechercher",
+    "options": "Options",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "light_mode": "Mode clair",
+    "dark_mode": "Mode sombre",
+    "english": "Anglais",
+    "french": "Français"
   },
   "rightbar": {
     "trends": "Tendances pour vous",
@@ -11,5 +19,52 @@
     "follow": "Suivre",
     "posts": "publications",
     "profile_picture": "Photo profil"
+  },
+  "feed": {
+    "for_you": "Pour toi",
+    "following": "Abonnement",
+    "delete_error": "Erreur lors de la suppression du post",
+    "network_error": "Erreur réseau lors de la suppression"
+  },
+  "search": {
+    "title": "Recherche",
+    "placeholder": "Rechercher des tags ou des utilisateurs...",
+    "error": "Erreur : {{error}}",
+    "no_results": "Aucun résultat trouvé pour \"{{query}}\"",
+    "users": "Utilisateurs",
+    "view_profile": "Voir profil",
+    "posts": "Publications",
+    "button": "Rechercher"
+  },
+  "profile": {
+    "load_error": "Erreur lors du chargement du profil",
+    "follow_error": "Erreur lors du chargement des abonnés/abonnements :",
+    "update_error": "Erreur lors de la mise à jour du profil",
+    "loading": "Chargement...",
+    "not_found": "Utilisateur introuvable",
+    "followers": "Abonné",
+    "following": "Abonnement",
+    "no_results": "Aucun résultat.",
+    "username_placeholder": "Nom d'utilisateur",
+    "bio_placeholder": "Biographie",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "no_bio": "Aucune biographie renseignée.",
+    "member_since": "Membre depuis le {{date}}",
+    "unknown_date": "date inconnue",
+    "followers_short": "abonné",
+    "following_short": "abonnement",
+    "edit_profile": "Modifier mon profil",
+    "unfollow": "Se désabonner",
+    "follow": "Suivre",
+    "role_demo": "(Démo) Le rôle passera à : {{role}}",
+    "role_error": "Erreur lors du changement de rôle.",
+    "demote": "Rétrograder en utilisateur",
+    "promote": "Promouvoir en modérateur",
+    "delete_confirm": "Supprimer ce compte ? Cette action est irréversible.",
+    "delete_success": "Compte supprimé !",
+    "delete_error": "Erreur lors de la suppression du compte.",
+    "delete_account": "Supprimer ce compte",
+    "posts": "Publications"
   }
 }

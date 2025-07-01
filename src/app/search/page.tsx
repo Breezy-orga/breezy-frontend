@@ -7,8 +7,10 @@ import SearchBar from '../../components/SearchBar';
 import { MdInfo } from 'react-icons/md';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function SearchPage() {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<PostType[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,12 +156,12 @@ const handleLike = async (postId: string) => {
 
   return (
     <div className="flex flex-col w-full max-w-full md:max-w-2xl mx-auto px-2 py-4 sm:px-4">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Recherche</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{t('search.title')}</h1>
 
       <div className="flex flex-col space-y-3 sm:space-y-4">
         <SearchBar 
           onSearch={handleSearch} 
-          placeholder="Rechercher des tags ou des utilisateurs..." 
+          placeholder={t('search.placeholder')} 
         />
       </div>
       
@@ -172,21 +174,21 @@ const handleLike = async (postId: string) => {
       {error && (
         <div className="my-4 p-4 bg-red-100 text-red-700 rounded-lg">
           <p className="flex items-center gap-2">
-            <MdInfo className="text-xl" /> {error}
+            <MdInfo className="text-xl" /> {t('search.error', { error })}
           </p>
         </div>
       )}
       
       {searchPerformed && !loading && posts.length === 0 && users.length === 0 && !error && (
         <div className="my-8 text-center">
-          <p className="text-gray-500">Aucun résultat trouvé pour &quot;{searchQuery}&quot;</p>
+          <p className="text-gray-500">{t('search.no_results', { query: searchQuery })}</p>
         </div>
       )}
       
       {/* Section utilisateurs */}
       {users.length > 0 && (
         <div className="mt-5 sm:mt-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Utilisateurs</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">{t('search.users')}</h2>
           <div className="space-y-3 sm:space-y-4">
             {users.map((user) => (
               <div key={user._id} className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
@@ -205,12 +207,12 @@ const handleLike = async (postId: string) => {
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{user.bio}</p>
                   )}
                 </div>
-               <Link 
-  href={`/profile/${user._id}`} 
-  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-md text-xs sm:text-sm ml-2 shadow-md border border-blue-300 dark:border-blue-400 dark:shadow-lg dark:text-white dark:drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
->
-  Voir profil
-</Link>
+                <Link 
+                  href={`/profile/${user._id}`} 
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-md text-xs sm:text-sm ml-2 shadow-md border border-blue-300 dark:border-blue-400 dark:shadow-lg dark:text-white dark:drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
+                >
+                  {t('search.view_profile')}
+                </Link>
               </div>
             ))}
           </div>
@@ -220,7 +222,7 @@ const handleLike = async (postId: string) => {
       {/* Section posts */}
       {posts.length > 0 && (
         <div className="mt-5 sm:mt-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Publications</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">{t('search.posts')}</h2>
           <div className="space-y-3 sm:space-y-4">
             {posts.map((post) => (
               <Post 

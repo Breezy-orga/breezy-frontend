@@ -1,17 +1,75 @@
 {
   "sidebar": {
-  "home": "Home",
-  "profile": "Profile",
-  "notifications": "Notifications",
-  "messages": "Messages"
-},
+    "home": "Home",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "search": "Search",
+    "options": "Options",
+    "settings": "Settings",
+    "logout": "Logout",
+    "light_mode": "Light mode",
+    "dark_mode": "Dark mode",
+    "english": "English",
+    "french": "French"
+  },
 
-"rightbar": {
+  "rightbar": {
     "trends": "Trends for you",
     "suggested_friends": "Suggested friends",
     "follow": "Follow",
     "posts": "posts",
     "profile_picture": "Profile picture"
+  },
+
+  "feed": {
+    "for_you": "For you",
+    "following": "Following",
+    "delete_error": "Error deleting post",
+    "network_error": "Network error while deleting"
+  },
+
+  "search": {
+    "title": "Search",
+    "placeholder": "Search tags or users...",
+    "error": "Error: {{error}}",
+    "no_results": "No results found for \"{{query}}\"",
+    "users": "Users",
+    "view_profile": "View profile",
+    "posts": "Posts",
+    "button": "Search"
+  },
+
+  "profile": {
+    "load_error": "Error loading profile",
+    "follow_error": "Error loading followers/following:",
+    "update_error": "Error updating profile",
+    "loading": "Loading...",
+    "not_found": "User not found",
+    "followers": "Follower",
+    "following": "Following",
+    "no_results": "No results.",
+    "username_placeholder": "Username",
+    "bio_placeholder": "Bio",
+    "save": "Save",
+    "cancel": "Cancel",
+    "no_bio": "No bio provided.",
+    "member_since": "Member since {{date}}",
+    "unknown_date": "unknown date",
+    "followers_short": "follower",
+    "following_short": "following",
+    "edit_profile": "Edit my profile",
+    "unfollow": "Unfollow",
+    "follow": "Follow",
+    "role_demo": "(Demo) Role will change to: {{role}}",
+    "role_error": "Error changing role.",
+    "demote": "Demote to user",
+    "promote": "Promote to moderator",
+    "delete_confirm": "Delete this account? This action is irreversible.",
+    "delete_success": "Account deleted!",
+    "delete_error": "Error deleting account.",
+    "delete_account": "Delete this account",
+    "posts": "Posts"
   }
 
 }
