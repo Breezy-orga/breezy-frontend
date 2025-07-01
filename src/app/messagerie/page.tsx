@@ -5,13 +5,11 @@ import ConversationList from '@/components/ConversationList'
 import AppSidebar from '@/components/AppSidebar'
 import NewMessageModal from '@/components/NewMessageModal'
 import { MdMail } from 'react-icons/md'
-import { useTranslation } from 'react-i18next';
 
 interface User {
   _id: string
   username: string
-  avatar?: string,
-  profilePicture?: string
+  avatar?: string
 }
 
 interface Conversation {
@@ -29,7 +27,6 @@ export default function MessagesPage() {
   const [error, setError]             = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const { t } = useTranslation();
 
   useEffect(() => {
     ;(async () => {
@@ -63,35 +60,44 @@ export default function MessagesPage() {
           .startsWith(search.trim().toLowerCase())
       )
     : sortedConversations
-      
+
 
   return (
-    <div className="relative min-h-screen flex">
+    <div className="relative min-h-screen flex bg-gray-50 dark:bg-gray-900">
       <AppSidebar />
       <main className="flex-1 p-6">
         <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 flex flex-col min-h-[60vh]">
-          <h2 className="text-xl font-semibold mb-4">Conversations</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Mes conversations</h2>
 
           {/* Barre de recherche */}
           <input
             type="text"
-            className="mb-4 px-4 py-2 border rounded focus:outline-none w-full"
-            placeholder="Recherche"
+            className="
+              mb-4 px-4 py-2
+              border border-gray-300 dark:border-gray-700
+              rounded focus:outline-none
+              focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+              bg-gray-100 dark:bg-gray-700
+              text-gray-900 dark:text-gray-100
+              placeholder-gray-500 dark:placeholder-gray-400
+              w-full
+            "
+            placeholder="Rechercher un utilisateur…"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
 
           {loading ? (
-            <p className="text-center mt-6">Chargement</p>
+            <p className="text-center mt-6 text-gray-600 dark:text-gray-300">Chargement…</p>
           ) : error ? (
             <p className="text-center text-red-500 mt-6">{error}</p>
           ) : (
             <div className="flex-1 overflow-y-auto">
               {filteredConversations.length === 0 ? (
-                <p className="text-center text-gray-500">
+                <p className="text-center text-gray-500 dark:text-gray-400">
                   {search.trim().length === 0
-                    ? "Pas de conversations"
-                    : "Pas de résultats"}
+                    ? 'Aucune conversation'
+                    : 'Aucun utilisateur trouvé'}
                 </p>
               ) : (
                 <ConversationList conversations={filteredConversations} />
@@ -103,8 +109,15 @@ export default function MessagesPage() {
         {/* Bouton flottant */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center"
-          aria-label={"Nouveau message"}
+          className="
+            fixed bottom-8 right-8
+            w-14 h-14
+            bg-blue-600 hover:bg-blue-700
+            text-white rounded-full shadow-lg
+            flex items-center justify-center
+            transition-colors
+          "
+          aria-label="Nouveau message"
         >
           <MdMail size={24} />
         </button>

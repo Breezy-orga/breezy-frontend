@@ -1,4 +1,4 @@
-'use client';
+`use client`
 
 import { useState, useEffect } from 'react';
 import { MdFavorite, MdFavoriteBorder } from 'react-icons/md';
@@ -7,6 +7,7 @@ import type { Post as PostType } from '@/types/models';
 interface LikeButtonProps {
   itemId: string;
   itemType: 'post' | 'comment';
+  parentId?: string;          // ajouté pour gérer les commentaires
   initialLikes: number;
   initialLikedStatus: boolean;
   onLikeSuccess?: (updatedPost: PostType) => void;
@@ -15,10 +16,10 @@ interface LikeButtonProps {
 
 const fetchUserId = async (): Promise<string | null> => {
   try {
-    const res = await fetch('/api/users/me', {
-      credentials: 'include'
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${apiBaseUrl}/profile/me`, {
+      credentials: 'include',
     });
-    console.log(res.status);
     if (!res.ok) throw new Error('Échec récupération userId');
     const data = await res.json();
     return data._id || null;
@@ -28,29 +29,24 @@ const fetchUserId = async (): Promise<string | null> => {
   }
 };
 
-
-/**
- * Composant réutilisable pour gérer les likes sur les posts et commentaires
- */
 export default function LikeButton({
   itemId,
   itemType,
+  parentId,
   initialLikes,
   initialLikedStatus,
   onLikeSuccess,
-  size = 'normal'
+  size = 'normal',
 }: LikeButtonProps) {
   const [isLiked, setIsLiked] = useState(initialLikedStatus);
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Récupérer l'userId au montage du composant
   useEffect(() => {
     fetchUserId().then(setUserId);
   }, []);
 
-  // Synchronise l'état du composant avec les props si elles changent
   useEffect(() => {
     setIsLiked(initialLikedStatus);
     setLikesCount(initialLikes);
@@ -59,60 +55,65 @@ export default function LikeButton({
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (isProcessing) return;
 
+    // calcul du nouvel état
+    const newLiked = !isLiked;
     setIsProcessing(true);
+    setIsLiked(newLiked);
+    setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
 
-    // Mise à jour locale immédiate du like et compteur
-    if (isLiked) {
-      setIsLiked(false);
-      setLikesCount((prev) => prev - 1);
+    // construction de l'endpoint
+    let endpoint: string;
+    if (itemType === 'comment') {
+      if (!parentId) {
+        console.error('parentId is required for comment likes');
+        setIsProcessing(false);
+        return;
+      }
+      endpoint = `/api/posts/${parentId}/comments/${itemId}/like`;
     } else {
-      setIsLiked(true);
-      setLikesCount((prev) => prev + 1);
+      endpoint = `/api/posts/${itemId}/like`;
     }
 
-    try {
-      const endpoint =
-        itemType === 'comment'
-          ? `api/comments/${itemId}/like`
-          : `api/posts/${itemId}/like`;
+    // méthode POST pour commentaires (toggle côté backend), POST/DELETE pour posts
+    const method = itemType === 'comment' ? 'POST' : (newLiked ? 'POST' : 'DELETE');
 
+    try {
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method,
         credentials: 'include',
       });
-
       if (!response.ok) {
-        throw new Error(`Erreur lors du like: ${response.status} ${response.statusText}`);
+        throw new Error(`Erreur lors du like: ${response.status}`);
       }
-
+      // optionnel : récupérer la ressource mise à jour
       // if (onLikeSuccess) {
-      //   const updatedPost = await response.json();
-      //   onLikeSuccess(updatedPost);
+      //   const updated = await response.json();
+      //   onLikeSuccess(updated);
       // }
-      
     } catch (error) {
       console.error('Erreur lors du like:', error);
+      // rollback local en cas d'erreur
+      setIsLiked(!newLiked);
+      setLikesCount(prev => newLiked ? prev - 1 : prev + 1);
     } finally {
       setIsProcessing(false);
     }
   };
 
-
   return (
     <button
-      type="button" 
-      className={`flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors duration-200 ${isProcessing ? 'opacity-70' : ''}`}
+      type="button"
+      className={`flex items-center gap-1 ${isProcessing ? 'opacity-70' : ''}`}
       onClick={handleLike}
       disabled={isProcessing}
       aria-label={isLiked ? 'Retirer le like' : 'Aimer'}
       title={isLiked ? 'Retirer le like' : 'Aimer'}
     >
-      {isLiked ? 
-        <MdFavorite className={size === 'small' ? "w-4 h-4 text-red-500" : "w-5 h-5 text-red-500"} /> : 
-        <MdFavoriteBorder className={size === 'small' ? "w-4 h-4" : "w-5 h-5"} />
+      {isLiked ?
+        <MdFavorite className={size === 'small' ? 'w-4 h-4 text-red-500' : 'w-5 h-5 text-red-500'} /> :
+        <MdFavoriteBorder className={size === 'small' ? 'w-4 h-4' : 'w-5 h-5'} />
       }
       <span>{likesCount}</span>
     </button>
