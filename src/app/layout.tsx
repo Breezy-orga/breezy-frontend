@@ -1,10 +1,11 @@
+
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProviderWrapper';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { NotificationProvider } from '../contexts/NotificationContext';
+import I18nProvider from '@/components/I18nProvider';
 import MainLayout from '@/components/MainLayout'
 import Script from 'next/script'
-import '../i18n';
 import 'flag-icons/css/flag-icons.min.css';
 
 
@@ -22,17 +23,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <LanguageProvider>
-            <NotificationProvider>
-              <MainLayout>
-                {children}
-              </MainLayout>
-            </NotificationProvider>
-          </LanguageProvider>
-
-        </ThemeProvider>
-
+        <I18nProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <NotificationProvider>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </NotificationProvider>
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   )
