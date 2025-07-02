@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import i18n from '../i18n'
 
 type Language = 'fr' | 'en'
 type LanguageContextType = {
@@ -44,6 +45,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage)
     setLanguageCookie(newLanguage)
+     localStorage.setItem('i18nextLng', newLanguage)
+    i18n.changeLanguage(newLanguage)
   }
 
   if (!mounted) {
