@@ -26,7 +26,8 @@
     "for_you": "For you",
     "following": "Following",
     "delete_error": "Error deleting post",
-    "network_error": "Network error while deleting"
+    "network_error": "Network error while deleting",
+    "vote": "vote"
   },
 
   "search": {
@@ -70,6 +71,28 @@
     "delete_error": "Error deleting account.",
     "delete_account": "Delete this account",
     "posts": "Posts"
+  },
+
+  "login": {
+    "no_account": "Don't have an account? ",
+    "signup": "Sign up",
+    "about": "About",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+
+  "messagerie": {
+    "title": "My conversations",
+    "search_placeholder": "Search for a user...",
+    "loading": "Loading...",
+    "error": "Error: {{error}}",
+    "no_conversation": "No conversation",
+    "no_user_found": "No user found",
+    "new_message": "New message",
+    "back": "Back",
+    "write_message": "Write a message...",
+    "send": "Send"
   }
 
 }

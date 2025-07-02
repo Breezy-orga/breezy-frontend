@@ -24,7 +24,8 @@
     "for_you": "Pour toi",
     "following": "Abonnement",
     "delete_error": "Erreur lors de la suppression du post",
-    "network_error": "Erreur réseau lors de la suppression"
+    "network_error": "Erreur réseau lors de la suppression",
+    "vote": "vote"
   },
   "search": {
     "title": "Recherche",
@@ -66,5 +67,25 @@
     "delete_error": "Erreur lors de la suppression du compte.",
     "delete_account": "Supprimer ce compte",
     "posts": "Publications"
+  },
+  "login": {
+    "no_account": "Pas encore de compte ? ",
+    "signup": "Créer un compte",
+    "about": "À propos",
+    "terms": "Conditions",
+    "privacy": "Confidentialité",
+    "contact": "Contact"
+  },
+  "messagerie": {
+    "title": "Mes conversations",
+    "search_placeholder": "Rechercher un utilisateur…",
+    "loading": "Chargement…",
+    "error": "Erreur : {{error}}",
+    "no_conversation": "Aucune conversation",
+    "no_user_found": "Aucun utilisateur trouvé",
+    "new_message": "Nouveau message",
+    "back": "Retour",
+    "write_message": "Écrire un message…",
+    "send": "Envoyer"
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import AppSidebar from '@/components/AppSidebar';
 import MessageBubble from '@/components/MessageBubble';
 
@@ -19,6 +20,7 @@ type User = {
 };
 
 export default function ConversationPage() {
+  const { t } = useTranslation();
   const { conversation: convId } = useParams();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -110,7 +112,7 @@ export default function ConversationPage() {
             <span
               onClick={() => router.back()}
               className="text-2xl mr-4 cursor-pointer select-none px-1 text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              title="Retour"
+              title={t('messagerie.back')}
             >
               ←
             </span>
@@ -152,7 +154,7 @@ export default function ConversationPage() {
                 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
                 transition-colors
               "
-              placeholder="Écrire un message…"
+              placeholder={t('messagerie.write_message')}
             />
             <button
               onClick={sendMessage}
@@ -164,7 +166,7 @@ export default function ConversationPage() {
                 transition-colors
               "
             >
-              Envoyer
+              {t('messagerie.send')}
             </button>
           </div>
         </div>

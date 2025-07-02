@@ -7,9 +7,11 @@ import '../../i18n';
 import { ThemeProvider } from '@/components/ThemeProviderWrapper';
 import {ThemeToggle} from '@/components/ThemeToggle';
 import { useTheme } from 'next-themes';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <div className={`min-h-screen flex flex-col relative overflow-hidden
@@ -41,8 +43,8 @@ export default function LoginPage() {
           </div>
           {/* Lien inscription */}
           <div className="w-full max-w-md text-center mt-6">
-            <span className="text-gray-500 dark:text-gray-300">Don't have an account? </span>
-            <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Sign up</Link>
+            <span className="text-gray-500 dark:text-gray-300">{t('login.no_account')}</span>
+            <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">{t('login.signup')}</Link>
           </div>
         </div>
       </div>
@@ -51,10 +53,10 @@ export default function LoginPage() {
         dark:bg-gray-900/80 dark:border-gray-800 dark:text-gray-400
       ">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <Link href="/about" className="hover:text-gray-700 dark:hover:text-white transition-colors">About</Link>
-          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-white transition-colors">Terms</Link>
-          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-white transition-colors">Privacy</Link>
-          <Link href="/contact" className="hover:text-gray-700 dark:hover:text-white transition-colors">Contact</Link>
+          <Link href="/about" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('login.about')}</Link>
+          <Link href="/terms" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('login.terms')}</Link>
+          <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('login.privacy')}</Link>
+          <Link href="/contact" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('login.contact')}</Link>
           <span>© {new Date().getFullYear()} Breezy</span>
         </div>
       </footer>

@@ -140,6 +140,7 @@ function Stories() {
 }
 
 function Poll({ poll }: { poll: Poll }) {
+  const { t } = useTranslation();
   const total = poll.votes.reduce((a: number, b: number) => a + b, 0);
   return (
     <div className="mt-3">
@@ -151,7 +152,7 @@ function Poll({ poll }: { poll: Poll }) {
               <div className="bg-blue-500 dark:bg-blue-400 h-full" style={{ width: `${total ? (poll.votes[i] / total * 100) : 0}%` }} />
             </div>
             <span className="text-sm text-gray-700 dark:text-gray-300">{opt}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{poll.votes[i]} vote{poll.votes[i] > 1 ? 's' : ''}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{poll.votes[i]} {t('poll.vote', { count: poll.votes[i] })}</span>
           </div>
         </div>
       ))}
@@ -332,10 +333,10 @@ export default function FeedPage() {
     if (res.ok) {
       setPosts(prev => prev.filter(p => p._id !== postId));
     } else {
-      alert('Erreur lors de la suppression du post');
+      alert(t('feed.delete_error'));
     }
   } catch (err) {
-    alert('Erreur réseau lors de la suppression');
+    alert(t('feed.network_error'));
   }
 };
 
@@ -359,7 +360,7 @@ return (
           ? 'text-blue-600 dark:text-blue-400 font-semibold' 
           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
       >
-        Pour toi
+        {t('feed.for_you')}
         {activeTab === 'all' && (
           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
         )}
@@ -370,7 +371,7 @@ return (
           ? 'text-blue-600 dark:text-blue-400 font-semibold' 
           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}`}
       >
-        Abonnement
+        {t('feed.following')}
         {activeTab === 'following' && (
           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
         )}
@@ -392,4 +393,4 @@ return (
 // Animation utilitaire
 // Ajoute dans globals.css :
 // @keyframes fade-in { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: none;} }
-// .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.39,.58,.57,1) both; } 
+// .animate-fade-in { animation: fade-in 0.7s cubic-bezier(.39,.58,.57,1) both; }

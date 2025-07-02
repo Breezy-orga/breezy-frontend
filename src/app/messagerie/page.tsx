@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import ConversationList from '@/components/ConversationList'
 import AppSidebar from '@/components/AppSidebar'
 import NewMessageModal from '@/components/NewMessageModal'
@@ -22,6 +23,7 @@ interface Conversation {
 }
 
 export default function MessagesPage() {
+  const { t } = useTranslation()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
@@ -67,7 +69,7 @@ export default function MessagesPage() {
       <AppSidebar />
       <main className="flex-1 p-6">
         <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 flex flex-col min-h-[60vh]">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Mes conversations</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('messagerie.title')}</h2>
 
           {/* Barre de recherche */}
           <input
@@ -82,22 +84,22 @@ export default function MessagesPage() {
               placeholder-gray-500 dark:placeholder-gray-400
               w-full
             "
-            placeholder="Rechercher un utilisateur…"
+            placeholder={t('messagerie.search_placeholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
 
           {loading ? (
-            <p className="text-center mt-6 text-gray-600 dark:text-gray-300">Chargement…</p>
+            <p className="text-center mt-6 text-gray-600 dark:text-gray-300">{t('messagerie.loading')}</p>
           ) : error ? (
-            <p className="text-center text-red-500 mt-6">{error}</p>
+            <p className="text-center text-red-500 mt-6">{t('messagerie.error', { error })}</p>
           ) : (
             <div className="flex-1 overflow-y-auto">
               {filteredConversations.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400">
                   {search.trim().length === 0
-                    ? 'Aucune conversation'
-                    : 'Aucun utilisateur trouvé'}
+                    ? t('messagerie.no_conversation')
+                    : t('messagerie.no_user_found')}
                 </p>
               ) : (
                 <ConversationList conversations={filteredConversations} />
@@ -117,7 +119,7 @@ export default function MessagesPage() {
             flex items-center justify-center
             transition-colors
           "
-          aria-label="Nouveau message"
+          aria-label={t('messagerie.new_message')}
         >
           <MdMail size={24} />
         </button>

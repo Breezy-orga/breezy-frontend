@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { format, isToday } from 'date-fns'
-import { fr } from 'date-fns/locale/fr'
+import { enUS } from 'date-fns/locale/en-US'
+import { fr as frLocale } from 'date-fns/locale/fr'
 
 export interface Conversation {
   _id: string
@@ -23,13 +25,16 @@ function getAvatarUrl(user: { profilePicture?: string, avatar?: string }) {
 }
 
 export default function ConversationItem({ conversation }: { conversation: Conversation }) {
+  const { t, i18n } = useTranslation()
   const { _id, withUser, lastMessage } = conversation
   const date = new Date(lastMessage.createdAt)
-
+  const locale = i18n.language === 'fr' ? frLocale : enUS
   const formatted =
     isToday(date)
-      ? format(date, "HH:mm", { locale: fr })
-      : format(date, "EEE dd MMM à HH:mm", { locale: fr })
+      ? format(date, 'HH:mm', { locale })
+      : i18n.language === 'fr'
+        ? format(date, "EEEE dd MMM 'à' HH:mm", { locale })
+        : format(date, "EEEE MMM dd 'at' HH:mm", { locale })
 
   return (
     <li>
