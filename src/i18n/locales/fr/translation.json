@@ -87,5 +87,33 @@
     "back": "Retour",
     "write_message": "Écrire un message…",
     "send": "Envoyer"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Tout marquer comme lu",
+    "filter_all": "Tout",
+    "filter_mentions": "Mentions",
+    "filter_likes": "J'aime",
+    "filter_follows": "Abonnements",
+    "filter_messages": "Messages",
+    "loading": "Chargement des notifications...",
+    "none": "Vous n'avez aucune notification",
+    "none_type": "Aucune notification de ce type",
+    "mention": "@{{user}} vous a mentionné dans un post",
+    "like": "@{{user}} a aimé votre post",
+    "follow": "@{{user}} a commencé à vous suivre",
+    "comment": "@{{user}} a commenté votre post",
+    "generic": "Vous avez reçu une notification"
+  },
+  "post": {
+    "loading": "Chargement...",
+    "error": "Erreur : {{error}}",
+    "not_found": "Aucun post trouvé",
+    "back": "Retour",
+    "reply_placeholder": "Répondre...",
+    "just_now": "À l'instant",
+    "minutes_ago": "Il y a {{count}}m",
+    "hours_ago": "Il y a {{count}}h",
+    "days_ago": "Il y a {{count}}j"
   }
 }

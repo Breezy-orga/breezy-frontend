@@ -7,8 +7,10 @@ import Image from 'next/image';
 import { format, formatDistance } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MdDone, MdDoneAll, MdDelete } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const { 
     notifications, 
     loading, 
@@ -53,15 +55,15 @@ export default function NotificationsPage() {
   function formatNotificationText(notification: Notification): string {
     switch (notification.type) {
       case 'mention':
-        return `@${notification.sender.username} vous a mentionné dans un post`;
+        return t('notifications.mention', { user: notification.sender.username });
       case 'like':
-        return `@${notification.sender.username} a aimé votre post`;
+        return t('notifications.like', { user: notification.sender.username });
       case 'follow':
-        return `@${notification.sender.username} a commencé à vous suivre`;
+        return t('notifications.follow', { user: notification.sender.username });
       case 'comment':
-        return `@${notification.sender.username} a commenté votre post`;
+        return t('notifications.comment', { user: notification.sender.username });
       default:
-        return 'Vous avez reçu une notification';
+        return t('notifications.generic');
     }
   }
 
@@ -140,14 +142,14 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Notifications</h1>
+        <h1 className="text-2xl font-bold">{t('notifications.title')}</h1>
         {notifications.length > 0 && (
           <button
             onClick={handleMarkAllAsRead}
             className="flex items-center text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <MdDoneAll size={18} className="mr-1" />
-            Tout marquer comme lu
+            {t('notifications.mark_all_read')}
           </button>
         )}
       </div>
@@ -160,7 +162,7 @@ export default function NotificationsPage() {
             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
           onClick={() => setActiveFilter('all')}
         >
-          Tout
+          {t('notifications.filter_all')}
         </button>
         <button
           className={`px-4 py-2 rounded-full flex items-center ${activeFilter === 'mention' 
@@ -168,7 +170,7 @@ export default function NotificationsPage() {
             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
           onClick={() => setActiveFilter('mention')}
         >
-          <span>Mentions</span>
+          <span>{t('notifications.filter_mentions')}</span>
         </button>
         <button
           className={`px-4 py-2 rounded-full flex items-center ${activeFilter === 'like' 
@@ -176,7 +178,7 @@ export default function NotificationsPage() {
             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
           onClick={() => setActiveFilter('like')}
         >
-          <span>J'aime</span>
+          <span>{t('notifications.filter_likes')}</span>
         </button>
         <button
           className={`px-4 py-2 rounded-full flex items-center ${activeFilter === 'follow' 
@@ -184,7 +186,7 @@ export default function NotificationsPage() {
             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
           onClick={() => setActiveFilter('follow')}
         >
-          <span>Abonnements</span>
+          <span>{t('notifications.filter_follows')}</span>
         </button>
         <button
           className={`px-4 py-2 rounded-full flex items-center ${activeFilter === 'message' 
@@ -192,13 +194,13 @@ export default function NotificationsPage() {
             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
           onClick={() => setActiveFilter('message')}
         >
-          <span>Messages</span>
+          <span>{t('notifications.filter_messages')}</span>
         </button>
       </div>
 
       {loading && (
         <div className="text-center py-8">
-          <p>Chargement des notifications...</p>
+          <p>{t('notifications.loading')}</p>
         </div>
       )}
 
@@ -210,13 +212,13 @@ export default function NotificationsPage() {
 
       {!loading && notifications.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">Vous n'avez aucune notification</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('notifications.none')}</p>
         </div>
       )}
       
       {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">Aucune notification de ce type</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('notifications.none_type')}</p>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThreadItem, FlatComments } from '../../../components/Post';
 import PostForm from '../../../components/PostForm';
+import { useTranslation } from 'react-i18next';
 
 async function fetchAllCommentsRecursive(parentId: string): Promise<any[]> {
   let all: any[] = [];
@@ -19,6 +20,7 @@ async function fetchAllCommentsRecursive(parentId: string): Promise<any[]> {
 }
 
 export default function PostFocusPage({ params }: { params: { id: string } }) {
+  const { t } = useTranslation();
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,16 +98,16 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diffInSeconds < 60) return 'À l\'instant';
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`;
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`;
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`;
+    if (diffInSeconds < 60) return t('post.just_now');
+    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
     return date.toLocaleDateString();
   };
 
-  if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">Chargement...</div>;
-  if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{error}</div>;
-  if (!post) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">Aucun post trouvé</div>;
+  if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</div>;
+  if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{t('post.error', { error })}</div>;
+  if (!post) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.not_found')}</div>;
 
   const repliesCount = comments.filter(c => c.parentPost === post._id).length;
 
@@ -120,7 +122,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               onClick={() => router.back()}
               className="text-blue-600 dark:text-blue-400 hover:underline text-sm sm:text-base transition-colors"
             >
-              ← Retour
+              ← {t('post.back')}
             </button>
           </div>
           {/* Post principal */}
@@ -160,7 +162,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
                   refreshComments();
                   refreshPost();
                 }}
-                placeholder="Répondre..."
+                placeholder={t('post.reply_placeholder')}
               />
             </div>
           )}

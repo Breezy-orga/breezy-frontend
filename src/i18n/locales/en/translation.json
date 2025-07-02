@@ -93,6 +93,36 @@
     "back": "Back",
     "write_message": "Write a message...",
     "send": "Send"
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "filter_all": "All",
+    "filter_mentions": "Mentions",
+    "filter_likes": "Likes",
+    "filter_follows": "Follows",
+    "filter_messages": "Messages",
+    "loading": "Loading notifications...",
+    "none": "You have no notifications",
+    "none_type": "No notifications of this type",
+    "mention": "@{{user}} mentioned you in a post",
+    "like": "@{{user}} liked your post",
+    "follow": "@{{user}} started following you",
+    "comment": "@{{user}} commented on your post",
+    "generic": "You have received a notification"
+  },
+
+  "post": {
+    "loading": "Loading...",
+    "error": "Error: {{error}}",
+    "not_found": "No post found",
+    "back": "Back",
+    "reply_placeholder": "Reply...",
+    "just_now": "Just now",
+    "minutes_ago": "{{count}}m ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago"
   }
 
 }
