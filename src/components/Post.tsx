@@ -9,6 +9,7 @@ import PostHeader from './post/PostHeader'
 import PostContent from './post/PostContent'
 import MediaModal from './ImageModal'
 import type { Post as PostType, User } from '@/types/models'
+import { useTranslation } from 'react-i18next';
 
 // Type étendu pour ajouter des propriétés temporaires
 interface ExtendedPost extends PostType {
@@ -58,6 +59,7 @@ export default function Post({
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const [userId, setUserId] = useState<string | null>(null);
   const [post, setPost] = useState<ExtendedPost>(initialPost);
+  const { t, i18n } = useTranslation();
 
   if (!post.author) {
     console.error('Author is null or undefined for post:', post._id);
@@ -101,15 +103,36 @@ export default function Post({
     if (onLike) onLike(post._id.toString(), updatedPost);
   };
 
+  // Utilitaire pour lire la langue depuis le localStorage ou le cookie i18next
+  function getLangFromStorageOrCookie() {
+    if (typeof window !== 'undefined') {
+      const lsLang = window.localStorage.getItem('i18nextLng');
+      if (lsLang) return lsLang;
+    }
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|; )i18next=([^;]*)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+    return null;
+  }
+
+  // Formatage date relative
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-    if (diffInSeconds < 60) return 'À l\'instant'
-    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)}m`
-    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)}h`
-    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)}j`
-    return date.toLocaleDateString()
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffInSeconds < 60) return t('post.just_now');
+    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
+    // Utilise la langue du localStorage, sinon cookie, sinon resolvedLanguage
+    const lang = getLangFromStorageOrCookie();
+    const locale = lang === 'fr' ? 'fr-FR' : lang === 'en' ? 'en-US' : (i18n.resolvedLanguage === 'fr' ? 'fr-FR' : 'en-US');
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 
   const refreshComments = async () => {
@@ -205,10 +228,10 @@ export default function Post({
             }}
           />
           <div className="mt-6">
-            {loadingComments && <p className="text-center text-gray-500 dark:text-gray-400">Chargement des commentaires...</p>}
-            {commentsError && <p className="text-center text-red-500 dark:text-red-400">{commentsError}</p>}
+            {loadingComments && <p className="text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</p>}
+            {commentsError && <p className="text-center text-red-500 dark:text-red-400">{t('post.error', { error: commentsError })}</p>}
             {!loadingComments && !commentsError && comments.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">Aucun commentaire pour l'instant</p>
+              <p className="text-center text-gray-500 dark:text-gray-400">{t('post.no_comments', "No comments yet")}</p>
             ) : (
               <FlatComments 
                 parentId={post._id} 
@@ -251,6 +274,7 @@ function ThreadItem({
   const [modalSrc, setModalSrc] = useState<string>('');
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
+  const { t } = useTranslation();
   
   useEffect(() => { fetchUserId().then(setUserId); }, []);
   useEffect(() => { setIsLiked(isLikedByUser(item.likes || [])) }, [item.likes])
@@ -346,7 +370,7 @@ function ThreadItem({
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-10 transition-all flex items-center justify-center">
                           <span className="flex items-center gap-1 text-white text-sm font-medium bg-black bg-opacity-60 hover:bg-opacity-80 px-2 py-1 rounded-md transition-all">
-                            <span className="text-sm">▶️</span> Vidéo
+                            <span className="text-sm">▶️</span> {t('post.video', 'Video')}
                           </span>
                         </div>
                       </div>
@@ -417,7 +441,7 @@ function ThreadItem({
           <div className="border-t border-gray-200 dark:border-gray-800 mt-2 pt-2">
             <PostForm
               parentPostId={item._id}
-              placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
+              placeholder={t('post.reply_to', { user: item.author?.username || 'user' }) + '...'}
               onPostCreated={() => {
                 setReplyingCommentId(null);
                 if (onLike) onLike();
@@ -454,6 +478,7 @@ function FlatComments({
   setExpandedComments: React.Dispatch<React.SetStateAction<Array<{ id: string, maxDisplayed: number }>>>
   currentUser: User
 }) {
+  const { t } = useTranslation();
   const maxDisplayedComments = 3;
   const comments = allComments.filter(c => c.parentPost === parentId)
   if (!comments.length) return null
@@ -516,7 +541,7 @@ function FlatComments({
                       }
                     }}
                   >
-                    Afficher plus de commentaires ({repliesCount - maxDisplayedComments})
+                    {t('post.show_more_comments', { count: repliesCount - maxDisplayedComments })}
                   </button>
                 )}
               </div>

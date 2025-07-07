@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useTheme } from 'next-themes'; 
+import { useTranslation } from 'react-i18next';
 
 interface AuthFormProps {
   mode: 'login' | 'register'
@@ -13,6 +14,7 @@ interface AuthFormProps {
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -51,11 +53,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     } catch (err: any) {
       if (err.response?.status === 401) {
-        setError('Email ou mot de passe incorrect. Veuillez réessayer.');
+        setError(t('auth.error_incorrect'));
       } else if (err.response?.status === 500) {
-        setError('Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.');
+        setError(t('auth.error_server'));
       } else {
-        setError(err.response?.data?.message || 'Une erreur est survenue lors de l\'authentification');
+        setError(err.response?.data?.message || t('auth.error_generic'));
       }
     }
   }
@@ -69,7 +71,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       {/* Bouton dark mode en haut à droite */}
       <button
         type="button"
-        aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+        aria-label={theme === 'dark' ? t('sidebar.light_mode') : t('sidebar.dark_mode')}
         className="absolute top-6 right-6 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
       >
@@ -92,9 +94,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
       ) : (
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Join <span className="text-blue-500">Breezy</span>
+            {t('auth.join_breezy', { defaultValue: 'Join ' })}<span className="text-blue-500">Breezy</span>
           </h2>
-          <p className="text-gray-400 mt-2 dark:text-gray-400">Create your account</p>
+          <p className="text-gray-400 mt-2 dark:text-gray-400">{t('auth.create_account')}</p>
         </div>
       )}
 
@@ -110,11 +112,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {mode === 'register' && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Username</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('auth.username')}</label>
             <input
               type="text"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-              placeholder="Enter your username"
+              placeholder={t('auth.username_placeholder')}
               value={formData.username}
               onChange={(e) => setFormData({...formData, username: e.target.value})}
               required
@@ -123,11 +125,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
         )}
         {mode === 'login' ? (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email or Username</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('auth.identifier')}</label>
             <input
               type="text"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-              placeholder="Enter your email or username"
+              placeholder={t('auth.identifier_placeholder')}
               value={formData.identifier}
               onChange={(e) => setFormData({...formData, identifier: e.target.value})}
               required
@@ -135,11 +137,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('auth.email')}</label>
             <input
               type="email"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-              placeholder="Enter your email"
+              placeholder={t('auth.email_placeholder')}
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
@@ -147,11 +149,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </div>
         )}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Password</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('auth.password')}</label>
           <input
             type="password"
             className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-            placeholder="Enter your password"
+            placeholder={t('auth.password_placeholder')}
             value={formData.password}
             onChange={(e) => setFormData({...formData, password: e.target.value})}
             required
@@ -161,13 +163,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
           type="submit"
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:opacity-90 transition-all transform hover:scale-[1.02] focus:scale-[0.98]"
         >
-          {mode === 'login' ? 'Se connecter' : 'Créer un compte'}
+          {mode === 'login' ? t('auth.login_button') : t('auth.register_button')}
         </button>
         {mode === 'login' && (
           <>
             <div className="flex items-center my-6">
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-              <span className="mx-4 text-gray-400 font-medium dark:text-gray-300">or</span>
+              <span className="mx-4 text-gray-400 font-medium dark:text-gray-300">{t('auth.or')}</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             </div>
             <button
@@ -184,7 +186,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   <path fill="#EA4335" d="M43.6 20.5h-1.9V20H24v8h11.3c-1.1 3-4.1 5.5-7.3 5.5-4.2 0-7.7-3.5-7.7-7.7 0-.6.1-1.2.2-1.8l-6.5-5C7.2 23.1 7 23.5 7 24c0 7.2 5.8 13 13 13 6.6 0 12-5.4 12-12 0-.8-.1-1.5-.2-2.2z"/>
                 </g>
               </svg>
-              <span className="text-gray-700 dark:text-gray-200 font-medium">Continue with Google</span>
+              <span className="text-gray-700 dark:text-gray-200 font-medium">{t('auth.google')}</span>
             </button>
           </>
         )}

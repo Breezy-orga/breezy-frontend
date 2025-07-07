@@ -94,6 +94,30 @@ export default function UserProfile({ userId }: Props) {
     }
   }
 
+  // Utilitaire pour lire la langue depuis le localStorage ou le cookie i18next
+  function getLangFromStorageOrCookie() {
+    if (typeof window !== 'undefined') {
+      const lsLang = window.localStorage.getItem('i18nextLng');
+      if (lsLang) return lsLang;
+    }
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|; )i18next=([^;]*)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+    return null;
+  }
+
+  // Formatage date d'inscription (UserProfile)
+  const formatProfileDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const lang = getLangFromStorageOrCookie();
+    const locale = lang === 'fr' ? 'fr-FR' : lang === 'en' ? 'en-US' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   if (loading) return <div className="text-center p-4">{t('profile.loading')}</div>
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>

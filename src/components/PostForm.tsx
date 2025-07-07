@@ -7,6 +7,7 @@ import { MdImage, MdClose, MdTag } from 'react-icons/md'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
 import { Post as PostType } from '@/types/models'
+import { useTranslation } from 'react-i18next'
 
 interface PostFormProps {
   onPostCreated?: (newPost: PostType) => void
@@ -15,6 +16,7 @@ interface PostFormProps {
 }
 
 export default function PostForm({ onPostCreated, parentPostId, placeholder = "Quoi de neuf ?" }: PostFormProps) {
+  const { t } = useTranslation()
   const [content, setContent] = useState('')
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
   const [mediaTypes, setMediaTypes] = useState<('image' | 'video')[]>([])
@@ -152,7 +154,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (mediaData.length >= 4) {
-      alert('Maximum 4 médias par publication')
+      alert(t('postform.media_limit'))
       return
     }
     if (file) {
@@ -223,7 +225,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       if (!response.ok) throw new Error('Erreur lors de la publication')
       newPost = await response.json()
     } catch (error) {
-      alert('Erreur lors de la création')
+      alert(t('postform.create_error'))
     }
     try {
       setContent('')
@@ -239,7 +241,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
         onPostCreated(newPost)
       }
     } catch (error) {
-      alert('Une erreur est survenue lors de la publication')
+      alert(t('postform.publish_error'))
     } finally {
       setIsSubmitting(false)
     }
@@ -250,7 +252,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
       <div className="flex gap-3">
         <Image
           src={user?.username === 'daemon' ? '/me.jpg' : (user?.profilePicture || '/default-avatar.svg')}
-          alt="Votre avatar"
+          alt={t('postform.avatar_alt')}
           width={40}
           height={40}
           className="w-10 h-10 rounded-full object-cover"
@@ -261,7 +263,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               ref={textareaRef}
               value={content}
               onChange={handleContentChange}
-              placeholder={placeholder}
+              placeholder={placeholder ? t(placeholder) : t('postform.placeholder')}
               maxLength={280}
               className="w-full bg-transparent border-none focus:ring-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               rows={3}
@@ -273,7 +275,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               >
                 {mentionSuggestions.length === 0 ? (
                   <div className="p-3 text-center text-gray-500 dark:text-gray-400">
-                    Recherche d'utilisateurs...
+                    {t('postform.user_searching')}
                   </div>
                 ) : (
                   mentionSuggestions.map((user, index) => (
@@ -320,13 +322,13 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                           poster={preview}
                         />
                         <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md flex items-center gap-1">
-                          <span className="text-white font-bold">▶</span> Vidéo
+                          <span className="text-white font-bold">▶</span> {t('postform.video_label')}
                         </div>
                       </div>
                     ) : (
                       <Image
                         src={preview}
-                        alt={`Preview ${index + 1}`}
+                        alt={t('postform.media_preview_alt', { index: index + 1 })}
                         fill
                         className="object-contain rounded-lg"
                       />
@@ -342,7 +344,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 </div>
               ))}
               <div className="mt-1 text-sm text-gray-500">
-                {mediaPreviews.length}/4 médias
+                {mediaPreviews.length}/4 {t('postform.media')}
               </div>
             </div>
           )}
@@ -371,7 +373,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 type="text"
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
-                placeholder="Ajouter un tag (sans #)"
+                placeholder={t('postform.add_tag_placeholder')}
                 className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
               />
@@ -380,7 +382,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                 onClick={addTag}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg"
               >
-                Ajouter
+                {t('postform.add_tag')}
               </button>
               <button
                 type="button"
@@ -427,7 +429,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
                   transition-colors
                 "
               >
-                {isSubmitting ? 'Publication...' : 'Publier'}
+                {isSubmitting ? t('postform.submitting') : t('postform.submit')}
               </button>
             </div>
           </div>

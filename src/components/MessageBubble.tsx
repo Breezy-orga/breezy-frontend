@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface Message {
   _id: string
   senderId: string | { _id: string }
@@ -12,6 +14,8 @@ interface Props {
 }
 
 export default function MessageBubble({ message, me }: Props) {
+  const { t } = useTranslation()
+
   const senderId = typeof message.senderId === 'string'
     ? message.senderId
     : (message.senderId?._id || '')
@@ -24,9 +28,9 @@ export default function MessageBubble({ message, me }: Props) {
   })
 
   const statusLabel = message.status === 'seen'
-    ? 'Lu'
+    ? t('messagerie.status_seen', 'Seen')
     : message.status === 'delivered'
-    ? 'Envoyé'
+    ? t('messagerie.status_delivered', 'Delivered')
     : ''
 
   return (

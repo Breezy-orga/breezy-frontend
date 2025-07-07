@@ -11,7 +11,9 @@
     "light_mode": "Light mode",
     "dark_mode": "Dark mode",
     "english": "English",
-    "french": "French"
+    "french": "French",
+    "followers": "Followers",
+    "following": "Following"
   },
 
   "rightbar": {
@@ -19,7 +21,15 @@
     "suggested_friends": "Suggested friends",
     "follow": "Follow",
     "posts": "posts",
-    "profile_picture": "Profile picture"
+    "profile_picture": "Profile picture",
+    "search_placeholder": "Search...",
+    "create": "Create",
+    "new_post": "New post",
+    "story": "Story",
+    "poll": "Poll",
+    "event": "Event",
+    "loading": "Loading...",
+    "no_suggestions": "No suggestions available."
   },
 
   "feed": {
@@ -92,7 +102,18 @@
     "new_message": "New message",
     "back": "Back",
     "write_message": "Write a message...",
-    "send": "Send"
+    "send": "Send",
+    "status_seen": "Seen",
+    "status_delivered": "Delivered",
+    "load_error": "Unable to load your followings.",
+    "error_network": "Network error.",
+    "send_error": "Error while sending.",
+    "send_to": "Send to @{{user}}",
+    "search_following": "Search a following…",
+    "no_following_found": "No following found.",
+    "message_placeholder": "Message to @{{user}}…",
+    "sending": "Sending…",
+    "cancel": "Cancel"
   },
 
   "notifications": {
@@ -122,8 +143,103 @@
     "just_now": "Just now",
     "minutes_ago": "{{count}}m ago",
     "hours_ago": "{{count}}h ago",
-    "days_ago": "{{count}}d ago"
-  }
+    "days_ago": "{{count}}d ago",
+    "actions": {
+      "comment": "Comment",
+      "share": "Share",
+      "write_comment": "Write a comment...",
+      "cancel": "Cancel",
+      "comment_button": "Comment"
+    },
+    "no_comments": "No comments yet",
+    "video": "Video",
+    "show_more_comments": "Show more comments ({{count}})",
+    "reply_to": "Reply to @{{user}}"
+  },
 
+  "register": {
+    "slogan": "A breath of fresh share",
+    "title": "Create your account",
+    "subtitle": "Sign up to get started",
+    "username": "Username",
+    "username_placeholder": "Enter your username",
+    "email": "Email",
+    "email_placeholder": "Enter your email",
+    "password": "Password",
+    "password_placeholder": "Enter your password",
+    "creating": "Creating...",
+    "create_account": "Create account",
+    "error": "Error: {{error}}",
+    "success": "Account created! You can now sign in.",
+    "or": "or",
+    "google": "Continue with Google",
+    "agree": "By signing up, you agree to our",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "and": "and",
+    "already": "Already have an account? ",
+    "signin": "Sign in",
+    "about": "About",
+    "contact": "Contact"
+  },
+
+  "notfound": {
+    "title": "Page not found",
+    "description": "Sorry, the page you are looking for does not exist or has been moved.",
+    "back_home": "Back to home"
+  },
+
+  "auth": {
+    "join_breezy": "Join ",
+    "create_account": "Create your account",
+    "username": "Username",
+    "username_placeholder": "Enter your username",
+    "identifier": "Username or email",
+    "identifier_placeholder": "Enter your username or email",
+    "email": "Email",
+    "email_placeholder": "Enter your email",
+    "password": "Password",
+    "password_placeholder": "Enter your password",
+    "login_button": "Sign in",
+    "register_button": "Sign up",
+    "or": "or",
+    "google": "Continue with Google",
+    "error_incorrect": "Incorrect credentials. Please try again.",
+    "error_server": "Server error. Please try again later.",
+    "error_generic": "An error occurred. Please try again."
+  },
+
+  "media": {
+    "close": "Close",
+    "image_alt": "Full screen image",
+    "video_not_supported": "Your browser does not support video playback."
+  },
+
+  "postform": {
+    "media_limit": "You can only upload up to 4 media files.",
+    "create_error": "Error while creating the post.",
+    "publish_error": "Error while publishing the post.",
+    "placeholder": "What's new?",
+    "user_searching": "No users found.",
+    "media": "media",
+    "add_tag_placeholder": "Add a tag...",
+    "add_tag": "Add tag",
+    "submitting": "Posting...",
+    "submit": "Post"
+  },
+
+  "postlist": {
+    "loading": "Loading posts...",
+    "fetch_error": "Error fetching posts.",
+    "load_error": "An error occurred while loading posts.",
+    "empty": "No posts to display.",
+    "share_log": "Sharing post:"
+  },
+  "theme": {
+    "light": "Thème clair actif",
+    "dark": "Thème sombre actif",
+    "system": "Thème système actif",
+    "toggle": "Changer de thème"
+  }
 }
 

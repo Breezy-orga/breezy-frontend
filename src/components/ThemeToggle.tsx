@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react'
 import { MdLightMode, MdDarkMode, MdOutlineAutoAwesome } from 'react-icons/md'
 import { useTheme } from 'next-themes'
+import { useTranslation } from 'react-i18next'
 
 type Theme = 'light' | 'dark' | 'system'
 
 export function ThemeToggle({ className = '' }: { className?: string }) {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
-  
+  const { t } = useTranslation()
   // Éviter le rendu côté serveur pour prévenir les erreurs d'hydratation
   useEffect(() => {
     setMounted(true)
@@ -44,12 +45,12 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   const getThemeLabel = () => {
     switch (theme) {
       case 'light':
-        return 'Thème clair actif'
+        return t('theme.light')
       case 'dark':
-        return 'Thème sombre actif'
+        return t('theme.dark')
       case 'system':
       default:
-        return 'Thème système actif'
+        return t('theme.system')
     }
   }
 
@@ -63,7 +64,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       aria-label={getThemeLabel()}
       title={getThemeLabel()}
     >
-      <span className="sr-only">Changer de thème</span>
+      <span className="sr-only">{t('theme.toggle')}</span>
       {getThemeIcon()}
     </button>
   )

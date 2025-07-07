@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MdClose } from 'react-icons/md'
+import { useTranslation } from 'react-i18next';
 
 interface User {
   _id: string
@@ -23,6 +24,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isOpen) return
@@ -36,7 +38,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
       try {
         // Récupère mes abonnements
         const res = await fetch('/api/users/me', { credentials: 'include' })
-        if (!res.ok) throw new Error('Impossible de charger vos abonnements')
+        if (!res.ok) throw new Error(t('messagerie.load_error', 'Unable to load your followings'))
         const me = await res.json()
         if (!Array.isArray(me.following) || me.following.length === 0) {
           setFollowings([])
@@ -52,7 +54,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
           setFollowings(users.filter(Boolean))
         }
       } catch (err: any) {
-        setLoadError(err.message || 'Erreur réseau')
+        setLoadError(err.message || t('messagerie.error_network', 'Network error'))
       } finally {
         setLoading(false)
       }
@@ -77,10 +79,10 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
           content: message.trim()
         })
       })
-      if (!res.ok) throw new Error('Erreur lors de l\'envoi')
+      if (!res.ok) throw new Error(t('messagerie.send_error', 'Error while sending'))
       window.location.href = `/messagerie/${selectedUser._id}`
     } catch (err: any) {
-      setSendError(err.message || 'Erreur réseau')
+      setSendError(err.message || t('messagerie.error_network', 'Network error'))
     } finally {
       setSending(false)
     }
@@ -95,12 +97,12 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
         <button
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           onClick={onClose}
-          aria-label="Fermer"
+          aria-label={t('media.close', 'Close')}
         >
           <MdClose size={26} />
         </button>
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-          {selectedUser ? `Envoyer à @${selectedUser.username}` : 'Nouveau message'}
+          {selectedUser ? t('messagerie.send_to', { user: selectedUser.username, defaultValue: 'Send to @' }) + `@${selectedUser.username}` : t('messagerie.new_message', 'New message')}
         </h2>
 
         {/* Sélecteur utilisateur */}
@@ -109,19 +111,19 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
             <input
               type="text"
               className="w-full mb-3 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-600 outline-none transition"
-              placeholder="Rechercher un abonné…"
+              placeholder={t('messagerie.search_following', 'Search a following…')}
               value={query}
               onChange={e => setQuery(e.target.value)}
               autoFocus
             />
             {loading ? (
-              <p className="text-gray-600 dark:text-gray-300">Chargement…</p>
+              <p className="text-gray-600 dark:text-gray-300">{t('messagerie.loading', 'Loading…')}</p>
             ) : loadError ? (
               <p className="text-red-500">{loadError}</p>
             ) : (
               <ul className="max-h-60 overflow-y-auto space-y-1">
                 {filtered.length === 0 && (
-                  <li className="text-gray-500 dark:text-gray-400 px-2 py-2">Aucun abonné trouvé.</li>
+                  <li className="text-gray-500 dark:text-gray-400 px-2 py-2">{t('messagerie.no_following_found', 'No following found.')}</li>
                 )}
                 {filtered.map(u => (
                   <li key={u._id}>
@@ -147,7 +149,7 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
             <textarea
               className="w-full mb-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-600 outline-none transition"
               rows={4}
-              placeholder={`Message à @${selectedUser.username}…`}
+              placeholder={t('messagerie.message_placeholder', { user: selectedUser.username, defaultValue: `Message to @${selectedUser.username}…` })}
               value={message}
               onChange={e => setMessage(e.target.value)}
               autoFocus
@@ -160,14 +162,14 @@ export default function NewMessageModal({ isOpen, onClose }: NewMessageModalProp
                 onClick={handleSend}
                 disabled={sending || !message.trim()}
               >
-                {sending ? 'Envoi…' : 'Envoyer'}
+                {sending ? t('messagerie.sending', 'Sending…') : t('messagerie.send', 'Send')}
               </button>
               <button
                 className="py-2 px-4 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
                 onClick={() => setSelectedUser(null)}
                 disabled={sending}
               >
-                Annuler
+                {t('messagerie.cancel', 'Cancel')}
               </button>
             </div>
           </>

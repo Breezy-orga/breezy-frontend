@@ -135,11 +135,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           <div className="flex justify-start gap-6 text-sm">
             <div className="flex items-center gap-1">
               <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.following?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Abonnements</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t('sidebar.following')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.followers?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">Abonnés</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t('sidebar.followers')}</span>
             </div>
           </div>
         </div>

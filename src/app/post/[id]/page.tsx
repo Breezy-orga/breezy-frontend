@@ -20,7 +20,7 @@ async function fetchAllCommentsRecursive(parentId: string): Promise<any[]> {
 }
 
 export default function PostFocusPage({ params }: { params: { id: string } }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,13 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
     if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
     if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
-    return date.toLocaleDateString();
+    // Utilise toujours la langue résolue d'i18n (toujours à jour)
+    const locale = i18n.resolvedLanguage === 'fr' ? 'fr-FR' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</div>;

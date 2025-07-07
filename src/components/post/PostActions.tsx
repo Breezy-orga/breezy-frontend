@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {useEffect, useState } from 'react';
 import { MessageCircle, Share2 } from 'lucide-react';
 import { Post, User } from '@/types/models';
@@ -18,6 +19,7 @@ export default function PostActions({
   onComment,
   onShare,
 }: PostActionsProps) {
+  const { t } = useTranslation();
   const [isLiked, setIsLiked] = useState(post.likes.some((like: any) => (typeof like === 'object' ? like._id : like) === currentUser._id));
   const [likeCount, setLikeCount] = useState(post.likes.length);
   const [isCommenting, setIsCommenting] = useState(false);
@@ -61,6 +63,7 @@ export default function PostActions({
           <button
             onClick={() => setIsCommenting(!isCommenting)}
             className="flex items-center space-x-1 text-gray-500"
+            aria-label={t('post.actions.comment')}
           >
             <MessageCircle className="w-5 h-5" />
             <span>{post.comments.length}</span>
@@ -68,6 +71,7 @@ export default function PostActions({
           <button
             onClick={() => onShare(post._id.toString())}
             className="text-gray-500"
+            aria-label={t('post.actions.share')}
           >
             <Share2 className="w-5 h-5" />
           </button>
@@ -79,7 +83,7 @@ export default function PostActions({
           <textarea
             value={commentContent}
             onChange={(e) => setCommentContent(e.target.value)}
-            placeholder="Write a comment..."
+            placeholder={t('post.actions.write_comment')}
             className="w-full p-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={2}
           />
@@ -88,17 +92,17 @@ export default function PostActions({
               onClick={() => setIsCommenting(false)}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              Cancel
+              {t('post.actions.cancel')}
             </button>
             <button
               onClick={handleComment}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
             >
-              Comment
+              {t('post.actions.comment_button')}
             </button>
           </div>
         </div>
       )}
     </div>
   );
-} 
+}

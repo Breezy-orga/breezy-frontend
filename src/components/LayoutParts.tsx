@@ -45,7 +45,7 @@ export function Header() {
   
   // Fonction helper pour basculer entre thème clair et sombre
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLang = i18n.language === 'fr' ? 'fr' : 'en';
 
   return (
@@ -55,19 +55,19 @@ export function Header() {
         <span className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 tracking-tight">Breezy</span>
       </div>
       <div className="flex-1 flex justify-center">
-        <input type="text" placeholder="Rechercher..." className="w-full max-w-md px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
+        <input type="text" placeholder={t('rightbar.search_placeholder', 'Search...')} className="w-full max-w-md px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
       </div>
       <div className="flex items-center gap-4 relative">
         <div className="relative">
           <button onClick={() => setCreateMenuOpen(v => !v)} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2 rounded-xl font-semibold shadow hover:opacity-90 transition text-base flex items-center gap-2">
-            <MdAddCircle className="text-xl" /> Créer
+            <MdAddCircle className="text-xl" /> {t('rightbar.create', 'Create')}
           </button>
           {createMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-40 animate-fade-in">
-              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdEdit className="text-xl" /> Nouveau post</button>
-              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdAutoAwesome className="text-xl" /> Story</button>
-              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdPoll className="text-xl" /> Sondage</button>
-              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdEvent className="text-xl" /> Événement</button>
+              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdEdit className="text-xl" /> {t('rightbar.new_post', 'New post')}</button>
+              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdAutoAwesome className="text-xl" /> {t('rightbar.story', 'Story')}</button>
+              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdPoll className="text-xl" /> {t('rightbar.poll', 'Poll')}</button>
+              <button className="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdEvent className="text-xl" /> {t('rightbar.event', 'Event')}</button>
             </div>
           )}
         </div>
@@ -77,23 +77,22 @@ export function Header() {
         </button>
         <div className="relative">
           <button onClick={() => setUserMenuOpen(v => !v)} className="flex items-center gap-2 focus:outline-none">
-            <Image src="/pp1.jpg" alt="Mon profil" width={36} height={36} className="rounded-full border border-gray-200" />
+            <Image src="/pp1.jpg" alt={t('sidebar.profile', 'Profile')} width={36} height={36} className="rounded-full border border-gray-200" />
             <MdExpandMore className="text-gray-500 dark:text-gray-300" />
           </button>
           {userMenuOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-40 animate-fade-in">
-              <Link href="/profile" className="block px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdPerson className="text-xl" /> Mon profil</Link>
-              <Link href="/settings" className="block px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdSettings className="text-xl" /> Paramètres</Link>
+              <Link href="/profile" className="block px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdPerson className="text-xl" /> {t('sidebar.profile')}</Link>
+              <Link href="/settings" className="block px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"><MdSettings className="text-xl" /> {t('sidebar.settings')}</Link>
               <button
                 className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
                 onClick={() => {
                   toggleTheme();
                   setUserMenuOpen(false);
                 }}>
-                {theme === 'dark' ? <MdLightMode className="text-xl" /> : <MdDarkMode className="text-xl" />} <span className="text-gray-900 dark:text-gray-100">{theme === 'dark' ? 'Mode clair' : 'Mode sombre'}</span>
+                {theme === 'dark' ? <MdLightMode className="text-xl" /> : <MdDarkMode className="text-xl" />} <span className="text-gray-900 dark:text-gray-100">{theme === 'dark' ? t('sidebar.light_mode') : t('sidebar.dark_mode')}</span>
               </button>
-
-              <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdLogout className="text-xl" /> Déconnexion</button>
+              <button className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition flex items-center gap-2"><MdLogout className="text-xl" /> {t('sidebar.logout')}</button>
             </div>
           )}
         </div>
@@ -140,22 +139,24 @@ export function Follows() {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <aside className="hidden xl:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 min-h-screen px-6 py-8 gap-10">
       <div>
-        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">Suggestions d'amis</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t('rightbar.suggested_friends')}</h2>
 
         {loading ? (
-          <p className="text-gray-500">Chargement...</p>
+          <p className="text-gray-500">{t('rightbar.loading', 'Loading...')}</p>
         ) : suggestions.length === 0 ? (
-          <p className="text-gray-500">Aucune suggestion disponible.</p>
+          <p className="text-gray-500">{t('rightbar.no_suggestions', 'No suggestions available.')}</p>
         ) : (
           <div className="flex flex-col gap-4">
             {suggestions.map(user => (
               <div key={user._id} className="flex items-center gap-3">
                 <Image
                   src={user.profilePicture || '/default-avatar.png'}
-                  alt="Photo profil"
+                  alt={t('rightbar.profile_picture')}
                   width={32}
                   height={32}
                   className="rounded-full object-cover border border-gray-200 dark:border-gray-700"
@@ -174,7 +175,7 @@ export function Follows() {
                       : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
                   }`}
                 >
-                  Suivre
+                  {t('rightbar.follow')}
                 </button>
               </div>
             ))}

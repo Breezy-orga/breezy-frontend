@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
+import { useTranslation } from 'react-i18next'
 
 interface PostListProps {
   initialPosts?: PostType[]
@@ -11,6 +12,7 @@ interface PostListProps {
 }
 
 export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListProps) {
+  const { t } = useTranslation()
   const [posts, setPosts] = useState<PostType[]>(initialPosts || []);
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +93,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     return (
       <div className="flex justify-center items-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-500">{t('postlist.loading')}</span>
       </div>
     )
   }
@@ -107,7 +110,7 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     <div className="space-y-4">
       {posts.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Aucun message à afficher
+          {t('postlist.empty')}
         </div>
       ) : (
         posts.map(post => {

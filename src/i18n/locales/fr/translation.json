@@ -11,14 +11,24 @@
     "light_mode": "Mode clair",
     "dark_mode": "Mode sombre",
     "english": "Anglais",
-    "french": "Français"
+    "french": "Français",
+    "followers": "Abonnés",
+    "following": "Abonnements"
   },
   "rightbar": {
     "trends": "Tendances pour vous",
     "suggested_friends": "Suggestions d'amis",
     "follow": "Suivre",
     "posts": "publications",
-    "profile_picture": "Photo profil"
+    "profile_picture": "Photo profil",
+    "search_placeholder": "Rechercher...",
+    "create": "Créer",
+    "new_post": "Nouveau post",
+    "story": "Story",
+    "poll": "Sondage",
+    "event": "Événement",
+    "loading": "Chargement...",
+    "no_suggestions": "Aucune suggestion disponible."
   },
   "feed": {
     "for_you": "Pour toi",
@@ -86,7 +96,18 @@
     "new_message": "Nouveau message",
     "back": "Retour",
     "write_message": "Écrire un message…",
-    "send": "Envoyer"
+    "send": "Envoyer",
+    "status_seen": "Lu",
+    "status_delivered": "Envoyé",
+    "load_error": "Impossible de charger vos abonnements.",
+    "error_network": "Erreur réseau.",
+    "send_error": "Erreur lors de l'envoi.",
+    "send_to": "Envoyer à @{{user}}",
+    "search_following": "Rechercher un abonné…",
+    "no_following_found": "Aucun abonné trouvé.",
+    "message_placeholder": "Message à @{{user}}…",
+    "sending": "Envoi…",
+    "cancel": "Annuler"
   },
   "notifications": {
     "title": "Notifications",
@@ -114,6 +135,96 @@
     "just_now": "À l'instant",
     "minutes_ago": "Il y a {{count}}m",
     "hours_ago": "Il y a {{count}}h",
-    "days_ago": "Il y a {{count}}j"
+    "days_ago": "Il y a {{count}}j",
+    "actions": {
+      "comment": "Commenter",
+      "share": "Partager",
+      "write_comment": "Écrire un commentaire...",
+      "cancel": "Annuler",
+      "comment_button": "Commenter"
+    },
+    "no_comments": "Aucun commentaire pour l'instant",
+    "video": "Vidéo",
+    "show_more_comments": "Afficher plus de commentaires ({{count}})",
+    "reply_to": "Répondre à @{{user}}"
+  },
+  "register": {
+    "slogan": "Un souffle de partage frais",
+    "title": "Créer votre compte",
+    "subtitle": "Inscrivez-vous pour commencer",
+    "username": "Nom d'utilisateur",
+    "username_placeholder": "Entrez votre nom d'utilisateur",
+    "email": "Email",
+    "email_placeholder": "Entrez votre email",
+    "password": "Mot de passe",
+    "password_placeholder": "Entrez votre mot de passe",
+    "creating": "Création...",
+    "create_account": "Créer le compte",
+    "error": "Erreur : {{error}}",
+    "success": "Compte créé ! Vous pouvez maintenant vous connecter.",
+    "or": "ou",
+    "google": "Continuer avec Google",
+    "agree": "En vous inscrivant, vous acceptez nos",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "and": "et",
+    "already": "Déjà un compte ? ",
+    "signin": "Se connecter",
+    "about": "À propos",
+    "contact": "Contact"
+  },
+  "notfound": {
+    "title": "Page non trouvée",
+    "description": "Désolé, la page que vous recherchez n'existe pas ou a été déplacée.",
+    "back_home": "Retour à l'accueil"
+  },
+  "auth": {
+    "join_breezy": "Rejoindre ",
+    "create_account": "Créez votre compte",
+    "username": "Nom d'utilisateur",
+    "username_placeholder": "Entrez votre nom d'utilisateur",
+    "identifier": "Nom d'utilisateur ou email",
+    "identifier_placeholder": "Entrez votre nom d'utilisateur ou email",
+    "email": "Email",
+    "email_placeholder": "Entrez votre email",
+    "password": "Mot de passe",
+    "password_placeholder": "Entrez votre mot de passe",
+    "login_button": "Se connecter",
+    "register_button": "S'inscrire",
+    "or": "ou",
+    "google": "Continuer avec Google",
+    "error_incorrect": "Identifiants incorrects. Veuillez réessayer.",
+    "error_server": "Erreur serveur. Veuillez réessayer plus tard.",
+    "error_generic": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "media": {
+    "close": "Fermer",
+    "image_alt": "Image en plein écran",
+    "video_not_supported": "Votre navigateur ne prend pas en charge la lecture de vidéos."
+  },
+  "postform": {
+    "media_limit": "Vous pouvez télécharger jusqu'à 4 médias maximum.",
+    "create_error": "Erreur lors de la création du post.",
+    "publish_error": "Erreur lors de la publication du post.",
+    "placeholder": "Quoi de neuf ?",
+    "user_searching": "Aucun utilisateur trouvé.",
+    "media": "média",
+    "add_tag_placeholder": "Ajouter un tag...",
+    "add_tag": "Ajouter le tag",
+    "submitting": "Publication...",
+    "submit": "Publier"
+  },
+  "postlist": {
+    "loading": "Chargement des messages...",
+    "fetch_error": "Erreur lors de la récupération des messages.",
+    "load_error": "Une erreur est survenue lors du chargement des messages.",
+    "empty": "Aucun message à afficher.",
+    "share_log": "Partager le post :"
+  },
+  "theme": {
+    "light": "Thème clair actif",
+    "dark": "Thème sombre actif",
+    "system": "Thème système actif",
+    "toggle": "Changer de thème"
   }
 }
