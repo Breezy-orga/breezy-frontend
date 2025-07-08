@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import LikeButton from './LikeButton'
 import { MdDelete, MdChatBubbleOutline, MdShare, MdRepeat } from 'react-icons/md';
@@ -10,6 +10,7 @@ import PostContent from './post/PostContent'
 import MediaModal from './ImageModal'
 import type { Post as PostType, User } from '@/types/models'
 import { useTranslation } from 'react-i18next';
+import { formatRelativeDate } from '../i18n/formatRelativeDate';
 
 // Type étendu pour ajouter des propriétés temporaires
 interface ExtendedPost extends PostType {
@@ -60,6 +61,15 @@ export default function Post({
   const [userId, setUserId] = useState<string | null>(null);
   const [post, setPost] = useState<ExtendedPost>(initialPost);
   const { t, i18n } = useTranslation();
+  // Ajout d'un state pour forcer le re-render sur changement de langue
+  const [forceRerender, setForceRerender] = useState(0);
+  useEffect(() => {
+    const handleLangChange = () => setForceRerender((f: number) => f + 1);
+    i18n.on('languageChanged', handleLangChange);
+    return () => {
+      i18n.off('languageChanged', handleLangChange);
+    };
+  }, [i18n]);
 
   if (!post.author) {
     console.error('Author is null or undefined for post:', post._id);
@@ -116,24 +126,8 @@ export default function Post({
     return null;
   }
 
-  // Formatage date relative
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diffInSeconds < 60) return t('post.just_now');
-    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
-    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
-    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
-    // Utilise la langue du localStorage, sinon cookie, sinon resolvedLanguage
-    const lang = getLangFromStorageOrCookie();
-    const locale = lang === 'fr' ? 'fr-FR' : lang === 'en' ? 'en-US' : (i18n.resolvedLanguage === 'fr' ? 'fr-FR' : 'en-US');
-    return date.toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  }
+  // Formatage date relative, utilise l'utilitaire partagé
+  const formatDate = useCallback((dateString: string) => formatRelativeDate(dateString, t), [t, i18n.resolvedLanguage, forceRerender]);
 
   const refreshComments = async () => {
     try {
@@ -160,7 +154,7 @@ export default function Post({
     try {
       await onComment(postId, updatedPost)
       setShowCommentForm(false)
-      setCommentsCount(prev => prev + 1)
+      setCommentsCount((prev: number) => prev + 1)
       await refreshComments()
       setReplyingCommentId(null)
     } catch (error) {
@@ -223,7 +217,7 @@ export default function Post({
             parentPostId={post._id}
             onPostCreated={() => {
               refreshComments()
-              setCommentsCount(prev => prev + 1)
+              setCommentsCount((prev: number) => prev + 1)
               commentInputRef.current?.blur()
             }}
           />

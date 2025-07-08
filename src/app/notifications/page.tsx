@@ -4,10 +4,9 @@ import React, { useState, useMemo } from 'react';
 import { useNotifications, Notification } from '../../contexts/NotificationContext';
 import Link from 'next/link';
 import Image from 'next/image';
-import { format, formatDistance } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { MdDone, MdDoneAll, MdDelete } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { formatRelativeDate } from '../../i18n/formatRelativeDate';
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
@@ -96,10 +95,7 @@ export default function NotificationsPage() {
                 </Link>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formatDistance(new Date(notification.createdAt), new Date(), { 
-                  addSuffix: true,
-                  locale: fr
-                })}
+                {formatRelativeDate(notification.createdAt, t)}
               </p>
             </div>
           </div>

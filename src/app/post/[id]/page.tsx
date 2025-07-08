@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ThreadItem, FlatComments } from '../../../components/Post';
 import PostForm from '../../../components/PostForm';
 import { useTranslation } from 'react-i18next';
+import { formatRelativeDate } from '@/i18n/formatRelativeDate';
 
 async function fetchAllCommentsRecursive(parentId: string): Promise<any[]> {
   let all: any[] = [];
@@ -93,23 +94,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     } catch {}
   };
 
-  // Formatage date relative
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diffInSeconds < 60) return t('post.just_now');
-    if (diffInSeconds < 3600) return t('post.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
-    if (diffInSeconds < 86400) return t('post.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
-    if (diffInSeconds < 604800) return t('post.days_ago', { count: Math.floor(diffInSeconds / 86400) });
-    // Utilise toujours la langue résolue d'i18n (toujours à jour)
-    const locale = i18n.resolvedLanguage === 'fr' ? 'fr-FR' : 'en-US';
-    return date.toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  // Formatage date relative (utilitaire partagé)
+  const formatDate = (dateString: string) => formatRelativeDate(dateString, t);
 
   if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</div>;
   if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{t('post.error', { error })}</div>;

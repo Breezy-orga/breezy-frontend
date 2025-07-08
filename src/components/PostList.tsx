@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Post from './Post'
 import { Post as PostType, User } from '@/types/models'
 import { useTranslation } from 'react-i18next'
+import { formatRelativeDate } from '../i18n/formatRelativeDate'
 
 interface PostListProps {
   initialPosts?: PostType[]

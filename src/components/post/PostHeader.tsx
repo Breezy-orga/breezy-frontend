@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { formatRelativeDate } from '@/i18n/formatRelativeDate';
 import { User } from '@/types/models';
 
 interface PostHeaderProps {
@@ -10,6 +11,7 @@ interface PostHeaderProps {
 }
 
 export default function PostHeader({ author, createdAt, location }: PostHeaderProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center space-x-3 p-4">
       <Link href={`/profile/${author._id}`}>
@@ -27,7 +29,7 @@ export default function PostHeader({ author, createdAt, location }: PostHeaderPr
           <h3 className="font-semibold hover:underline">{author.username}</h3>
         </Link>
         <div className="flex items-center text-sm text-gray-500">
-          <span>{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</span>
+          <span>{formatRelativeDate(createdAt.toISOString(), t)}</span>
           {location && (
             <>
               <span className="mx-1">•</span>
@@ -38,4 +40,4 @@ export default function PostHeader({ author, createdAt, location }: PostHeaderPr
       </div>
     </div>
   );
-} 
+}

@@ -7,13 +7,14 @@ import PostList from './PostList'
 import Link from 'next/link'
 import { MdArrowBack } from 'react-icons/md'
 import { useTranslation } from 'react-i18next'
+import { formatRelativeDate } from '../i18n/formatRelativeDate'
 
 interface Props {
   userId?: string
 }
 
 export default function UserProfile({ userId }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [user, setUser] = useState<User | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -94,30 +95,20 @@ export default function UserProfile({ userId }: Props) {
     }
   }
 
-  // Utilitaire pour lire la langue depuis le localStorage ou le cookie i18next
-  function getLangFromStorageOrCookie() {
-    if (typeof window !== 'undefined') {
-      const lsLang = window.localStorage.getItem('i18nextLng');
-      if (lsLang) return lsLang;
-    }
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(/(?:^|; )i18next=([^;]*)/);
-      if (match) return decodeURIComponent(match[1]);
-    }
-    return null;
-  }
+  // Force re-render quand la langue change (pour que la date suive le provider)
+  const [lang, setLang] = useState('');
+  useEffect(() => {
+    const updateLang = () => {
+      const lsLang = typeof window !== 'undefined' ? window.localStorage.getItem('i18nextLng') : '';
+      setLang(lsLang || i18n.language);
+    };
+    updateLang();
+    i18n.on('languageChanged', updateLang);
+    return () => { i18n.off('languageChanged', updateLang); };
+  }, [i18n]);
 
   // Formatage date d'inscription (UserProfile)
-  const formatProfileDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const lang = getLangFromStorageOrCookie();
-    const locale = lang === 'fr' ? 'fr-FR' : lang === 'en' ? 'en-US' : 'en-US';
-    return date.toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  const formatProfileDate = (dateString: string) => formatRelativeDate(dateString, t);
 
   if (loading) return <div className="text-center p-4">{t('profile.loading')}</div>
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>
@@ -212,7 +203,7 @@ export default function UserProfile({ userId }: Props) {
                 {user.bio || t('profile.no_bio')}
               </p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                {t('profile.member_since', { date: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : t('profile.unknown_date') })}
+                {t('profile.member_since', { date: user.createdAt ? formatProfileDate(user.createdAt) : t('profile.unknown_date') })}
               </div>
               <div className="mt-2 text-sm space-x-4">
                 <button

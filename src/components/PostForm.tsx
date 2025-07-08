@@ -15,7 +15,7 @@ interface PostFormProps {
   placeholder?: string
 }
 
-export default function PostForm({ onPostCreated, parentPostId, placeholder = "Quoi de neuf ?" }: PostFormProps) {
+export default function PostForm({ onPostCreated, parentPostId, placeholder = 'postform.placeholder' }: PostFormProps) {
   const { t } = useTranslation()
   const [content, setContent] = useState('')
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
@@ -263,7 +263,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = "Q
               ref={textareaRef}
               value={content}
               onChange={handleContentChange}
-              placeholder={placeholder ? t(placeholder) : t('postform.placeholder')}
+              placeholder={t(placeholder)}
               maxLength={280}
               className="w-full bg-transparent border-none focus:ring-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               rows={3}
