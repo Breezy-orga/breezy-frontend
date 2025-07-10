@@ -1,55 +1,77 @@
-import { useState } from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
 
-interface Media {
-  data: string;
+export interface Media {
+  url: string;
+  base64?: string;
   contentType?: string;
+  alt?: string;
+  type: 'image' | 'video';
 }
 
-interface PostContentProps {
+interface Props {
   content: string;
-  media?: Media | null;
+  media?: Media[];
   className?: string;
 }
 
-export default function PostContent({ content, media, className = '' }: PostContentProps) {
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+export default function PostContent({ content, media = [], className = '' }: Props) {
+  const [lightbox, setLightbox] = useState<Media | null>(null);
 
-  // Vérifier si le média est une image ou une vidéo
-  const isImage = media?.contentType?.startsWith('image/') || 
-                 (media?.data?.startsWith('data:image/') && !media?.data?.includes(';base64,undefined'));
-
-  // Si le média est vide ou invalide, ne rien afficher
-  if (!media?.data || imageError) {
+  const renderMedia = () => {
+    if (!media.length) return null;
     return (
-      <div className={`${className} break-words`}>
-        {content && <p className="whitespace-pre-line">{content}</p>}
+      <div className={media.length > 1 ? 'grid grid-cols-2 gap-2' : ''}>
+        {media.map((m, i) => {
+          const src = m.base64
+            ? `data:${m.contentType ?? ''};base64,${m.base64}`
+            : m.url;
+          const isVideo = m.contentType?.startsWith('video/') ?? false;
+
+          if (isVideo) {
+            return (
+              <video
+                key={i}
+                src={src}
+                controls
+                className="w-full max-h-[500px] object-cover rounded-md"
+              />
+            );
+          }
+
+          return (
+            <img
+              key={i}
+              src={src}
+              alt={m.alt || ''}
+              className="w-full h-auto max-h-[500px] object-cover rounded-md cursor-pointer"
+              onClick={() => setLightbox(m)}
+            />
+          );
+        })}
       </div>
     );
-  }
-
+  };
 
   return (
-    <div className={`${className} space-y-2`}>
-      {content && <p className="whitespace-pre-line">{content}</p>}
-      
-      {isImage ? (
-        <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div className={className}>
+      {content && <p className="mb-2 whitespace-pre-wrap">{content}</p>}
+      {renderMedia()}
+
+      {/* Lightbox uniquement pour les images */}
+      {lightbox && !(lightbox.contentType?.startsWith('video/') ?? true) && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50"
+          onClick={() => setLightbox(null)}
+        >
           <img
-            src={media.data}
-            alt=""
-            className={`w-full h-auto max-h-[500px] object-cover transition-opacity duration-200 ${
-              isImageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            onLoad={() => setIsImageLoaded(true)}
-            onError={() => setImageError(true)}
+            src={lightbox.base64
+              ? `data:${lightbox.contentType ?? ''};base64,${lightbox.base64}`
+              : lightbox.url}
+            alt={lightbox.alt || ''}
+            className="max-h-[90vh] max-w-[90vw] rounded-md"
           />
-          {!isImageLoaded && (
-            <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 animate-pulse" />
-          )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

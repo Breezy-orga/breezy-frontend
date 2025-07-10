@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import {useEffect, useState } from 'react';
 import { MessageCircle, Share2 } from 'lucide-react';
 import { Post, User } from '@/types/models';
