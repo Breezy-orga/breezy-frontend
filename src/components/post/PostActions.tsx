@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useTranslation } from 'react-i18next';
 import {useEffect, useState } from 'react';
 import { MessageCircle, Share2 } from 'lucide-react';

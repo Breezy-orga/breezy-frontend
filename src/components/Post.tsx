@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import LikeButton from './LikeButton'
 import { MdDelete, MdChatBubbleOutline, MdShare, MdRepeat } from 'react-icons/md';
@@ -325,8 +325,8 @@ function ThreadItem({
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
   const { t } = useTranslation();
   
-  useEffect(() => { fetchUserId().then(setUserId); }, []);
-  useEffect(() => { setIsLiked(isLikedByUser(item.likes || [])) }, [item.likes])
+  //useEffect(() => { fetchUserId().then(setUserId); }, []);
+  //useEffect(() => { setIsLiked(isLikedByUser(item.likes || [])) }, [item.likes])
 
   useEffect(() => {
     const liked = item.likes.some((l: any) => (l._id || l) === currentUser._id);
