@@ -77,7 +77,6 @@ export default function ConversationPage() {
     })();
   }, [convId]);
 
-  // Scroll auto tout en bas
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -132,12 +131,35 @@ export default function ConversationPage() {
 
           {/* Liste des messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col space-y-2 bg-gray-50 dark:bg-gray-800">
-            {currentUserId &&
-              messages.map((m) => (
-                <MessageBubble key={m._id} message={m} me={currentUserId} />
-              ))}
+            {currentUserId && (() => {
+              let lastDate = '';
+              return messages.map((m) => {
+                const dateString = new Date(m.timestamp).toLocaleDateString('fr-FR', {
+                  day:   '2-digit',
+                  month: 'long',
+                  year:  'numeric',
+                });
+                const showSeparator = dateString !== lastDate;
+                lastDate = dateString;
+                return (
+                  <div key={m._id}>
+                    {showSeparator && (
+                      <div className="text-center text-gray-500 dark:text-gray-400 text-sm my-2">
+                        {dateString}
+                      </div>
+                    )}
+                    <MessageBubble message={m} me={currentUserId} />
+                  </div>
+                );
+              });
+            })()}
             <div ref={scrollRef} />
           </div>
+
+
+
+
+          
 
           {/* Zone de saisie */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex">

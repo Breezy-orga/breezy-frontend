@@ -1,33 +1,17 @@
-`use client`
+'use client'
 
-import { useState, useEffect } from 'react';
-import { MdFavorite, MdFavoriteBorder } from 'react-icons/md';
-import type { Post as PostType } from '@/types/models';
+import { useState, useEffect } from 'react'
+import { MdFavorite, MdFavoriteBorder } from 'react-icons/md'
 
 interface LikeButtonProps {
-  itemId: string;
-  itemType: 'post' | 'comment';
-  parentId?: string;          // ajouté pour gérer les commentaires
-  initialLikes: number;
-  initialLikedStatus: boolean;
-  onLikeSuccess?: (updatedPost: PostType) => void;
-  size?: 'small' | 'normal';
+  itemId: string
+  itemType: 'post' | 'comment'
+  parentId?: string
+  initialLikes: number
+  initialLikedStatus: boolean
+  onLikeSuccess?: (update: { liked: boolean; totalLikes: number }) => void;
+  size?: 'small' | 'normal'
 }
-
-const fetchUserId = async (): Promise<string | null> => {
-  try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    const res = await fetch(`${apiBaseUrl}/profile/me`, {
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error('Échec récupération userId');
-    const data = await res.json();
-    return data._id || null;
-  } catch (err) {
-    console.error('Erreur fetchUserId:', err);
-    return null;
-  }
-};
 
 export default function LikeButton({
   itemId,
@@ -38,84 +22,64 @@ export default function LikeButton({
   onLikeSuccess,
   size = 'normal',
 }: LikeButtonProps) {
-  const [isLiked, setIsLiked] = useState(initialLikedStatus);
-  const [likesCount, setLikesCount] = useState(initialLikes);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(initialLikedStatus)
+  const [likesCount, setLikesCount] = useState(initialLikes)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
-    fetchUserId().then(setUserId);
-  }, []);
-
-  useEffect(() => {
-    setIsLiked(initialLikedStatus);
-    setLikesCount(initialLikes);
-  }, [initialLikedStatus, initialLikes]);
+    setIsLiked(initialLikedStatus)
+    setLikesCount(initialLikes)
+  }, [initialLikedStatus, initialLikes])
 
   const handleLike = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isProcessing) return;
+    e.preventDefault()
+    e.stopPropagation()
+    if (isProcessing) return
+    setIsProcessing(true)
 
-    // calcul du nouvel état
-    const newLiked = !isLiked;
-    setIsProcessing(true);
-    setIsLiked(newLiked);
-    setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
-
-    // construction de l'endpoint
-    let endpoint: string;
-    if (itemType === 'comment') {
-      if (!parentId) {
-        console.error('parentId is required for comment likes');
-        setIsProcessing(false);
-        return;
-      }
-      endpoint = `/api/posts/${parentId}/comments/${itemId}/like`;
-    } else {
-      endpoint = `/api/posts/${itemId}/like`;
-    }
-
-    // méthode POST pour commentaires (toggle côté backend), POST/DELETE pour posts
-    const method = itemType === 'comment' ? 'POST' : (newLiked ? 'POST' : 'DELETE');
+    const endpoint = `/api/posts/${itemId}/like`
 
     try {
-      const response = await fetch(endpoint, {
-        method,
+      const res = await fetch(endpoint, {
+        method: 'POST',
         credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error(`Erreur lors du like: ${response.status}`);
-      }
-      // optionnel : récupérer la ressource mise à jour
-      // if (onLikeSuccess) {
-      //   const updated = await response.json();
-      //   onLikeSuccess(updated);
-      // }
-    } catch (error) {
-      console.error('Erreur lors du like:', error);
-      // rollback local en cas d'erreur
-      setIsLiked(!newLiked);
-      setLikesCount(prev => newLiked ? prev - 1 : prev + 1);
+      })
+      if (!res.ok) throw new Error(`Status ${res.status}`)
+
+      const { liked, totalLikes } = await res.json() as {
+        liked: boolean
+        totalLikes: number
+      } 
+      setIsLiked(liked)
+      setLikesCount(totalLikes)
+      onLikeSuccess?.({ liked, totalLikes });
+
+    } catch (err) {
+      console.error('Like error', err)
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   return (
     <button
       type="button"
-      className={`flex items-center gap-1 ${isProcessing ? 'opacity-70' : ''}`}
       onClick={handleLike}
       disabled={isProcessing}
       aria-label={isLiked ? 'Retirer le like' : 'Aimer'}
       title={isLiked ? 'Retirer le like' : 'Aimer'}
+      className={`
+        flex items-center gap-1 fill-current
+        ${isLiked ? 'text-red-500 dark:text-red-500' : 'text-gray-500 dark:text-gray-400'}
+        ${size === 'small' ? 'text-sm' : 'text-base'}
+        ${isProcessing ? 'opacity-70' : ''}
+      `}
     >
-      {isLiked ?
-        <MdFavorite className={size === 'small' ? 'w-4 h-4 text-red-500' : 'w-5 h-5 text-red-500'} /> :
-        <MdFavoriteBorder className={size === 'small' ? 'w-4 h-4' : 'w-5 h-5'} />
+      {isLiked
+        ? <MdFavorite size={size === 'small' ? 16 : 20} />
+        : <MdFavoriteBorder size={size === 'small' ? 16 : 20} />
       }
       <span>{likesCount}</span>
     </button>
-  );
+  )
 }

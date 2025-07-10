@@ -6,32 +6,46 @@ import { ThreadItem, FlatComments } from '../../../components/Post';
 import PostForm from '../../../components/PostForm';
 import { useTranslation } from 'react-i18next';
 import { formatRelativeDate } from '@/i18n/formatRelativeDate';
+import type { Post as PostType } from '@/types/models'; 
 
 async function fetchAllCommentsRecursive(parentId: string): Promise<any[]> {
-  let all: any[] = [];
-  const res = await fetch(`/api/posts/${parentId}/comments`, { credentials: 'include' });
-  if (!res.ok) return all;
-  const data = await res.json();
-  all = [...data];
-  for (const comment of data) {
-    const children = await fetchAllCommentsRecursive(comment._id);
-    all.push(...children);
+  try {
+    const res = await fetch(`/api/posts/${parentId}/comments`, { 
+      credentials: 'include' 
+    });
+    
+    if (!res.ok) {
+      console.error('Erreur lors de la récupération des commentaires:', res.status);
+      return [];
+    }
+    
+    const directComments = await res.json();
+    let allComments = [...directComments];
+    
+    for (const comment of directComments) {
+      const subComments = await fetchAllCommentsRecursive(comment._id);
+      allComments = [...allComments, ...subComments];
+    }
+    
+    return allComments;
+  } catch (error) {
+    console.error('Erreur lors de la récupération récursive des commentaires:', error);
+    return [];
   }
-  return all;
 }
 
 export default function PostFocusPage({ params }: { params: { id: string } }) {
+
   const { t, i18n } = useTranslation();
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<PostType | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
-  const [expandedComments, setExpandedComments] = useState<Array<{ id: string, maxDisplayed: number }>>([]);
+  const [expandedComments, setExpandedComments] = useState<Array<{ id: string; maxDisplayed: number }>>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const router = useRouter();
 
-  // Récupère l'utilisateur connecté
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -42,7 +56,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
           ...user,
           profilePicture: user.profilePicture || '/default-avatar.svg'
         });
-      } catch (error) {
+      } catch {
         setCurrentUser({
           _id: '',
           username: 'utilisateur',
@@ -54,19 +68,16 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     fetchCurrentUser();
   }, []);
 
-  // Récupération du post et des commentaires (récursif)
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Récupère le post principal
         const resPost = await fetch(`/api/posts/${params.id}`, { credentials: 'include' });
         if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
         const postData = await resPost.json();
         setPost(postData);
 
-        // Récupère TOUS les commentaires de tous niveaux
         const allComments = await fetchAllCommentsRecursive(params.id);
         setComments(allComments);
       } catch (e: any) {
@@ -78,20 +89,42 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     fetchData();
   }, [params.id]);
 
-  // Refresh commentaires
   const refreshComments = async () => {
     const allComments = await fetchAllCommentsRecursive(params.id);
     setComments(allComments);
   };
+  const handlePostLike = (update: { liked: boolean; totalLikes: number }) => {
+    if (!post || !currentUser) return;
+    setPost(prev => {
+      if (!prev) return prev;
+      const userId = currentUser._id;
+      let newLikes = prev.likes as string[];
+      if (update.liked) {
+        if (!newLikes.includes(userId)) newLikes = [...newLikes, userId];
+      } else {
+        newLikes = newLikes.filter(id => id !== userId);
+      }
+      return { ...prev, likes: newLikes };
+    });
+  };
 
-  // Refresh post principal (pour likes sur le post principal)
-  const refreshPost = async () => {
-    try {
-      const resPost = await fetch(`/api/posts/${params.id}`, { credentials: 'include' });
-      if (!resPost.ok) throw new Error('Erreur lors du chargement du post');
-      const postData = await resPost.json();
-      setPost(postData);
-    } catch {}
+  const handleCommentLike = (
+    commentId: string,
+    liked: boolean,
+    totalLikes: number
+  ) => {
+    setComments(prev =>
+      prev.map(c =>
+        c._id === commentId
+          ? {
+              ...c,
+              likes: liked
+                ? [...c.likes, currentUser._id]
+                : c.likes.filter((id: string) => id !== currentUser._id),
+            }
+          : c
+      )
+    );
   };
 
   // Formatage date relative (utilitaire partagé)
@@ -100,12 +133,22 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</div>;
   if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{t('post.error', { error })}</div>;
   if (!post) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.not_found')}</div>;
+  const refreshPost = async () => {
+    try {
+      const res = await fetch(`/api/posts/${params.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Erreur lors du rafraîchissement du post');
+      const postData = await res.json();
+      setPost(postData);
+    } catch (err) {
+      console.error('refreshPost error:', err);
+    }
+  };
+
 
   const repliesCount = comments.filter(c => c.parentPost === post._id).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100
-      dark:from-[#0c0e1a] dark:via-[#141622] dark:to-[#0c0e1a] flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 dark:from-[#0c0e1a] dark:via-[#141622] dark:to-[#0c0e1a] flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors">
       <div className="flex flex-1 w-full">
         <main className="flex-1 w-full max-w-full md:max-w-2xl mx-auto py-4 px-2 sm:py-8 sm:px-4 flex flex-col relative">
           {/* Bouton retour */}
@@ -117,6 +160,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               ← {t('post.back')}
             </button>
           </div>
+
           {/* Post principal */}
           <div className="bg-white dark:bg-[#151925] rounded-xl sm:rounded-2xl shadow-md border border-blue-200 dark:border-blue-800 p-3 sm:p-6 mb-4 sm:mb-6 transition-colors">
             <ThreadItem
@@ -127,24 +171,41 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               replyingCommentId={replyingCommentId}
               setReplyingCommentId={setReplyingCommentId}
               isClickable={false}
-              onLike={refreshPost}
+              onLike={(
+                _itemId: string,
+                _liked: boolean,
+                _totalLikes: number
+              ) => {
+                refreshPost()
+              }}
+              onCommentCreated={refreshComments}
               currentUser={currentUser}
             />
           </div>
+
           {/* Commentaires */}
           <div className="flex-1 overflow-y-auto pb-24 sm:pb-32">
-            <FlatComments
-              parentId={post._id}
-              formatDate={formatDate}
-              allComments={comments}
-              replyingCommentId={replyingCommentId}
-              setReplyingCommentId={setReplyingCommentId}
-              onLike={refreshComments}
-              expandedComments={expandedComments}
-              setExpandedComments={setExpandedComments}
-              currentUser={currentUser}
-            />
+            {comments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                Aucun commentaire pour l'instant. Soyez le premier à commenter !
+              </div>
+            ) : (
+              <FlatComments 
+                parentId={post._id} 
+                formatDate={formatDate} 
+                allComments={comments} 
+                replyingCommentId={replyingCommentId}
+                setReplyingCommentId={setReplyingCommentId}
+                onLike={(_id, _liked, _totalLikes) => {
+                  refreshComments()
+                }}
+                expandedComments={expandedComments}
+                setExpandedComments={setExpandedComments}
+                currentUser={currentUser}
+              />
+            )}
           </div>
+
           {/* Formulaire réponse */}
           {!replyingCommentId && (
             <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white/90 dark:from-[#151925]/90 to-transparent pt-2 sm:pt-4 z-30 transition-colors">
@@ -152,7 +213,6 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
                 parentPostId={post._id}
                 onPostCreated={() => {
                   refreshComments();
-                  refreshPost();
                 }}
                 placeholder={t('post.reply_placeholder')}
               />
