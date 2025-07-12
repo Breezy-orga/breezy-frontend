@@ -63,8 +63,8 @@
     "no_bio": "Aucune biographie renseignée.",
     "member_since": "Membre depuis le {{date}}",
     "unknown_date": "date inconnue",
-    "followers_short": "abonné",
-    "following_short": "abonnement",
+    "followers_short": "Abonné",
+    "following_short": "Abonnement",
     "edit_profile": "Modifier mon profil",
     "unfollow": "Se désabonner",
     "follow": "Suivre",
@@ -76,7 +76,16 @@
     "delete_success": "Compte supprimé !",
     "delete_error": "Erreur lors de la suppression du compte.",
     "delete_account": "Supprimer ce compte",
-    "posts": "Publications"
+    "posts": "Publications",
+    "save_photo": "Enregistrer la photo",
+    "display_name": "Nom d'affichage",
+    "username": "Nom d'utilisateur",
+    "upload_error": "Erreur lors du téléchargement de la photo",
+    "photo_updated": "Photo mise à jour avec succès",
+    "uploading": "Téléchargement de la photo...",
+    "change_photo": "Changer la photo de profil",
+    "username_readonly": "Nom d'utilisateur (non modifiable)",
+    "profile_updated": "Profil mis à jour avec succès"
   },
   "login": {
     "no_account": "Pas encore de compte ? ",

@@ -299,7 +299,9 @@ function ThreadItem({
   onLike,
   onCommentCreated,
   isClickable = true,
-  isComment = false
+  isComment = false,
+  onDelete,
+  deletingCommentId
 }: {
   item: any,
   currentUser: User,
@@ -311,7 +313,9 @@ function ThreadItem({
   onLike?: (itemId: string, liked: boolean, totalLikes: number) => void,
   onCommentCreated?: () => void,
   isClickable?: boolean,
-  isComment?: boolean
+  isComment?: boolean,
+  onDelete?: (commentId: string) => void,
+  deletingCommentId?: string | null
 }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState(item.likes.length)
@@ -538,7 +542,9 @@ function FlatComments({
   onLike,
   onCommentCreated,
   expandedComments,
-  setExpandedComments
+  setExpandedComments,
+  onDelete,
+  deletingCommentId
 }: {
   parentId: string | null,
   formatDate: (date: string) => string,
@@ -549,7 +555,9 @@ function FlatComments({
   onCommentCreated?: () => void,
   expandedComments: Array<{ id: string, maxDisplayed: number }>,
   setExpandedComments: React.Dispatch<any>,
-  currentUser: User
+  currentUser: User,
+  onDelete?: (commentId: string) => void,
+  deletingCommentId?: string | null
 }): React.ReactNode {
   const { t } = useTranslation();
   const maxDisplayedComments = 3
@@ -610,6 +618,8 @@ function FlatComments({
               onLike={onLike}
               onCommentCreated={onCommentCreated}
               isComment={true}
+              onDelete={onDelete}
+              deletingCommentId={deletingCommentId}
             />
 
             {/* Bouton pour afficher/masquer les réponses */}
@@ -648,6 +658,8 @@ function FlatComments({
                   onCommentCreated={onCommentCreated}
                   expandedComments={expandedComments}
                   setExpandedComments={setExpandedComments}
+                  onDelete={onDelete}
+                  deletingCommentId={deletingCommentId}
                 />
               </div>
             )}
@@ -657,6 +669,5 @@ function FlatComments({
     </div>
   )
 }
-
 
 export { ThreadItem, FlatComments }

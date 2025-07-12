@@ -5,7 +5,7 @@ import api from '@/lib/axios'
 import { User } from '@/types/models'
 import PostList from './PostList'
 import Link from 'next/link'
-import { MdArrowBack } from 'react-icons/md'
+import { MdArrowBack, MdEdit, MdCamera } from 'react-icons/md'
 import { useTranslation } from 'react-i18next'
 import { formatRelativeDate } from '../i18n/formatRelativeDate'
 
@@ -20,13 +20,39 @@ export default function UserProfile({ userId }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({ username: '', bio: '' })
+  const [formData, setFormData] = useState({ 
+    name: '',
+    bio: '' 
+  })
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'error';
+    visible: boolean;
+  } | null>(null)
 
   const [viewMode, setViewMode] = useState<'profile' | 'followers' | 'following'>('profile')
   const [followers, setFollowers] = useState<User[]>([])
   const [following, setFollowing] = useState<User[]>([])
 
   const isSelf = user?._id === currentUser?._id
+
+  // Fonction pour afficher une notification
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type, visible: true })
+    setTimeout(() => {
+      setNotification(prev => prev ? { ...prev, visible: false } : null)
+      setTimeout(() => setNotification(null), 300) // Délai pour l'animation de sortie
+    }, 3000)
+  }
+
+  // Fonction pour fermer manuellement la notification
+  const closeNotification = () => {
+    setNotification(prev => prev ? { ...prev, visible: false } : null)
+    setTimeout(() => setNotification(null), 300)
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +64,7 @@ export default function UserProfile({ userId }: Props) {
         setUser(userRes.data)
         setCurrentUser(meRes.data)
         setFormData({
-          username: userRes.data.username || '',
+          name: userRes.data.name || userRes.data.username || '',
           bio: userRes.data.bio || ''
         })
       } catch (err) {
@@ -62,20 +88,89 @@ export default function UserProfile({ userId }: Props) {
           setFollowing(res.data)
         }
       } catch (error) {
-        console.error(t('profile.follow_error'), error)
+        // Removed console.error to eliminate console notifications
       }
     }
     if (viewMode !== 'profile') fetchList()
   }, [viewMode, userId, currentUser, t])
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Vérifier le type de fichier
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        alert(t('profile.invalid_file_type'))
+        return
+      }
+
+      // Vérifier la taille (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(t('profile.file_too_large'))
+        return
+      }
+
+      setSelectedFile(file)
+      
+      // Créer une URL de prévisualisation
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadProfilePicture = async () => {
+    if (!selectedFile) return
+
+    try {
+      setUploading(true)
+      
+      // Convertir le fichier en base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string
+        
+        try {
+          const response = await api.post('/users/upload-profile-picture', {
+            base64: base64,
+            contentType: selectedFile.type
+          })
+          
+          // Mettre à jour l'utilisateur avec la nouvelle photo
+          if (user) {
+            setUser({ ...user, profilePicture: response.data.profilePicture })
+          }
+          
+          // Réinitialiser les états
+          setSelectedFile(null)
+          setPreviewUrl(null)
+          
+          showNotification(t('profile.photo_updated') || 'Photo mise à jour avec succès', 'success')
+        } catch (error) {
+          alert(t('profile.upload_error'))
+        } finally {
+          setUploading(false)
+        }
+      }
+      reader.readAsDataURL(selectedFile)
+    } catch (error) {
+      alert(t('profile.upload_error'))
+      setUploading(false)
+    }
+  }
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await api.put('/users/me', formData)
+      // Utiliser la route correcte
+      const res = await api.put('/users/profile', formData)
       setUser(res.data)
       setIsEditing(false)
-    } catch {
-      alert(t('profile.update_error'))
+      showNotification(t('profile.profile_updated') || 'Profil mis à jour avec succès', 'success')
+    } catch (error) {
+      showNotification(t('profile.update_error') || 'Erreur lors de la mise à jour', 'error')
     }
   }
 
@@ -91,7 +186,7 @@ export default function UserProfile({ userId }: Props) {
       setUser(userRes.data)
       setCurrentUser(meRes.data)
     } catch (error) {
-      console.error("Erreur lors du (un)follow :", error)
+      // Removed console.error to eliminate console notifications
     }
   }
 
@@ -114,9 +209,6 @@ export default function UserProfile({ userId }: Props) {
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>
   if (!user) return <div className="text-center p-4">{t('profile.not_found')}</div>
 
-  // ----------------------------
-  // AFFICHAGE DES FOLLOWERS/FOLLOWING
-  // ----------------------------
   if (viewMode !== 'profile') {
     const list = viewMode === 'followers' ? followers : following
     return (
@@ -130,13 +222,13 @@ export default function UserProfile({ userId }: Props) {
               onClick={() => setViewMode('followers')}
               className={`px-4 py-2 ${viewMode === 'followers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              {t('profile.followers', { count: user.followers?.length ?? 0 })}
+              {t('profile.followers_short', { count: user.followers?.length ?? 0 })} ({user.followers?.length ?? 0})
             </button>
             <button
               onClick={() => setViewMode('following')}
               className={`px-4 py-2 ${viewMode === 'following' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
             >
-              {t('profile.following', { count: user.following?.length ?? 0 })}
+              {t('profile.following_short', { count: user.following?.length ?? 0 })} ({user.following?.length ?? 0})
             </button>
           </div>
         </div>
@@ -145,9 +237,29 @@ export default function UserProfile({ userId }: Props) {
             <p className="text-gray-500">{t('profile.no_results')}</p>
           ) : (
             list.map((u: any) => (
-              <div key={u._id} className="flex items-center gap-3">
-                <img src={u.profilePicture || '/default-avatar.png'} className="w-9 h-9 rounded-full" />
-                <Link href={`/profile/${u._id}`} className="hover:underline">@{u.username}</Link>
+              <div key={u._id} className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                <img 
+                  src={u.profilePicture || '/default-avatar.png'} 
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0" 
+                  alt={`Avatar de ${u.username}`}
+                />
+                <div className="flex-1 min-w-0">
+                  <Link href={`/profile/${u._id}`} className="block hover:underline">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {u.name || u.username}
+                      </h3>
+                      <span className="text-gray-500 dark:text-gray-400 text-sm truncate">
+                        @{u.username}
+                      </span>
+                    </div>
+                    {u.bio && (
+                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">
+                        {u.bio}
+                      </p>
+                    )}
+                  </Link>
+                </div>
               </div>
             ))
           )}
@@ -156,41 +268,143 @@ export default function UserProfile({ userId }: Props) {
     )
   }
 
-  // ----------------------------
-  // AFFICHAGE PROFIL NORMAL
-  // ----------------------------
   return (
-    <div>
+    <div className="relative">
+      {notification && (
+        <div 
+          className={`fixed top-4 right-4 z-50 max-w-sm w-full transition-all duration-300 transform ${
+            notification.visible 
+              ? 'translate-x-0 opacity-100' 
+              : 'translate-x-full opacity-0'
+          }`}
+        >
+          <div className={`rounded-lg shadow-lg p-4 flex items-center justify-between ${
+            notification.type === 'success' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+              }`}>
+                {notification.type === 'success' ? '✓' : '✕'}
+              </div>
+              <span className="font-medium">{notification.message}</span>
+            </div>
+            <button
+              onClick={closeNotification}
+              className={`ml-4 transition-colors ${
+                notification.type === 'success' 
+                  ? 'text-green-200 hover:text-green-100' 
+                  : 'text-red-200 hover:text-red-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex flex-col md:flex-row items-start gap-6 mb-8">
-        <img
-          src={user.profilePicture || '/default-avatar.png'}
-          alt={user.username}
-          className="w-24 h-24 rounded-full object-cover border border-gray-300"
-        />
+        <div className="flex-shrink-0 flex flex-col items-center">
+          <div className="relative">
+            <img
+              src={previewUrl || user.profilePicture || '/default-avatar.png'}
+              alt={user.name || user.username}
+              className="w-24 h-24 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
+            />
+          </div>
+          {isSelf && isEditing && (
+            <div className="mt-3">
+              <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-md font-medium text-sm inline-flex items-center gap-2">
+                <MdCamera size={16} />
+                {t('profile.change_photo') || 'Changer la photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
+          {selectedFile && isEditing && (
+            <div className="mt-3 flex flex-col gap-2 items-center">
+              <button
+                onClick={uploadProfilePicture}
+                disabled={uploading}
+                className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md font-medium"
+              >
+                {uploading ? t('profile.uploading') : t('profile.save_photo')}
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedFile(null)
+                  setPreviewUrl(null)
+                }}
+                className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors shadow-md font-medium"
+              >
+                {t('profile.cancel')}
+              </button>
+            </div>
+          )}
+        </div>
         <div className="w-full">
           {isEditing && isSelf ? (
             <form onSubmit={handleUpdate} className="space-y-4">
-              <input
-                type="text"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
-                placeholder={t('profile.username_placeholder')}
-              />
-              <textarea
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
-                placeholder={t('profile.bio_placeholder')}
-              />
-              <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('profile.display_name')}</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 transition-colors"
+                  placeholder={t('profile.display_name_placeholder')}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('profile.username')}</label>
+                <input
+                  type="text"
+                  value={user.username}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  placeholder={t('profile.username_placeholder')}
+                  disabled
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('profile.username_readonly')}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('profile.bio')}</label>
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 transition-colors resize-none"
+                  placeholder={t('profile.bio_placeholder')}
+                  rows={3}
+                  maxLength={160}
+                />
+                <div className="text-xs text-gray-500 mt-1 text-right">
+                  {formData.bio.length}/160 {t('profile.characters')}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="submit" 
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-md"
+                >
                   {t('profile.save')}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                  onClick={() => {
+                    setIsEditing(false)
+                    setSelectedFile(null)
+                    setPreviewUrl(null)
+                  }}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-md"
                 >
                   {t('profile.cancel')}
                 </button>
@@ -198,24 +412,25 @@ export default function UserProfile({ userId }: Props) {
             </form>
           ) : (
             <>
-              <h2 className="text-xl font-semibold">@{user.username}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name || user.username}</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">@{user.username}</p>
               <p className="text-gray-600 dark:text-gray-300 mt-2">
                 {user.bio || t('profile.no_bio')}
               </p>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                 {t('profile.member_since', { date: user.createdAt ? formatProfileDate(user.createdAt) : t('profile.unknown_date') })}
               </div>
-              <div className="mt-2 text-sm space-x-4">
+              <div className="mt-3 text-sm space-x-4">
                 <button
                   onClick={() => setViewMode('followers')}
-                  className="hover:underline text-black dark:text-white"
+                  className="hover:underline text-gray-900 dark:text-gray-100 transition-colors"
                 >
                   <strong>{user.followers?.length ?? 0}</strong> {t('profile.followers_short', { count: user.followers?.length ?? 0 })}
                 </button>
-                <span>·</span>
+                <span className="text-gray-400">·</span>
                 <button
                   onClick={() => setViewMode('following')}
-                  className="hover:underline text-black dark:text-white"
+                  className="hover:underline text-gray-900 dark:text-gray-100 transition-colors"
                 >
                   <strong>{user.following?.length ?? 0}</strong> {t('profile.following_short', { count: user.following?.length ?? 0 })}
                 </button>
@@ -223,26 +438,26 @@ export default function UserProfile({ userId }: Props) {
               {isSelf && !isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  style={{ backgroundColor: "#2563eb", color: "#fff" }}
+                  className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-md"
                 >
+                  <MdEdit size={16} />
                   {t('profile.edit_profile')}
                 </button>
               )}
               {!isSelf && (
                 <button
                   onClick={handleFollowToggle}
-                  className="mt-4 inline-block px-4 py-2 rounded-lg transition font-semibold"
+                  className="mt-4 inline-block px-6 py-3 rounded-lg transition-all duration-200 font-semibold shadow-md focus:ring-2 focus:ring-offset-2"
                   style={
                     (currentUser?.following ?? []).includes(user._id)
-                      ? { backgroundColor: "#fee2e2", color: "#dc2626" } // rouge-100 bg, rouge-600 texte
-                      : { backgroundColor: "#2563eb", color: "#fff" }    // bleu-600 bg, blanc texte
+                      ? { backgroundColor: "#fee2e2", color: "#dc2626" }
+                      : { backgroundColor: "#2563eb", color: "#fff" }
                   }
                   onMouseOver={e => {
                     if ((currentUser?.following ?? []).includes(user._id)) {
-                      e.currentTarget.style.backgroundColor = "#fecaca"; // rouge-200
+                      e.currentTarget.style.backgroundColor = "#fecaca";
                     } else {
-                      e.currentTarget.style.backgroundColor = "#1d4ed8"; // bleu-700
+                      e.currentTarget.style.backgroundColor = "#1d4ed8";
                     }
                   }}
                   onMouseOut={e => {
@@ -265,18 +480,17 @@ export default function UserProfile({ userId }: Props) {
               onClick={async () => {
                 try {
                   const newRole = user.role === 'moderator' ? 'user' : 'moderator';
-                  // await api.put(`/users/${user._id}/role`, { role: newRole });
                   alert(t('profile.role_demo', { role: newRole }))
                 } catch (err) {
                   alert(t('profile.role_error'))
                 }
               }}
-              className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+              className="mt-4 inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-semibold shadow-md"
             >
               {user.role === 'moderator' ? t('profile.demote') : t('profile.promote')}
             </button>
           )}
-          {(currentUser?.role === 'admin' && !isSelf) || currentUser?.role != 'admin' && isSelf ? (
+          {(currentUser?.role === 'admin' && !isSelf) || (currentUser?.role !== 'admin' && isSelf) ? (
             <button
               onClick={async () => {
                 if (confirm(t('profile.delete_confirm'))) {
@@ -289,15 +503,14 @@ export default function UserProfile({ userId }: Props) {
                   }
                 }
               }}
-              className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-              style={{ backgroundColor: "#dc2626", color: "#fff" }} // rouge Tailwind 600
-          >
+              className="mt-4 inline-block px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 font-semibold ml-3 shadow-md"
+            >
               {t('profile.delete_account')}
             </button>
           ) : null}
         </div>
       </div>
-      <h2 className="text-xl font-bold mb-4">{t('profile.posts')}</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">{t('profile.posts')}</h2>
       <PostList fetchUrl={`/api/posts/user/${user._id}`} />
     </div>
   )

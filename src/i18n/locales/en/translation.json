@@ -67,8 +67,8 @@
     "no_bio": "No bio provided.",
     "member_since": "Member since {{date}}",
     "unknown_date": "unknown date",
-    "followers_short": "follower",
-    "following_short": "following",
+    "followers_short": "Follower",
+    "following_short": "Following",
     "edit_profile": "Edit my profile",
     "unfollow": "Unfollow",
     "follow": "Follow",
@@ -80,7 +80,16 @@
     "delete_success": "Account deleted!",
     "delete_error": "Error deleting account.",
     "delete_account": "Delete this account",
-    "posts": "Posts"
+    "posts": "Posts",
+    "save_photo": "Save photo",
+    "display_name": "Display name",
+    "username": "Username",
+    "upload_error": "Error uploading photo",
+    "photo_updated": "Photo updated successfully",
+    "uploading": "Uploading photo...",
+    "change_photo": "Change profile photo",
+    "username_readonly": "Username (not editable)",
+    "profile_updated": "Profile updated successfully"
   },
 
   "login": {

@@ -44,6 +44,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
   const [expandedComments, setExpandedComments] = useState<Array<{ id: string; maxDisplayed: number }>>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     const allComments = await fetchAllCommentsRecursive(params.id);
     setComments(allComments);
   };
+
   const handlePostLike = (update: { liked: boolean; totalLikes: number }) => {
     if (!post || !currentUser) return;
     setPost(prev => {
@@ -127,12 +129,72 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     );
   };
 
+  // Fonction pour supprimer un commentaire
+  const handleDeleteComment = async (commentId: string) => {
+  if (!currentUser) return;
+  
+  const commentToDelete = comments.find(c => c._id === commentId);
+  if (!commentToDelete) return;
+
+  // Correction ici : author peut être string ou User
+  const commentAuthorId = typeof commentToDelete.author === 'string'
+    ? commentToDelete.author
+    : commentToDelete.author?._id;
+
+  const postAuthorId = typeof post?.author === 'string'
+    ? post.author
+    : post?.author?._id;
+
+  // Vérifier si l'utilisateur peut supprimer ce commentaire
+  const canDelete = commentAuthorId === currentUser._id ||
+                   (post && postAuthorId === currentUser._id);
+
+  if (!canDelete) {
+    alert(t('post.delete_not_allowed') || 'Vous n\'êtes pas autorisé à supprimer ce commentaire');
+    return;
+  }
+
+    // Demander confirmation
+    const confirmDelete = window.confirm(
+      t('post.confirm_delete_comment') || 'Êtes-vous sûr de vouloir supprimer ce commentaire ?'
+    );
+    
+    if (!confirmDelete) return;
+
+    setDeletingCommentId(commentId);
+    
+    try {
+      const response = await fetch(`/api/posts/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la suppression');
+      }
+
+      // Rafraîchir les commentaires après suppression
+      await refreshComments();
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression du commentaire:', error);
+      alert(t('post.delete_error') || 'Erreur lors de la suppression du commentaire');
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
+
   // Formatage date relative (utilitaire partagé)
   const formatDate = (dateString: string) => formatRelativeDate(dateString, t);
 
   if (loading || !currentUser) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</div>;
   if (error) return <div className="p-6 text-center text-red-500 dark:text-red-400">{t('post.error', { error })}</div>;
   if (!post) return <div className="p-6 text-center text-gray-500 dark:text-gray-400">{t('post.not_found')}</div>;
+  
   const refreshPost = async () => {
     try {
       const res = await fetch(`/api/posts/${params.id}`, { credentials: 'include' });
@@ -143,7 +205,6 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
       console.error('refreshPost error:', err);
     }
   };
-
 
   const repliesCount = comments.filter(c => c.parentPost === post._id).length;
 
@@ -202,6 +263,8 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
                 expandedComments={expandedComments}
                 setExpandedComments={setExpandedComments}
                 currentUser={currentUser}
+                onDelete={handleDeleteComment}
+                deletingCommentId={deletingCommentId}
               />
             )}
           </div>
