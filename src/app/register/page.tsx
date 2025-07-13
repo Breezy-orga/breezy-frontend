@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTranslation } from 'react-i18next';
+import * as React from 'react';
 
 export default function Register() {
   const { t } = useTranslation();
@@ -14,6 +15,22 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+ useEffect(() => {
+  // Empêche la redirection automatique si on vient d'un logout
+  const fromLogout = window.sessionStorage.getItem('fromLogout');
+  if (fromLogout === 'true') {
+    window.sessionStorage.removeItem('fromLogout');
+    return;
+  }
+  fetch('/api/users/me', { credentials: 'include' })
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      if (data && data._id) {
+        router.replace('/feed');
+      }
+    });
+}, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

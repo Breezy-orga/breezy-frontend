@@ -8,10 +8,30 @@ import { ThemeProvider } from '@/components/ThemeProviderWrapper';
 import {ThemeToggle} from '@/components/ThemeToggle';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const router = useRouter();
+
+ useEffect(() => {
+  // Empêche la redirection si on vient d'un logout (navigation push)
+  if (window && window.performance) {
+    const entries = window.performance.getEntriesByType('navigation');
+    const navType = (entries[0] && (entries[0] as PerformanceNavigationTiming).type) || '';
+    // Si navigation est de type 'reload' ou 'navigate', on vérifie l'authentification
+    if (navType !== 'reload' && navType !== 'navigate') return;
+  }
+  fetch('/api/users/me', { credentials: 'include' })
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      if (data && data._id) {
+        router.replace('/feed');
+      }
+    });
+}, [router]);
 
   return (
     <div className={`min-h-screen flex flex-col relative overflow-hidden
