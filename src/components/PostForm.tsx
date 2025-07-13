@@ -33,7 +33,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   
-  // Mentions
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionSuggestions, setMentionSuggestions] = useState<Array<{_id: string; username: string; profilePicture?: string}>>([])
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false)
@@ -58,7 +57,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
     fetchUser()
   }, [])
 
-  // Mention auto-suggest
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
       if (query.length < 2) {
@@ -80,15 +78,12 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
     []
   );
   
-  // Gère le changement de texte + détection mentions
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
 
-    // position du curseur
     if (textareaRef.current) setCursorPosition(textareaRef.current.selectionStart);
 
-    // Détection mention
     const cursorPos = textareaRef.current?.selectionStart || 0;
     const contentBeforeCursor = newContent.substring(0, cursorPos);
     const match = contentBeforeCursor.match(/@([\w.-]*)$/);
@@ -104,7 +99,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
     }
   };
 
-  // Gestion navigation suggestions avec le clavier
   useEffect(() => {
     if (!showMentionSuggestions) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -128,7 +122,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showMentionSuggestions, mentionSuggestions, selectedSuggestionIndex, content]);
 
-  // Insère la mention dans le champ texte à la position du curseur
   const insertMention = (username: string) => {
     if (!textareaRef.current) return;
     const cursorPos = textareaRef.current.selectionStart;
@@ -150,7 +143,6 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
     }, 0);
   };
 
-  // Upload média
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (mediaData.length >= 4) {
@@ -321,9 +313,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
                           }}
                           poster={preview}
                         />
-                        <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md flex items-center gap-1">
-                          <span className="text-white font-bold">▶</span> {t('postform.video_label')}
-                        </div>
+                        {/* 🔧 SUPPRESSION: Label vidéo retiré */}
                       </div>
                     ) : (
                       <Image
@@ -359,7 +349,7 @@ export default function PostForm({ onPostCreated, parentPostId, placeholder = 'p
                   <button 
                     type="button" 
                     onClick={() => removeTag(tag)}
-                    className="w-4 h-4 rounded-full bg-blue-200 hover:bg-blue-300 flex items-center justify-center text-blue-800"
+                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5 flex items-center justify-center text-blue-800 transition-colors"
                   >
                     <MdClose className="w-3 h-3" />
                   </button>

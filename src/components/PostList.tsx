@@ -53,6 +53,27 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     )
   }
 
+  const handlePostDelete = (postId: string) => {
+    console.log('handlePostDelete appelé pour le post:', postId);
+    
+    const postExists = posts.some(post => post._id === postId);
+    if (!postExists) {
+      console.log('Post déjà supprimé de la liste, appel ignoré');
+      return;
+    }
+
+    setPosts(prevPosts => {
+      const newPosts = prevPosts.filter(post => post._id !== postId);
+      console.log('Posts mis à jour:', newPosts.length, 'posts restants');
+      return newPosts;
+    });
+    
+    if (onDelete) {
+      console.log('Appel de la fonction onDelete du parent');
+      onDelete(postId);
+    }
+  };
+
   const fetchPosts = async () => {
     try {
       setLoading(true)
@@ -70,8 +91,21 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
   }
 
   useEffect(() => {
-    setPosts(initialPosts || [])
-  }, [initialPosts])
+    if (initialPosts && initialPosts.length > 0) {
+      setPosts(prevPosts => {
+        const existingIds = new Set(prevPosts.map(post => post._id));
+        
+        const newPosts = initialPosts.filter(post => !existingIds.has(post._id));
+        
+        if (newPosts.length > 0) {
+          console.log(`Ajout de ${newPosts.length} nouveaux posts`);
+          return [...newPosts, ...prevPosts];
+        }
+        
+        return prevPosts;
+      });
+    }
+  }, [initialPosts]);
 
   useEffect(() => {
     fetchPosts()
@@ -113,20 +147,28 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
-        {error}
+      <div className="text-center py-8">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button
+          onClick={fetchPosts}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          {t('postlist.retry', 'Réessayer')}
+        </button>
       </div>
     )
   }
 
+  const visiblePosts = posts
+
   return (
     <div className="space-y-4">
-      {posts.length === 0 ? (
+      {visiblePosts.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {t('postlist.empty')}
         </div>
       ) : (
-        posts.map(post => {
+        visiblePosts.map(post => {
           if (!post?._id) {
             console.error('Post invalide détecté:', post)
             return null
@@ -151,8 +193,11 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
               }}
               onShare={postId => {
                 console.log('Partager le post:', postId)
+                navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`)
+                  .then(() => console.log('Lien copié dans le presse-papier'))
+                  .catch(() => console.error('Erreur lors de la copie du lien'))
               }}
-              onDelete={onDelete}
+              onDelete={handlePostDelete}
             />
           )
         })

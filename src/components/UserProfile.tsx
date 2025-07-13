@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { MdArrowBack, MdEdit, MdCamera } from 'react-icons/md'
 import { useTranslation } from 'react-i18next'
 import { formatRelativeDate } from '../i18n/formatRelativeDate'
+import { ProfileSync } from '@/utils/profileSync'
 
 interface Props {
   userId?: string
@@ -44,7 +45,7 @@ export default function UserProfile({ userId }: Props) {
     setNotification({ message, type, visible: true })
     setTimeout(() => {
       setNotification(prev => prev ? { ...prev, visible: false } : null)
-      setTimeout(() => setNotification(null), 300) // Délai pour l'animation de sortie
+      setTimeout(() => setNotification(null), 300)
     }, 3000)
   }
 
@@ -88,7 +89,6 @@ export default function UserProfile({ userId }: Props) {
           setFollowing(res.data)
         }
       } catch (error) {
-        // Removed console.error to eliminate console notifications
       }
     }
     if (viewMode !== 'profile') fetchList()
@@ -97,14 +97,11 @@ export default function UserProfile({ userId }: Props) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Vérifier le type de fichier
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!validTypes.includes(file.type)) {
         alert(t('profile.invalid_file_type'))
         return
       }
-
-      // Vérifier la taille (5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert(t('profile.file_too_large'))
         return
@@ -112,7 +109,6 @@ export default function UserProfile({ userId }: Props) {
 
       setSelectedFile(file)
       
-      // Créer une URL de prévisualisation
       const reader = new FileReader()
       reader.onload = (e) => {
         setPreviewUrl(e.target?.result as string)
@@ -127,7 +123,6 @@ export default function UserProfile({ userId }: Props) {
     try {
       setUploading(true)
       
-      // Convertir le fichier en base64
       const reader = new FileReader()
       reader.onload = async (e) => {
         const base64 = e.target?.result as string
@@ -138,17 +133,28 @@ export default function UserProfile({ userId }: Props) {
             contentType: selectedFile.type
           })
           
-          // Mettre à jour l'utilisateur avec la nouvelle photo
           if (user) {
-            setUser({ ...user, profilePicture: response.data.profilePicture })
+            const updatedUser = { ...user, profilePicture: response.data.profilePicture }
+            setUser(updatedUser)
+            
+            if (isSelf) {
+              console.log('Émission de la mise à jour du profil (photo):', updatedUser);
+              console.log('URL de la nouvelle photo:', response.data.profilePicture);
+
+              setTimeout(() => {
+                ProfileSync.emitUpdate(updatedUser);
+                
+                window.dispatchEvent(new CustomEvent('forceUserRefresh'));
+              }, 100);
+            }
+
+            setSelectedFile(null)
+            setPreviewUrl(null)
+            
+            showNotification(t('profile.photo_updated') || 'Photo mise à jour avec succès', 'success')
           }
-          
-          // Réinitialiser les états
-          setSelectedFile(null)
-          setPreviewUrl(null)
-          
-          showNotification(t('profile.photo_updated') || 'Photo mise à jour avec succès', 'success')
         } catch (error) {
+          console.error('Erreur upload:', error);
           alert(t('profile.upload_error'))
         } finally {
           setUploading(false)
@@ -156,6 +162,7 @@ export default function UserProfile({ userId }: Props) {
       }
       reader.readAsDataURL(selectedFile)
     } catch (error) {
+      console.error('Erreur générale:', error);
       alert(t('profile.upload_error'))
       setUploading(false)
     }
@@ -164,12 +171,19 @@ export default function UserProfile({ userId }: Props) {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // Utiliser la route correcte
       const res = await api.put('/users/profile', formData)
-      setUser(res.data)
+      const updatedUser = res.data
+      setUser(updatedUser)
       setIsEditing(false)
+      
+      if (isSelf) {
+        console.log('Émission de la mise à jour du profil (données):', updatedUser);
+        ProfileSync.emitUpdate(updatedUser);
+      }
+      
       showNotification(t('profile.profile_updated') || 'Profil mis à jour avec succès', 'success')
     } catch (error) {
+      console.error('Erreur mise à jour:', error);
       showNotification(t('profile.update_error') || 'Erreur lors de la mise à jour', 'error')
     }
   }
@@ -178,7 +192,6 @@ export default function UserProfile({ userId }: Props) {
     if (!user) return
     try {
       await api.post(`/users/${user._id}/follow`)
-      // Rafraîchir le user connecté et la cible
       const userRes = userId
         ? await api.get(`/users/getById/${userId}`)
         : await api.get('/users/me')
@@ -186,11 +199,9 @@ export default function UserProfile({ userId }: Props) {
       setUser(userRes.data)
       setCurrentUser(meRes.data)
     } catch (error) {
-      // Removed console.error to eliminate console notifications
     }
   }
 
-  // Force re-render quand la langue change (pour que la date suive le provider)
   const [lang, setLang] = useState('');
   useEffect(() => {
     const updateLang = () => {
@@ -202,7 +213,6 @@ export default function UserProfile({ userId }: Props) {
     return () => { i18n.off('languageChanged', updateLang); };
   }, [i18n]);
 
-  // Formatage date d'inscription (UserProfile)
   const formatProfileDate = (dateString: string) => formatRelativeDate(dateString, t);
 
   if (loading) return <div className="text-center p-4">{t('profile.loading')}</div>

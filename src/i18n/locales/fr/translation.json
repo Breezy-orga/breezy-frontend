@@ -39,13 +39,20 @@
   },
   "search": {
     "title": "Recherche",
-    "placeholder": "Rechercher des tags ou des utilisateurs...",
-    "error": "Erreur : {{error}}",
-    "no_results": "Aucun résultat trouvé pour \"{{query}}\"",
-    "users": "Utilisateurs",
-    "view_profile": "Voir profil",
+    "placeholder": "Rechercher des utilisateurs, posts, tags...",
+    "tags": "Tags",
+    "users": "Utilisateurs", 
     "posts": "Publications",
-    "button": "Rechercher"
+    "search": "Rechercher",
+    "viewProfile": "Voir le profil",
+    "noResultsTitle": "Aucun résultat trouvé",
+    "noResultsMessage": "Aucun résultat pour \"{{query}}\"",
+    "welcomeTitle": "Commencez votre recherche",
+    "welcomeMessage": "Tapez au moins 2 caractères pour commencer la recherche",
+    "searchError": "Une erreur est survenue lors de la recherche",
+    "deleteError": "Erreur lors de la suppression",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce post ?",
+    "linkCopied": "Lien copié dans le presse-papier"
   },
   "profile": {
     "load_error": "Erreur lors du chargement du profil",
@@ -116,7 +123,19 @@
     "no_following_found": "Aucun abonné trouvé.",
     "message_placeholder": "Message à @{{user}}…",
     "sending": "Envoi…",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "delete_conversation": "Supprimer la conversation",
+    "delete": "Supprimer",
+    "confirm_delete_conversation": "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+    "select_messages" : "Sélectionner des messages",
+    "select_all": "Tout sélectionner",
+    "selected": "sélectionné(s)",
+    "confirm_delete_messages": "Êtes-vous sûr de vouloir supprimer {{count}} message(s) ? Cette action est irréversible.",
+    "delete_messages": "Supprimer les messages",
+    "delete_selected": "Supprimer la sélection",
+    "cancel_selection": "Annuler la sélection"
   },
   "notifications": {
     "title": "Notifications",
@@ -145,6 +164,10 @@
     "minutes_ago": "Il y a {{count}}m",
     "hours_ago": "Il y a {{count}}h",
     "days_ago": "Il y a {{count}}j",
+    "confirmDeleteComment": "Êtes-vous sûr de vouloir supprimer ce commentaire ?",
+    "deleteError": "Erreur lors de la suppression du commentaire",
+    "post.deleting": "Suppression du post...",
+    "comments_deleted": "Commentaires supprimés",
     "actions": {
       "comment": "Commenter",
       "share": "Partager",
@@ -156,6 +179,17 @@
     "video": "Vidéo",
     "show_more_comments": "Afficher plus de commentaires ({{count}})",
     "reply_to": "Répondre à @{{user}}"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur : {{error}}",
+    "no_results": "Aucun résultat trouvé",
+    "back": "Retour",
+    "delete_confirm": "Êtes-vous sûr de vouloir supprimer ?",
+    "delete_success": "Supprimé avec succès",
+    "delete_error": "Erreur lors de la suppression",
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
   },
   "register": {
     "slogan": "Un souffle de partage frais",
