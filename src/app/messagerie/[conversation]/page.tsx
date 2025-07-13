@@ -704,7 +704,7 @@ export default function ConversationPage() {
                     text-white disabled:text-gray-400 transition-colors shadow-sm hover:shadow-md
                     focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2
                     disabled:cursor-not-allowed"
-                  title={t('messagerie.send', 'Envoyer')}
+                  title={t('messagerie.send')}
                 >
                   <MdSend className="w-5 h-5" />
                 </button>

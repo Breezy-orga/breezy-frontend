@@ -94,7 +94,9 @@
     "uploading": "Uploading photo...",
     "change_photo": "Change profile photo",
     "username_readonly": "Username (not editable)",
-    "profile_updated": "Profile updated successfully"
+    "profile_updated": "Profile updated successfully",
+    "bio": "Bio",
+    "characters": "Characters"
   },
 
   "login": {
@@ -139,7 +141,8 @@
     "confirm_delete_messages": "Are you sure you want to delete {{count}} message(s)? This action is irreversible.",
     "delete_messages": "Delete messages",
     "delete_selected": "Delete selection",
-    "cancel_selection": "Cancel selection"
+    "cancel_selection": "Cancel selection",
+    "type_message": "Type your message..."
   },
 
   "notifications": {
