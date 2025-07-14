@@ -233,7 +233,9 @@
     "fetch_error": "Error fetching posts.",
     "load_error": "An error occurred while loading posts.",
     "empty": "No posts to display.",
-    "share_log": "Sharing post:"
+    "share_log": "Sharing post:",
+    "link_copied": "Link copied to clipboard",
+    "copy_error": "Error copying link"
   },
   "theme": {
     "light": "Thème clair actif",

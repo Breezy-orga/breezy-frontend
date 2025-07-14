@@ -219,7 +219,9 @@
     "fetch_error": "Erreur lors de la récupération des messages.",
     "load_error": "Une erreur est survenue lors du chargement des messages.",
     "empty": "Aucun message à afficher.",
-    "share_log": "Partager le post :"
+    "share_log": "Partager le post :",
+    "link_copied": "Lien copié dans le presse-papier",
+    "copy_error": "Erreur lors de la copie du lien"
   },
   "theme": {
     "light": "Thème clair actif",
