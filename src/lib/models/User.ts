@@ -2,6 +2,7 @@ export interface User {
   _id: string;
   username: string;
   email: string;
+  name?: string;
   role: 'user' | 'moderator' | 'admin';
   profilePicture?: string;
   bio?: string;

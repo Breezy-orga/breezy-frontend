@@ -23,22 +23,98 @@ import { useLanguage } from './LanguageProvider'
 import NotificationBadge from './NotificationBadge'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useTranslation } from 'react-i18next'
+import { ProfileSync } from '@/utils/profileSync'
 
 interface AppSidebarProps {
   className?: string
 }
 
+interface UserInfo {
+  _id: string;
+  username: string;
+  name?: string;
+  profilePicture?: string;
+  avatar?: string;
+  following?: string[];
+  followers?: string[];
+  [key: string]: any;
+}
+
 export default function AppSidebar({ className = '' }: AppSidebarProps) {
+  const router = useRouter()
   const pathname = usePathname()
-  const [menuOpen, setMenuOpen] = useState(false) // Pour d'autres menus existants ou futurs
+  const [menuOpen, setMenuOpen] = useState(false)
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   
   const { i18n, t } = useTranslation()
   const currentLanguage = i18n.language || 'fr'
-  const [userInfo, setUserInfo] = useState<any>(null)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [mounted, setMounted] = useState(false)
-   useEffect(() => {
+  const [loading, setLoading] = useState(true)
+  const [avatarKey, setAvatarKey] = useState(0)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // Fonction pour récupérer les infos utilisateur
+  const fetchUserInfo = async () => {
+    try {
+      const response = await fetch('/api/users/me', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('User data récupérée dans sidebar:', userData);
+        setUserInfo(userData);
+        setAvatarKey(prev => prev + 1);
+      } else {
+        console.error('Erreur API users/me:', response.status, response.statusText);
+        setUserInfo(null);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la récupération des infos utilisateur:', err);
+      setUserInfo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction de déconnexion améliorée
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setOptionsMenuOpen(false);
+    
+    try {
+      console.log('Début de la déconnexion...');
+      
+      const response = await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+      
+      if (response.ok) {
+        console.log('Déconnexion réussie côté serveur');
+        
+        setUserInfo(null);
+        setLoading(true);
+        
+        router.push('/login');
+        
+        console.log('Redirection vers login...');
+      } else {
+        console.error('Erreur lors de la déconnexion:', response.status);
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Erreur de déconnexion:', error);
+      window.location.href = '/login';
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  useEffect(() => {
     console.log('i18n debug:', {
       language: i18n.language,
       isInitialized: i18n.isInitialized,
@@ -46,6 +122,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
       testTranslation: t('sidebar.feed')
     })
   }, [i18n.language, t])
+
   // Fermer le menu d'options lorsqu'on clique ailleurs
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -67,29 +144,43 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [optionsMenuOpen]);
   
-  // Éviter les erreurs d'hydratation
+  // Récupération initiale
   useEffect(() => {
     setMounted(true);
-    // Récupérer l'info utilisateur via l'API (cookie JWT)
-    const fetchUserInfo = async () => {
-      try {
-        const response = await fetch('/api/users/me', {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          setUserInfo(userData);
-        } else {
-          setUserInfo(null);
-        }
-      } catch (err) {
-        setUserInfo(null);
-        console.error('Erreur lors de la récupération des infos utilisateur:', err);
-      }
-    };
-
     fetchUserInfo();
   }, []);
+
+  useEffect(() => {
+    console.log('AppSidebar: Mise en place de l\'écoute des mises à jour');
+    
+    const cleanup = ProfileSync.onUpdate((updatedUserData: UserInfo) => {
+      console.log('AppSidebar: Mise à jour reçue:', updatedUserData);
+      
+      // Vérifier que c'est le même utilisateur
+      if (userInfo && updatedUserData._id === userInfo._id) {
+        console.log('AppSidebar: Mise à jour appliquée');
+        setUserInfo(prevUserInfo => ({
+          ...prevUserInfo,
+          ...updatedUserData
+        }));
+        setAvatarKey(prev => prev + 1);
+      } else {
+        console.log('AppSidebar: Mise à jour ignorée (utilisateur différent)');
+      }
+    });
+
+    const handleForceRefresh = () => {
+      console.log('AppSidebar: Force refresh demandé');
+      fetchUserInfo();
+    };
+
+    window.addEventListener('forceUserRefresh', handleForceRefresh);
+
+    return () => {
+      cleanup();
+      window.removeEventListener('forceUserRefresh', handleForceRefresh);
+    };
+  }, [userInfo?._id]);
 
   // Navigation principale
   const navItems = [
@@ -100,14 +191,28 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     { key: 'notifications', label: t('sidebar.notifications'), icon: MdNotifications, href: '/notifications' },
   ];
 
-  const isActive = (path: string) => {
-    return pathname === path ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-600 dark:text-gray-400'
-  }
-
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
     setMenuOpen(false)
   }
+
+  // Fonction pour obtenir l'URL de l'avatar
+  const getAvatarUrl = () => {
+    if (!userInfo) return '/default-avatar.svg';
+    return userInfo.profilePicture || userInfo.avatar || '/default-avatar.svg';
+  };
+
+  // Fonction pour obtenir le nom d'affichage
+  const getDisplayName = () => {
+    if (!userInfo) return 'Utilisateur';
+    return userInfo.name || userInfo.username || 'Utilisateur';
+  };
+
+  // Fonction pour obtenir le nom d'utilisateur
+  const getUsername = () => {
+    if (!userInfo) return 'utilisateur';
+    return userInfo.username || 'utilisateur';
+  };
 
   return (
     <aside className={`fixed top-0 left-0 h-full flex flex-col bg-white dark:bg-gray-900 w-64 z-20 shadow-lg border-r border-gray-200 dark:border-gray-800 ${className}`}>
@@ -117,29 +222,71 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
           {/* Avatar et nom */}
           <div className="flex items-center space-x-3">
             <div className="relative h-12 w-12 rounded-full overflow-hidden ring-2 ring-white/50 dark:ring-gray-700/50">
-              <Image 
-                src={userInfo?.avatar || '/default-avatar.png'} 
-                alt="Avatar"
-                width={48}
-                height={48}
-                className="object-cover w-full h-full"
-              />
+              {loading ? (
+                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-full"></div>
+              ) : (
+                <Image 
+                  src={getAvatarUrl()} 
+                  alt="Avatar"
+                  width={48}
+                  height={48}
+                  className="object-cover w-full h-full"
+                  onError={(e) => {
+                    console.log('Erreur chargement avatar, fallback vers default');
+                    e.currentTarget.src = '/default-avatar.svg';
+                  }}
+                  key={`${userInfo?.profilePicture}-${avatarKey}`}
+                />
+              )}
             </div>
-            <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">{userInfo?.username || 'Utilisateur'}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">@{userInfo?.username || 'utilisateur'}</p>
+            <div className="min-w-0 flex-1">
+              {loading ? (
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                    {getDisplayName()}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    @{getUsername()}
+                  </p>
+                </>
+              )}
             </div>
           </div>
           
           {/* Stats */}
           <div className="flex justify-start gap-6 text-sm">
             <div className="flex items-center gap-1">
-              <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.following?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t('sidebar.following')}</span>
+              {loading ? (
+                <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              ) : (
+                <>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {userInfo?.following?.length || 0}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('sidebar.following')}
+                  </span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-gray-900 dark:text-gray-100">{userInfo?.followers?.length || 0}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{t('sidebar.followers')}</span>
+              {loading ? (
+                <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              ) : (
+                <>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {userInfo?.followers?.length || 0}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {t('sidebar.followers')}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -152,7 +299,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
             <li key={item.key}>
               <Link
                 href={item.href}
-                className={`flex items-center px-4 py-3 rounded-lg ${
+                className={`flex items-center px-4 py-3 rounded-lg relative ${
                   (item.key === 'search' ? pathname.startsWith('/search') : pathname === item.href)
                     ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400'
                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
@@ -160,6 +307,10 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               >
                 <item.icon className="w-5 h-5 mr-3" />
                 {item.label}
+                {/* Badge pour les notifications */}
+                {item.key === 'notifications' && (
+                  <NotificationBadge className="ml-auto" />
+                )}
               </Link>
             </li>
           ))}
@@ -215,8 +366,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 {theme === 'dark' ? t('sidebar.light_mode') : t('sidebar.dark_mode')}
               </button>
               
-              {
-                   <button 
+              <button 
                 onClick={() => {
                   i18n.changeLanguage(currentLanguage === 'fr' ? 'en' : 'fr');
                   setOptionsMenuOpen(false);
@@ -227,8 +377,6 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 <span className={`fi fi-${currentLanguage === 'fr' ? 'gb' : 'fr'}`}></span>
                 <span className="ml-2">{currentLanguage === 'fr' ? t('sidebar.english') : t('sidebar.french')}</span>
               </button>
-              
-              }
               
               <Link 
                 href="/settings" 
@@ -241,15 +389,17 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               </Link>
               
               <button
-                onClick={async () => {
-                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-                  window.location.href = '/login';
-                }}
-                className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className={`w-full flex items-center px-4 py-2.5 text-left transition-colors ${
+                  isLoggingOut 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                }`}
                 role="menuitem"
               >
                 <MdLogout className="w-5 h-5 mr-3" />
-                {t('sidebar.logout')}
+                {isLoggingOut ? 'Déconnexion...' : t('sidebar.logout')}
               </button>
             </div>
           )}
