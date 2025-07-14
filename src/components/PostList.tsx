@@ -103,6 +103,12 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     }
   }
 
+    // Fonction pour supprimer un post de la liste locale et appeler le parent si besoin
+  const handlePostDelete = (postId: string) => {
+    setPosts((prevPosts: PostType[]) => prevPosts.filter((post: PostType) => post._id !== postId));
+    if (onDelete) onDelete(postId);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -128,12 +134,12 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
         </div>
       )}
       <div className="space-y-4">
-        {visiblePosts.length === 0 ? (
+        {posts.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             {t('postlist.empty')}
           </div>
         ) : (
-          visiblePosts.map(post => {
+          posts.map(post => {
             if (!post?._id) {
               console.error('Post invalide détecté:', post)
               return null

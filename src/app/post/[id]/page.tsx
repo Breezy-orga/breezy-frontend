@@ -187,7 +187,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
           <div className="flex-1 overflow-y-auto pb-24 sm:pb-32">
             {comments.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Aucun commentaire pour l'instant. Soyez le premier à commenter !
+                {t('post.no_comments')}
               </div>
             ) : (
               <FlatComments 
