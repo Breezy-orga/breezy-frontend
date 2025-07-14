@@ -41,6 +41,7 @@ interface UserInfo {
 }
 
 export default function AppSidebar({ className = '' }: AppSidebarProps) {
+  const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false)
@@ -52,6 +53,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [avatarKey, setAvatarKey] = useState(0)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Fonction pour récupérer les infos utilisateur
   const fetchUserInfo = async () => {
@@ -74,6 +76,41 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
       setUserInfo(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fonction de déconnexion améliorée
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setOptionsMenuOpen(false);
+    
+    try {
+      console.log('Début de la déconnexion...');
+      
+      const response = await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+      
+      if (response.ok) {
+        console.log('Déconnexion réussie côté serveur');
+        
+        setUserInfo(null);
+        setLoading(true);
+        
+        router.push('/login');
+        
+        console.log('Redirection vers login...');
+      } else {
+        console.error('Erreur lors de la déconnexion:', response.status);
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Erreur de déconnexion:', error);
+      window.location.href = '/login';
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -262,7 +299,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
             <li key={item.key}>
               <Link
                 href={item.href}
-                className={`flex items-center px-4 py-3 rounded-lg ${
+                className={`flex items-center px-4 py-3 rounded-lg relative ${
                   (item.key === 'search' ? pathname.startsWith('/search') : pathname === item.href)
                     ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400'
                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
@@ -270,6 +307,10 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               >
                 <item.icon className="w-5 h-5 mr-3" />
                 {item.label}
+                {/* Badge pour les notifications */}
+                {item.key === 'notifications' && (
+                  <NotificationBadge className="ml-auto" />
+                )}
               </Link>
             </li>
           ))}
@@ -348,15 +389,17 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               </Link>
               
               <button
-                onClick={async () => {
-                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-                  window.location.href = '/login';
-                }}
-                className="w-full flex items-center px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className={`w-full flex items-center px-4 py-2.5 text-left transition-colors ${
+                  isLoggingOut 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                }`}
                 role="menuitem"
               >
                 <MdLogout className="w-5 h-5 mr-3" />
-                {t('sidebar.logout')}
+                {isLoggingOut ? 'Déconnexion...' : t('sidebar.logout')}
               </button>
             </div>
           )}

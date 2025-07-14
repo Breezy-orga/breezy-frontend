@@ -96,7 +96,9 @@
     "username_readonly": "Username (not editable)",
     "profile_updated": "Profile updated successfully",
     "bio": "Bio",
-    "characters": "Characters"
+    "characters": "Characters",
+    "followed_success": "You are now following @{{username}}",
+    "unfollowed_success": "You unfollowed @{{username}}"
   },
 
   "login": {

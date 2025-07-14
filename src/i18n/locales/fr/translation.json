@@ -94,7 +94,9 @@
     "username_readonly": "Nom d'utilisateur (non modifiable)",
     "profile_updated": "Profil mis à jour avec succès",
     "bio": "Biographie",
-    "characters": "Caractères"
+    "characters": "Caractères",
+    "followed_success": "Vous suivez maintenant @{{username}}",
+    "unfollowed_success": "Vous ne suivez plus @{{username}}"
   },
   "login": {
     "no_account": "Pas encore de compte ? ",

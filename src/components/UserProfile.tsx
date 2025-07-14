@@ -187,18 +187,62 @@ export default function UserProfile({ userId }: Props) {
       showNotification(t('profile.update_error') || 'Erreur lors de la mise à jour', 'error')
     }
   }
-
   const handleFollowToggle = async () => {
     if (!user) return
+    
     try {
-      await api.post(`/users/${user._id}/follow`)
+      const wasFollowing = (currentUser?.following ?? []).includes(user._id)
+      
+      console.log('handleFollowToggle démarré:');
+      console.log('- User à follow/unfollow:', user._id, '@' + user.username);
+      console.log('- Était déjà suivi:', wasFollowing);
+      
+      // Appeler l'API de follow avec notifications
+      const response = await api.post(`/users/${user._id}/follow`)
+      console.log('Réponse API follow:', response.data);
+      
+      // Rafraîchir les données utilisateur
       const userRes = userId
         ? await api.get(`/users/getById/${userId}`)
         : await api.get('/users/me')
       const meRes = await api.get('/users/me')
+      
       setUser(userRes.data)
       setCurrentUser(meRes.data)
+      
+      // Afficher une notification de succès basée sur l'action effectuée
+      if (response.data.action === 'followed') {
+        showNotification(
+          `Vous suivez maintenant @${user.username}`, 
+          'success'
+        )
+        console.log('👥 Utilisateur suivi avec succès');
+      } else if (response.data.action === 'unfollowed') {
+        showNotification(
+          `Vous ne suivez plus @${user.username}`, 
+          'success'
+        )
+        console.log('Utilisateur non suivi avec succès');
+      } else {
+        if (!wasFollowing) {
+          showNotification(
+            `Vous suivez maintenant @${user.username}`, 
+            'success'
+          )
+        } else {
+          showNotification(
+            `Vous ne suivez plus @${user.username}`, 
+            'success'
+          )
+        }
+      }
+      
     } catch (error) {
+      console.error('Erreur follow/unfollow:', error)
+      showNotification(
+        'Erreur lors de l\'action', 
+        'error'
+      )
     }
   }
 

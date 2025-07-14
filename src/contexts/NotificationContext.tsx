@@ -10,7 +10,7 @@ export interface Notification {
     username: string;
     profilePicture?: string;
   };
-  type: 'mention' | 'like' | 'follow' | 'comment';
+  type: 'mention' | 'like' | 'follow' ;
   post?: {
     _id: string;
     content: string;
@@ -27,6 +27,7 @@ interface NotificationContextType {
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  createNotification: (notification: Omit<Notification, '_id' | 'createdAt' | 'read'>) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -44,6 +45,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUserId, setLastUserId] = useState<string | null>(null);
 
   const fetchNotifications = async () => {
     if (typeof window === 'undefined') return;
@@ -52,11 +54,24 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch('/api/notifications', {
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
+        if (response.status === 401) {
+          // Utilisateur non connecté, réinitialiser
+          setNotifications([]);
+          setUnreadCount(0);
+          setLastUserId(null);
+          return;
+        }
         throw new Error(`Erreur: ${response.status}`);
       }
 
@@ -68,9 +83,52 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       setUnreadCount(unread);
     } catch (err) {
       console.error('Erreur lors de la récupération des notifications:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Timeout - Veuillez réessayer');
+      } else {
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Vérifier si l'utilisateur a changé
+  const checkAndUpdateUser = async () => {
+    try {
+      const response = await fetch('/api/users/me', { 
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const user = await response.json();
+        if (user._id !== lastUserId) {
+          console.log('Changement utilisateur détecté:', { 
+            ancien: lastUserId, 
+            nouveau: user._id 
+          });
+          setLastUserId(user._id);
+          
+          // Réinitialiser les notifications pour le nouvel utilisateur
+          setNotifications([]);
+          setUnreadCount(0);
+          setError(null);
+          
+          // Récupérer les nouvelles notifications
+          setTimeout(fetchNotifications, 100);
+        }
+      } else if (response.status === 401) {
+        // Utilisateur déconnecté
+        if (lastUserId !== null) {
+          console.log('Utilisateur déconnecté');
+          setNotifications([]);
+          setUnreadCount(0);
+          setLastUserId(null);
+          setError(null);
+        }
+      }
+    } catch (err) {
+      console.error('Erreur vérification utilisateur:', err);
     }
   };
 
@@ -78,11 +136,17 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (typeof window === 'undefined') return;
     
     try {
-      const response = await fetch(`api/notifications/${notificationId}/read`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PUT',
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`Erreur: ${response.status}`);
       }
@@ -106,13 +170,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const markAllAsRead = async () => {
     if (typeof window === 'undefined') return;
     
-    
     try {
-      const response = await fetch(`api/notifications/read-all`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`/api/notifications/read-all`, {
         method: 'PUT',
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`Erreur: ${response.status}`);
       }
@@ -129,15 +198,50 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  useEffect(() => {
-    // Récupérer les notifications au chargement
-    fetchNotifications();
+  const createNotification = async (notification: Omit<Notification, '_id' | 'createdAt' | 'read'>) => {
+    if (typeof window === 'undefined') return;
     
-    // Définir un intervalle pour actualiser les notifications
-    const interval = setInterval(fetchNotifications, 60000); // 1 minute
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        signal: controller.signal,
+        body: JSON.stringify(notification)
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Erreur: ${response.status}`);
+      }
+      
+      // Rafraîchir les notifications après création
+      await fetchNotifications();
+    } catch (err) {
+      console.error('Erreur lors de la création de la notification:', err);
+    }
+  };
+
+  useEffect(() => {
+    // Vérification initiale
+    checkAndUpdateUser();
+    
+    // Intervalle pour vérifier les changements d'utilisateur et les nouvelles notifications
+    const interval = setInterval(() => {
+      checkAndUpdateUser();
+      if (lastUserId) {
+        fetchNotifications();
+      }
+    }, 5000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [lastUserId]);
 
   return (
     <NotificationContext.Provider value={{
@@ -147,7 +251,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       error,
       fetchNotifications,
       markAsRead,
-      markAllAsRead
+      markAllAsRead,
+      createNotification
     }}>
       {children}
     </NotificationContext.Provider>

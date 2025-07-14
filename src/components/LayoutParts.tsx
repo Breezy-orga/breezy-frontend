@@ -17,25 +17,6 @@ import {
 import { useTheme } from 'next-themes';
 
 
-const fakeFollows = [
-  { username: 'alice', avatar: '/pp1.jpg' },
-  { username: 'bob', avatar: '/pp2.jpg' },
-  { username: 'carla', avatar: '/pp3.jpg' },
-];
-const fakeTrends = [
-  { tag: '#bienvenue', count: 12 },
-  { tag: '#séries', count: 8 },
-  { tag: '#breezy', count: 5 },
-  { tag: '#dev', count: 3 },
-];
-const fakeStories = [
-  { username: 'alice', avatar: '/pp1.jpg', isOnline: true },
-  { username: 'bob', avatar: '/pp2.jpg', isOnline: false },
-  { username: 'carla', avatar: '/pp3.jpg', isOnline: true },
-  { username: 'david', avatar: '/pp4.jpg', isOnline: false },
-  { username: 'emma', avatar: '/pp5.jpg', isOnline: true },
-];
-
 export function Header() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -130,7 +111,6 @@ export function Follows() {
   const handleFollowToggle = async (userId: string) => {
     try {
       const res = await api.post(`/users/${userId}/follow`);
-      // Si on vient de suivre, on retire la suggestion
       setSuggestions(prev =>
         prev.filter(user => user._id !== userId)
       );
