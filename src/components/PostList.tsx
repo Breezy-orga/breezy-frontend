@@ -137,11 +137,6 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     }
   }
 
-    // Fonction pour supprimer un post de la liste locale et appeler le parent si besoin
-  const handlePostDelete = (postId: string) => {
-    setPosts((prevPosts: PostType[]) => prevPosts.filter((post: PostType) => post._id !== postId));
-    if (onDelete) onDelete(postId);
-  };
 
   if (loading) {
     return (
@@ -166,54 +161,57 @@ export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListP
     )
   }
 
-  const visiblePosts = posts
-
   return (
-
     <>
       {shareNotification && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
           {shareNotification}
         </div>
-    <div className="space-y-4">
-      {visiblePosts.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          {t('postlist.empty')}
-        </div>
-      ) : (
-        visiblePosts.map(post => {
-          if (!post?._id) {
-            console.error('Post invalide détecté:', post)
-            return null
-          }
-
-          return (
-            <Post
-              key={post._id.toString()}
-              post={post}
-              currentUser={currentUser || {
-                _id: '',
-                username: '',
-                email: '',
-                profilePicture: '/default-avatar.png',
-                role: 'user',
-              }}
-              onLike={(postId, update) =>
-                updatePostLikesInState(postId, update)
-              }
-              onComment={async (_postId, updatedPost) => {
-                updatePostInState(updatedPost)
-              }}
-              onShare={postId => {
-                console.log('Partager le post:', postId)
-                navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`)
-                  .then(() => console.log('Lien copié dans le presse-papier'))
-                  .catch(() => console.error('Erreur lors de la copie du lien'))
-              }}
-              onDelete={handlePostDelete}
-            />
-          )
-        })()}
+      )}
+      <div className="space-y-4">
+        {posts.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {t('postlist.empty')}
+          </div>
+        ) : (
+          posts.map(post => {
+            if (!post?._id) {
+              console.error('Post invalide détecté:', post)
+              return null
+            }
+            return (
+              <Post
+                key={post._id.toString()}
+                post={post}
+                currentUser={currentUser || {
+                  _id: '',
+                  username: '',
+                  email: '',
+                  profilePicture: '/default-avatar.png',
+                  role: 'user',
+                }}
+                onLike={(postId, update) =>
+                  updatePostLikesInState(postId, update)
+                }
+                onComment={async (_postId, updatedPost) => {
+                  updatePostInState(updatedPost)
+                }}
+                onShare={postId => {
+                  navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`)
+                    .then(() => {
+                      setShareNotification(t('postlist.link_copied', 'Link copied to clipboard'));
+                      setTimeout(() => setShareNotification(null), 2000);
+                    })
+                    .catch(() => {
+                      setShareNotification(t('postlist.copy_error', 'Error copying link'));
+                      setTimeout(() => setShareNotification(null), 2000);
+                    });
+                }}
+                onDelete={handlePostDelete}
+              />
+            )
+          })
+        )}
       </div>
     </>
   )
