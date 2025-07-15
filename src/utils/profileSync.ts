@@ -13,7 +13,6 @@ interface UserData {
 export const ProfileSync = {
   // Émettre une mise à jour
   emitUpdate: (userData: UserData) => {
-    console.log('ProfileSync: Émission mise à jour', userData);
    
     if (typeof window !== 'undefined') {
       localStorage.setItem('profileUpdate', JSON.stringify({

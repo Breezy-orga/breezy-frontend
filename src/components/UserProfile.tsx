@@ -138,8 +138,6 @@ export default function UserProfile({ userId }: Props) {
             setUser(updatedUser)
             
             if (isSelf) {
-              console.log('Émission de la mise à jour du profil (photo):', updatedUser);
-              console.log('URL de la nouvelle photo:', response.data.profilePicture);
 
               setTimeout(() => {
                 ProfileSync.emitUpdate(updatedUser);
@@ -177,7 +175,6 @@ export default function UserProfile({ userId }: Props) {
       setIsEditing(false)
       
       if (isSelf) {
-        console.log('Émission de la mise à jour du profil (données):', updatedUser);
         ProfileSync.emitUpdate(updatedUser);
       }
       

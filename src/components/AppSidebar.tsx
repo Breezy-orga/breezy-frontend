@@ -115,12 +115,7 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   };
 
   useEffect(() => {
-    console.log('i18n debug:', {
-      language: i18n.language,
-      isInitialized: i18n.isInitialized,
-      hasResources: !!i18n.options?.resources,
-      testTranslation: t('sidebar.feed')
-    })
+
   }, [i18n.language, t])
 
   // Fermer le menu d'options lorsqu'on clique ailleurs
@@ -150,22 +145,16 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     fetchUserInfo();
   }, []);
 
-  useEffect(() => {
-    console.log('AppSidebar: Mise en place de l\'écoute des mises à jour');
-    
+  useEffect(() => {    
     const cleanup = ProfileSync.onUpdate((updatedUserData: UserInfo) => {
-      console.log('AppSidebar: Mise à jour reçue:', updatedUserData);
       
       // Vérifier que c'est le même utilisateur
       if (userInfo && updatedUserData._id === userInfo._id) {
-        console.log('AppSidebar: Mise à jour appliquée');
         setUserInfo(prevUserInfo => ({
           ...prevUserInfo,
           ...updatedUserData
         }));
         setAvatarKey(prev => prev + 1);
-      } else {
-        console.log('AppSidebar: Mise à jour ignorée (utilisateur différent)');
       }
     });
 

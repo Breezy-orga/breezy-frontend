@@ -135,12 +135,7 @@ export default function Post({
   
   useEffect(() => {
     const liked = isLikedByUser(post.likes, userId);
-    console.log('Mise à jour isLiked:', {
-      userId,
-      likes: post.likes,
-      liked,
-      postId: post._id
-    });
+
     setIsLiked(liked);
   }, [post.likes, userId, isLikedByUser, post._id]);
 
@@ -293,7 +288,6 @@ export default function Post({
         }
 
         if (onDelete) {
-          console.log('Appel de onDelete pour mise à jour de la liste');
           onDelete(postId);
         } else {
           console.warn('onDelete callback non fourni');
@@ -340,15 +334,6 @@ export default function Post({
       console.error('Erreur suppression commentaire:', error);
     }
   };
-// DEBUG
-  console.log('Debug Post:', {
-    postId: post._id,
-    userId,
-    likes: post.likes,
-    isLiked,
-    likesCount,
-    currentUserFromProps: currentUser?._id
-  });
 
   if (isDeleting) {
     return (
