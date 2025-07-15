@@ -546,7 +546,12 @@ export default function UserProfile({ userId }: Props) {
               onClick={async () => {
                 if (confirm(t('profile.delete_confirm'))) {
                   try {
-                    await api.delete(`/users/${user._id}`);
+                    const res = await api.delete(`/users/${user._id}`);
+                    const data = res.data;
+                    if (data.redirect) {
+                      window.location.href = "/login";
+                    }
+                    
                     alert(t('profile.delete_success'));
                     window.location.href = "/";
                   } catch (err) {
