@@ -1,4 +1,3 @@
-// components/AdminModerationPanel.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -52,6 +51,8 @@ interface PromptDialog {
 
 // Composant d'alerte personnalisé
 const CustomAlert = ({ alert, onClose }: { alert: Alert; onClose: () => void }) => {
+  const { t } = useTranslation();
+  
   const icons = {
     success: <MdCheckCircle className="w-5 h-5" />,
     error: <MdError className="w-5 h-5" />,
@@ -104,6 +105,8 @@ const CustomAlert = ({ alert, onClose }: { alert: Alert; onClose: () => void }) 
 
 // Composant de dialogue de confirmation
 const ConfirmDialog = ({ dialog, onClose }: { dialog: ConfirmDialog; onClose: () => void }) => {
+  const { t } = useTranslation();
+  
   if (!dialog.isOpen) return null;
 
   const handleConfirm = () => {
@@ -137,13 +140,13 @@ const ConfirmDialog = ({ dialog, onClose }: { dialog: ConfirmDialog; onClose: ()
               onClick={handleCancel}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              {dialog.cancelText || 'Annuler'}
+              {dialog.cancelText || t('common.cancel', 'Annuler')}
             </button>
             <button
               onClick={handleConfirm}
               className={`px-4 py-2 rounded-lg transition-colors ${typeColors[dialog.type || 'info']}`}
             >
-              {dialog.confirmText || 'Confirmer'}
+              {dialog.confirmText || t('common.confirm', 'Confirmer')}
             </button>
           </div>
         </div>
@@ -154,6 +157,7 @@ const ConfirmDialog = ({ dialog, onClose }: { dialog: ConfirmDialog; onClose: ()
 
 // Composant de dialogue de saisie
 const PromptDialog = ({ dialog, onClose }: { dialog: PromptDialog; onClose: () => void }) => {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
 
   if (!dialog.isOpen) return null;
@@ -195,13 +199,13 @@ const PromptDialog = ({ dialog, onClose }: { dialog: PromptDialog; onClose: () =
               onClick={handleCancel}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              Annuler
+              {t('common.cancel', 'Annuler')}
             </button>
             <button
               onClick={handleConfirm}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Confirmer
+              {t('common.confirm', 'Confirmer')}
             </button>
           </div>
         </div>
@@ -259,12 +263,12 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
       } else {
         console.error('Erreur lors du chargement des signalements:', response.status);
         setReports([]);
-        showAlert('error', 'Erreur lors du chargement des signalements');
+        showAlert('error', t('moderation.load_error', 'Erreur lors du chargement des signalements'));
       }
     } catch (error) {
       console.error('Erreur lors du chargement des signalements:', error);
       setReports([]);
-      showAlert('error', 'Erreur lors du chargement des signalements');
+      showAlert('error', t('moderation.load_error', 'Erreur lors du chargement des signalements'));
     } finally {
       setLoading(false);
     }
@@ -297,31 +301,27 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
         }
         
         showAlert('error', errorMessage);
-        // Rafraîchir quand même au cas où l'action aurait fonctionné
         await fetchReports();
       }
     } catch (error) {
       console.error('Erreur lors du traitement du signalement:', error);
       showAlert('error', t('moderation.action_error', 'Erreur lors de l\'action'));
-      // Rafraîchir au cas où l'action aurait fonctionné malgré l'erreur
       await fetchReports();
     } finally {
       setIsProcessing(false);
     }
   };
 
-const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unban', reason?: string, duration?: number) => {
+  const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unban', reason?: string, duration?: number) => {
     try {
       setIsProcessing(true);
       
       const endpoint = action === 'unban' ? 'unban' : action;
-      const body: any = { reason: reason || `Action ${action} par ${userRole}` };
+      const body: any = { reason: reason || t('moderation.default_reason', `Action ${action} par ${userRole}`) };
       
       if (duration && action === 'suspend') {
         body.duration = duration;
       }
-
-      console.log(`Envoi de la requête ${endpoint} pour l'utilisateur ${userId}:`, body);
 
       const response = await fetch(`/api/moderation/users/${userId}/${endpoint}`, {
         method: 'POST',
@@ -330,12 +330,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
         body: JSON.stringify(body)
       });
 
-      console.log(`Réponse du serveur:`, response.status, response.statusText);
-
-      // Gestion robuste de la réponse
       let responseData;
-      let errorMessage = '';
-
       try {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -343,24 +338,21 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
           if (responseText.trim()) {
             responseData = JSON.parse(responseText);
           } else {
-            responseData = { message: 'Action effectuée' };
+            responseData = { message: t('moderation.action_success', 'Action effectuée') };
           }
         } else {
-          responseData = { message: 'Action effectuée' };
+          responseData = { message: t('moderation.action_success', 'Action effectuée') };
         }
       } catch (parseError) {
-        console.warn('Erreur de parsing JSON:', parseError);
-        responseData = { message: 'Action effectuée' };
+        responseData = { message: t('moderation.action_success', 'Action effectuée') };
       }
 
-      // Vérifier le succès basé sur le code de statut
       if (response.status >= 200 && response.status < 300) {
-        // Déterminer le message de succès
         let successMessage;
         switch (action) {
           case 'suspend':
             successMessage = duration 
-              ? t('moderation.suspend_success_duration', `Utilisateur suspendu pour ${duration} jour(s)`)
+              ? t('moderation.suspend_success_duration', 'Utilisateur suspendu pour {{duration}} jour(s)', { duration })
               : t('moderation.suspend_success_indefinite', 'Utilisateur suspendu indéfiniment');
             break;
           case 'ban':
@@ -374,25 +366,18 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
         }
 
         showAlert('success', successMessage);
-        
-        // Recharger les signalements pour refléter les changements
         await fetchReports();
-        
       } else {
-        // Gérer les erreurs
-        errorMessage = responseData.message || 
-                     responseData.error || 
-                     t('moderation.action_error', `Erreur ${response.status}`);
+        const errorMessage = responseData.message || 
+                           responseData.error || 
+                           t('moderation.action_error', `Erreur ${response.status}`);
         
         showAlert('error', errorMessage);
-        
-        // Toujours rafraîchir au cas où l'action aurait partiellement fonctionné
         await fetchReports();
       }
     } catch (error) {
       console.error(`Erreur lors du ${action}:`, error);
       
-      // Message d'erreur adaptatif
       let errorMessage;
       if (error instanceof TypeError && error.message.includes('fetch')) {
         errorMessage = t('moderation.network_error', 'Erreur de connexion au serveur');
@@ -401,8 +386,6 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
       }
       
       showAlert('error', errorMessage);
-      
-      // Rafraîchir quand même au cas où
       await fetchReports();
     } finally {
       setIsProcessing(false);
@@ -420,31 +403,24 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
         body: JSON.stringify({ reason })
       });
 
-      // Accepter les codes 200, 201, 204 comme succès
       if (response.status >= 200 && response.status < 300) {
         showAlert('success', t('moderation.post_deleted', 'Post supprimé avec succès'));
         await fetchReports();
       } else {
-        // Essayer de parser l'erreur, sinon message générique
         let errorMessage = t('moderation.action_error', 'Erreur lors de la suppression');
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch (parseError) {
-          // Si on ne peut pas parser la réponse, utiliser le message par défaut
           console.warn('Impossible de parser la réponse d\'erreur:', parseError);
         }
         
         showAlert('error', errorMessage);
-        
-        // Rafraîchir quand même les données au cas où la suppression aurait fonctionné
         await fetchReports();
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du post:', error);
       showAlert('error', t('moderation.action_error', 'Erreur lors de la suppression'));
-      
-      // Rafraîchir les données au cas où la suppression aurait fonctionné malgré l'erreur
       await fetchReports();
     } finally {
       setIsProcessing(false);
@@ -463,7 +439,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
             isOpen: true,
             title: t('moderation.suspend_duration_title', 'Durée de suspension'),
             message: t('moderation.suspend_duration_prompt', 'Durée en jours (optionnel):'),
-            placeholder: 'Ex: 7',
+            placeholder: t('moderation.duration_placeholder', 'Ex: 7'),
             inputType: 'number',
             onConfirm: (durationStr) => {
               const duration = durationStr ? parseInt(durationStr) : undefined;
@@ -573,7 +549,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                       {t(`report.types.${report.type}`, report.type)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      par @{report.reporter.username}
+                      {t('moderation.report.reported_by', 'par')} @{report.reporter.username}
                     </span>
                   </div>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -591,7 +567,9 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                 {/* Contenu signalé */}
                 {report.post && (
                   <div className="mb-4 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Post signalé:</h4>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                      {t('moderation.report.reported_post', 'Post signalé:')}
+                    </h4>
                     <p className="text-blue-700 dark:text-blue-300 text-sm">
                       {report.post.content.substring(0, 200)}...
                     </p>
@@ -600,7 +578,9 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
 
                 {report.reported && (
                   <div className="mb-4 bg-orange-50 dark:bg-orange-900/30 p-4 rounded-lg">
-                    <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-2">Utilisateur signalé:</h4>
+                    <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-2">
+                      {t('moderation.report.reported_user', 'Utilisateur signalé:')}
+                    </h4>
                     <p className="text-orange-700 dark:text-orange-300">@{report.reported.username}</p>
                   </div>
                 )}
@@ -613,23 +593,23 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                       disabled={isProcessing}
                       className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 disabled:opacity-50 transition-colors"
                     >
-                      Examiner
+                      {t('moderation.actions.review', 'Examiner')}
                     </button>
                     
                     <button
-                      onClick={() => handleReportAction(report._id, 'resolved', 'Résolu')}
+                      onClick={() => handleReportAction(report._id, 'resolved', t('moderation.actions.resolved_label', 'Résolu'))}
                       disabled={isProcessing}
                       className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 disabled:opacity-50 transition-colors"
                     >
-                      Résoudre
+                      {t('moderation.actions.resolve', 'Résoudre')}
                     </button>
                     
                     <button
-                      onClick={() => handleReportAction(report._id, 'dismissed', 'Non fondé')}
+                      onClick={() => handleReportAction(report._id, 'dismissed', t('moderation.actions.not_founded', 'Non fondé'))}
                       disabled={isProcessing}
                       className="px-3 py-1 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600 disabled:opacity-50 transition-colors"
                     >
-                      Rejeter
+                      {t('moderation.actions.dismiss', 'Rejeter')}
                     </button>
 
                     {report.post && (
@@ -638,7 +618,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                         disabled={isProcessing}
                         className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 disabled:opacity-50 transition-colors"
                       >
-                        Supprimer post
+                        {t('moderation.actions.delete_post', 'Supprimer post')}
                       </button>
                     )}
                     
@@ -649,7 +629,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                           disabled={isProcessing}
                           className="px-3 py-1 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50 transition-colors"
                         >
-                          Suspendre
+                          {t('moderation.actions.suspend_user', 'Suspendre')}
                         </button>
                         
                         <button
@@ -657,7 +637,7 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                           disabled={isProcessing}
                           className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
-                          Bannir
+                          {t('moderation.actions.ban_user', 'Bannir')}
                         </button>
                       </>
                     )}
@@ -668,8 +648,8 @@ const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unb
                 {report.status !== 'pending' && report.moderator && (
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Traité par @{report.moderator.username}
-                      {report.moderatorAction && `: ${report.moderatorAction}`}
+                      {t('moderation.report.processed_by', 'Traité par @{{moderator}}', { moderator: report.moderator.username })}
+                      {report.moderatorAction && t('moderation.report.with_action', ': {{action}}', { action: report.moderatorAction })}
                     </p>
                   </div>
                 )}

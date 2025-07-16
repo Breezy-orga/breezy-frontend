@@ -101,7 +101,11 @@
     "bio": "Biographie",
     "characters": "Caractères",
     "followed_success": "Vous suivez maintenant @{{username}}",
-    "unfollowed_success": "Vous ne suivez plus @{{username}}"
+    "unfollowed_success": "Vous ne suivez plus @{{username}}",
+    "delete_account_title": "Supprimer le compte",
+    "delete_account_self_message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et toutes vos données seront perdues.",
+    "delete_account_other_message": "Êtes-vous sûr de vouloir supprimer le compte de @{{username}} ? Cette action est irréversible.",
+    "delete_permanently": "Supprimer définitivement"
   },
   "login": {
     "no_account": "Pas encore de compte ? ",
@@ -329,6 +333,23 @@
       "reviewed": "Examiné",
       "resolved": "Résolu",
       "dismissed": "Rejeté"
+    },
+    "actions": {
+      "review": "Examiner",
+      "resolve": "Résoudre",
+      "dismiss": "Rejeter",
+      "delete_post": "Supprimer post",
+      "suspend_user": "Suspendre",
+      "ban_user": "Bannir",
+      "resolved_label": "Résolu",
+      "not_founded": "Non fondé"
+    },
+    "report": {
+      "reported_post": "Post signalé:",
+      "reported_user": "Utilisateur signalé:",
+      "processed_by": "Traité par @{{moderator}}",
+      "with_action": ": {{action}}",
+      "reported_by": "par"
     }
   },
   "banned_page": {

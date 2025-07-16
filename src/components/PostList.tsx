@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Post from './Post';
 import { Post as PostType, User } from '@/types/models';
 
@@ -15,6 +16,7 @@ export default function PostList({
   onDelete, 
   onLike 
 }: PostListProps) {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<PostType[]>(initialPosts);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,12 +33,12 @@ export default function PostList({
           setCurrentUser(user);
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+        console.error(t('postlist.fetch_user_error', 'Erreur lors de la récupération de l\'utilisateur:'), error);
       }
     };
 
     fetchCurrentUser();
-  }, []);
+  }, [t]);
 
   // Synchroniser avec les props
   useEffect(() => {
@@ -54,20 +56,22 @@ export default function PostList({
         if (response.ok) {
           const newPosts = await response.json();
           setPosts(newPosts);
+        } else {
+          console.error(t('postlist.fetch_error', 'Erreur lors du chargement des posts'));
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des posts:', error);
+        console.error(t('postlist.load_error', 'Erreur lors du chargement des posts:'), error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPosts();
-  }, [fetchUrl]);
+  }, [fetchUrl, t]);
 
   // Gérer les likes localement et notifier le parent
   const handleLike = (postId: string, update: { liked: boolean; totalLikes: number }) => {
-    console.log('handleLike dans PostList:', postId, update);
+    console.log(t('postlist.share_log', 'handleLike dans PostList:'), postId, update);
     
     // Mettre à jour l'état local
     if (currentUser) {
@@ -99,7 +103,7 @@ export default function PostList({
   };
 
   const handleComment = async (postId: string, updatedPost: PostType) => {
-    // Mettre à jour le post avec les  commentaires
+    // Mettre à jour le post avec les commentaires
     setPosts(prevPosts => 
       prevPosts.map(post => 
         post._id === postId ? updatedPost : post
@@ -111,8 +115,8 @@ export default function PostList({
     // Logique de partage
     const postUrl = `${window.location.origin}/post/${postId}`;
     navigator.clipboard.writeText(postUrl)
-      .then(() => console.log('Lien copié'))
-      .catch(() => console.error('Erreur lors de la copie'));
+      .then(() => console.log(t('postlist.link_copied', 'Lien copié')))
+      .catch(() => console.error(t('postlist.copy_error', 'Erreur lors de la copie')));
   };
 
   if (loading) {
@@ -134,6 +138,11 @@ export default function PostList({
             </div>
           </div>
         ))}
+        <div className="text-center py-4">
+          <p className="text-gray-500 dark:text-gray-400">
+            {t('postlist.loading', 'Chargement des posts...')}
+          </p>
+        </div>
       </div>
     );
   }
@@ -155,7 +164,7 @@ export default function PostList({
       {posts.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-gray-400">
-            Aucun post à afficher
+            {t('postlist.empty', 'Aucun post à afficher')}
           </p>
         </div>
       )}

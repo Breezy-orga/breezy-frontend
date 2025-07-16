@@ -5,7 +5,7 @@ import api from '@/lib/axios'
 import { User } from '@/types/models'
 import PostList from './PostList'
 import Link from 'next/link'
-import { MdArrowBack, MdEdit, MdCamera, MdFlag, MdWarning, MdBlock, MdInfo } from 'react-icons/md'
+import { MdArrowBack, MdEdit, MdCamera, MdFlag, MdWarning, MdBlock, MdInfo, MdDelete, MdClose } from 'react-icons/md'
 import { useTranslation } from 'react-i18next'
 import { formatRelativeDate } from '../i18n/formatRelativeDate'
 import { ProfileSync } from '@/utils/profileSync'
@@ -15,6 +15,81 @@ import { UserStatusBadge, UserStatusBanner } from './UserStatusAlert'
 interface Props {
   userId?: string
 }
+
+// Composant de dialogue de confirmation personnalisé
+const ConfirmDialog = ({ 
+  isOpen, 
+  title, 
+  message, 
+  onConfirm, 
+  onCancel,
+  confirmText = "Confirmer",
+  cancelText = "Annuler",
+  type = "danger"
+}: {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  type?: "danger" | "warning" | "info";
+}) => {
+  if (!isOpen) return null;
+
+  const typeColors = {
+    danger: "bg-red-500 hover:bg-red-600",
+    warning: "bg-orange-500 hover:bg-orange-600", 
+    info: "bg-blue-500 hover:bg-blue-600"
+  };
+
+  const iconColors = {
+    danger: "text-red-500",
+    warning: "text-orange-500",
+    info: "text-blue-500"
+  };
+
+  const icons = {
+    danger: <MdDelete className="w-8 h-8" />,
+    warning: <MdWarning className="w-8 h-8" />,
+    info: <MdInfo className="w-8 h-8" />
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className={iconColors[type]}>
+              {icons[type]}
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {title}
+            </h3>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+            {message}
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+            >
+              {cancelText}
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`px-4 py-2 text-white rounded-lg transition-colors font-medium ${typeColors[type]}`}
+            >
+              {confirmText}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function UserProfile({ userId }: Props) {
   const { t, i18n } = useTranslation();
@@ -41,6 +116,9 @@ export default function UserProfile({ userId }: Props) {
   const [following, setFollowing] = useState<User[]>([])
   const [showReportModal, setShowReportModal] = useState(false)
   const [statusBannerDismissed, setStatusBannerDismissed] = useState(false)
+  
+  // État pour le dialogue de confirmation de suppression
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const isSelf = user?._id === currentUser?._id
 
@@ -104,11 +182,11 @@ export default function UserProfile({ userId }: Props) {
     if (file) {
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!validTypes.includes(file.type)) {
-        alert(t('profile.invalid_file_type'))
+        showNotification(t('profile.invalid_file_type') || 'Type de fichier non supporté', 'error')
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert(t('profile.file_too_large'))
+        showNotification(t('profile.file_too_large') || 'Fichier trop volumineux (max 5MB)', 'error')
         return
       }
 
@@ -156,7 +234,7 @@ export default function UserProfile({ userId }: Props) {
           }
         } catch (error) {
           console.error('Erreur upload:', error);
-          alert(t('profile.upload_error'))
+          showNotification(t('profile.upload_error') || 'Erreur lors du téléchargement', 'error')
         } finally {
           setUploading(false)
         }
@@ -164,7 +242,7 @@ export default function UserProfile({ userId }: Props) {
       reader.readAsDataURL(selectedFile)
     } catch (error) {
       console.error('Erreur générale:', error);
-      alert(t('profile.upload_error'))
+      showNotification(t('profile.upload_error') || 'Erreur lors du téléchargement', 'error')
       setUploading(false)
     }
   }
@@ -244,6 +322,33 @@ export default function UserProfile({ userId }: Props) {
     }
   }
 
+  // Fonction pour gérer la suppression du compte
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    try {
+      const res = await api.delete(`/users/${user._id}`);
+      const data = res.data;
+      
+      if (data.redirect) {
+        showNotification('Compte supprimé avec succès', 'success');
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      } else {
+        showNotification('Compte supprimé avec succès', 'success');
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Erreur suppression:', err);
+      showNotification('Erreur lors de la suppression du compte', 'error');
+    } finally {
+      setShowDeleteDialog(false);
+    }
+  }
+
   const [lang, setLang] = useState('');
   useEffect(() => {
     const updateLang = () => {
@@ -265,8 +370,8 @@ export default function UserProfile({ userId }: Props) {
     const isCurrentUserModerator = currentUser?.role === 'moderator' || isCurrentUserAdmin;
 
     return {
-      canView: true, // Les profils restent visibles
-      canInteract: isSelf || isCurrentUserModerator, // Seul l'utilisateur lui-même ou les modérateurs peuvent interagir
+      canView: true,
+      canInteract: isSelf || isCurrentUserModerator,
       showWarning: !isSelf && !isCurrentUserModerator,
       restrictionLevel: user.status === 'banned' ? 'high' : 'medium'
     };
@@ -395,13 +500,26 @@ export default function UserProfile({ userId }: Props) {
               onClick={closeNotification}
               className="ml-4 transition-colors text-white hover:text-gray-200"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <MdClose className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
+
+      {/* Dialogue de confirmation de suppression */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title={t('profile.delete_account_title', 'Supprimer le compte')}
+        message={isSelf 
+          ? t('profile.delete_account_self_message', 'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et toutes vos données seront perdues.')
+          : t('profile.delete_account_other_message', 'Êtes-vous sûr de vouloir supprimer le compte de @{{username}} ? Cette action est irréversible.', { username: user?.username })
+        }
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteDialog(false)}
+        confirmText={t('profile.delete_permanently', 'Supprimer définitivement')}
+        cancelText={t('common.cancel', 'Annuler')}
+        type="danger"
+      />
 
       {/* Banner de statut utilisateur */}
       {user.status && user.status !== 'active' && !statusBannerDismissed && accessInfo?.showWarning && (
@@ -591,11 +709,11 @@ export default function UserProfile({ userId }: Props) {
                     </button>
                   )}
 
-                  {!isSelf &&(
+                  {!isSelf && (
                     <>
                       <button
                         onClick={handleFollowToggle}
-                        className="mt-4 inline-block px-6 py-3 rounded-lg transition-all duration-200 font-semibold shadow-md focus:ring-2 focus:ring-offset-2"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-semibold shadow-md focus:ring-2 focus:ring-offset-2"
                         style={
                           (currentUser?.following ?? []).includes(user._id)
                             ? { backgroundColor: "#fee2e2", color: "#dc2626" }
@@ -631,60 +749,21 @@ export default function UserProfile({ userId }: Props) {
                       </button>
                     </>
                   )}
-{/* 
-                  {!isSelf && !accessInfo?.canInteract && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400">
-                      <MdInfo size={16} />
-                      <span className="text-sm">
-                        {user.status === 'banned' 
-                          ? 'Utilisateur banni - Interactions limitées'
-                          : 'Utilisateur suspendu - Interactions limitées'
-                        }
-                      </span>
-                    </div>
-                  )} */}
+
+                  {/* Bouton supprimer - Admin/Modérateur peut supprimer autres comptes */}
+                  {(((currentUser?.role === 'admin' || currentUser?.role === 'moderator') && !isSelf) || isSelf) && (
+                    <button
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-md"
+                    >
+                      <MdDelete size={16} />
+                      {t('profile.delete_account')}
+                    </button>
+                  )}
                 </div>
               </div>
             </>
           )}
-          {(currentUser?.role === 'admin' && !isSelf) && (
-            <button
-              onClick={async () => {
-                try {
-                  const newRole = user.role === 'moderator' ? 'user' : 'moderator';
-                  alert(t('profile.role_demo', { role: newRole }))
-                } catch (err) {
-                  alert(t('profile.role_error'))
-                }
-              }}
-              className="mt-4 inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-semibold shadow-md"
-            >
-              {user.role === 'moderator' ? t('profile.demote') : t('profile.promote')}
-            </button>
-          )}
-          {(currentUser?.role === 'admin' && !isSelf) || (currentUser?.role !== 'admin' && isSelf) ? (
-            <button
-              onClick={async () => {
-                if (confirm(t('profile.delete_confirm'))) {
-                  try {
-                    const res = await api.delete(`/users/${user._id}`);
-                    const data = res.data;
-                    if (data.redirect) {
-                      window.location.href = "/login";
-                    }
-                    
-                    alert(t('profile.delete_success'));
-                    window.location.href = "/";
-                  } catch (err) {
-                    alert(t('profile.delete_error'));
-                  }
-                }
-              }}
-              className="mt-4 inline-block px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 font-semibold ml-3 shadow-md"
-            >
-              {t('profile.delete_account')}
-            </button>
-          ) : null}
         </div>
       </div>
 

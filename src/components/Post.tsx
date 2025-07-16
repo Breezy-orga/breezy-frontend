@@ -19,6 +19,8 @@ interface ExtendedPost extends PostType {
   commentsCount?: number;
 }
 
+const userIdCache = new Map<string, string>();
+
 const fetchUserId = async (): Promise<string | null> => {
   try {
     const res = await fetch('/api/users/me', {
@@ -32,6 +34,47 @@ const fetchUserId = async (): Promise<string | null> => {
     return null;
   }
 }
+
+const handleMentionClick = async (e: React.MouseEvent, username: string) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  try {
+    // Vérifier le cache d'abord
+    if (userIdCache.has(username)) {
+      const userId = userIdCache.get(username)!;
+      console.log(`ID trouvé dans le cache pour @${username}: ${userId}`);
+      window.location.href = `/profile/${userId}`;
+      return;
+    }
+    
+    console.log(`Recherche de l'ID pour @${username}...`);
+    
+    // Utiliser votre route existante
+    const response = await fetch(`/api/users/find-id-by-username/${username}`, {
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      const userData = await response.json();
+      console.log(`ID trouvé pour @${username}: ${userData._id}`);
+      
+      // Mettre en cache pour les prochaines fois
+      userIdCache.set(username, userData._id);
+      
+      // Redirection vers le profil avec l'ID
+      window.location.href = `/profile/${userData._id}`;
+    } else {
+      console.warn(`Utilisateur @${username} non trouvé`);
+      // Fallback vers la recherche
+      window.location.href = `/search?q=${username}`;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la recherche du profil:', error);
+    // Fallback vers la recherche en cas d'erreur
+    window.location.href = `/search?q=${username}`;
+  }
+};
 
 interface PostProps {
   post: ExtendedPost
@@ -186,24 +229,27 @@ export default function Post({
   }, [initialPost, isLikedByUser, safeCurrentUser._id]);
 
   // Fonction pour transformer le contenu avec mentions cliquables
-  const renderContentWithMentions = (text: string) => {
+  const renderContentWithMentions = useCallback((text: string) => {
+    if (!text) return text;
+    
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
       if (part.startsWith('@')) {
         const username = part.substring(1);
         return (
-          <Link
+          <a
             key={index}
-            href={`/profile/username/${username}`}
-            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
+            href={`/profile/username/${username}`} // Fallback href
+            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors cursor-pointer"
+            onClick={(e) => handleMentionClick(e, username)}
           >
             {part}
-          </Link>
+          </a>
         );
       }
       return <span key={index}>{part}</span>;
     });
-  };
+  }, []);
 
   const fetchComments = async () => {
     setLoadingComments(true)
@@ -619,25 +665,27 @@ function ThreadItem({
   };
 
   // Fonction pour transformer le contenu avec mentions cliquables dans ThreadItem
-  const renderContentWithMentions = (text: string) => {
+  const renderContentWithMentions = useCallback((text: string) => {
+    if (!text) return text;
+    
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
       if (part.startsWith('@')) {
         const username = part.substring(1);
         return (
-          <Link
+          <a
             key={index}
             href={`/profile/username/${username}`}
-            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
-            onClick={(e) => e.stopPropagation()}
+            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors cursor-pointer"
+            onClick={(e) => handleMentionClick(e, username)}
           >
             {part}
-          </Link>
+          </a>
         );
       }
       return <span key={index}>{part}</span>;
     });
-  };
+  }, []);
   
   useEffect(() => {
     const liked = isLikedByUser(item.likes, currentUser._id);

@@ -159,6 +159,7 @@ export default function AdminUsersPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -183,13 +184,15 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    // Vérifier les droits admin
-    const checkAdminAccess = async () => {
+    // Vérifier les droits admin/modérateur
+    const checkAccess = async () => {
       try {
         const response = await fetch('/api/users/me', { credentials: 'include' });
         if (response.ok) {
           const user = await response.json();
-          if (user.role !== 'admin') {
+          if (user.role === 'admin' || user.role === 'moderator') {
+            setUserRole(user.role);
+          } else {
             router.push('/');
             return;
           }
@@ -203,7 +206,7 @@ export default function AdminUsersPage() {
       }
     };
 
-    checkAdminAccess();
+    checkAccess();
     fetchUsers();
   }, [router, searchQuery, statusFilter]);
 
@@ -240,7 +243,7 @@ export default function AdminUsersPage() {
       setIsProcessing(true);
       
       const endpoint = action === 'unban' ? 'unban' : action;
-      const body: any = { reason: reason || t('users.action_by_admin', `Action ${action} par admin`) };
+      const body: any = { reason: reason || t('users.action_by_moderator', `Action ${action} par ${userRole}`) };
       
       if (duration && action === 'suspend') {
         body.duration = duration;
@@ -432,6 +435,25 @@ export default function AdminUsersPage() {
     );
   };
 
+  // Fonction pour vérifier si l'utilisateur peut être modéré
+  const canModerateUser = (targetUser: User) => {
+    // Les admins peuvent modérer tout le monde sauf les autres admins
+    if (userRole === 'admin') {
+      return targetUser.role !== 'admin';
+    }
+    
+    // Les modérateurs peuvent modérer seulement les utilisateurs normaux
+    if (userRole === 'moderator') {
+      return targetUser.role === 'user';
+    }
+    
+    return false;
+  };
+
+  if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+    return null; 
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
       {/* Alertes */}
@@ -460,7 +482,10 @@ export default function AdminUsersPage() {
                 {t('users.management')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                {t('users.management_description')}
+                {userRole === 'admin' 
+                  ? t('users.management_description_admin')
+                  : t('users.management_description_moderator')
+                }
               </p>
             </div>
             <button
@@ -590,7 +615,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          {user.role !== 'admin' && user.status !== 'banned' && (
+                          {canModerateUser(user) && user.status !== 'banned' && (
                             <button
                               onClick={() => promptUserAction(user._id, 'suspend')}
                               disabled={isProcessing || user.status === 'suspended'}
@@ -601,7 +626,7 @@ export default function AdminUsersPage() {
                             </button>
                           )}
                           
-                          {user.role !== 'admin' && user.status !== 'banned' && (
+                          {canModerateUser(user) && user.status !== 'banned' && (
                             <button
                               onClick={() => promptUserAction(user._id, 'ban')}
                               disabled={isProcessing}
@@ -612,7 +637,7 @@ export default function AdminUsersPage() {
                             </button>
                           )}
                           
-                          {(user.status === 'suspended' || user.status === 'banned') && (
+                          {canModerateUser(user) && (user.status === 'suspended' || user.status === 'banned') && (
                             <button
                               onClick={() => promptUserAction(user._id, 'unban')}
                               disabled={isProcessing}
@@ -621,6 +646,12 @@ export default function AdminUsersPage() {
                             >
                               <MdCheck className="w-4 h-4" />
                             </button>
+                          )}
+
+                          {!canModerateUser(user) && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                              {user.role === 'admin' ? 'Admin' : 'Rôle supérieur'}
+                            </span>
                           )}
                         </div>
                       </td>

@@ -103,7 +103,11 @@
     "bio": "Bio",
     "characters": "Characters",
     "followed_success": "You are now following @{{username}}",
-    "unfollowed_success": "You unfollowed @{{username}}"
+    "unfollowed_success": "You unfollowed @{{username}}",
+    "delete_account_title": "Delete account",
+    "delete_account_self_message": "Are you sure you want to delete your account? This action is irreversible and all your data will be lost.",
+    "delete_account_other_message": "Are you sure you want to delete @{{username}}'s account? This action is irreversible.",
+    "delete_permanently": "Delete permanently"
   },
 
   "login": {
@@ -292,10 +296,10 @@
     "copy_error": "Error copying link"
   },
   "theme": {
-    "light": "Thème clair actif",
-    "dark": "Thème sombre actif",
-    "system": "Thème système actif",
-    "toggle": "Changer de thème"
+    "light": "Light theme active",
+    "dark": "Dark theme active",
+    "system": "System theme active",
+    "toggle": "Toggle theme"
   },
 
   "admin": {
@@ -342,6 +346,23 @@
       "reviewed": "Reviewed",
       "resolved": "Resolved",
       "dismissed": "Dismissed"
+    },
+    "actions": {
+      "review": "Review",
+      "resolve": "Resolve",
+      "dismiss": "Dismiss",
+      "delete_post": "Delete post",
+      "suspend_user": "Suspend",
+      "ban_user": "Ban",
+      "resolved_label": "Resolved",
+      "not_founded": "Not founded"
+    },
+    "report": {
+      "reported_post": "Reported post:",
+      "reported_user": "Reported user:",
+      "processed_by": "Processed by @{{moderator}}",
+      "with_action": ": {{action}}",
+      "reported_by": "by"
     }
   },
   "banned_page": {
@@ -475,4 +496,3 @@
     "user": "User"
   }
 }
-
