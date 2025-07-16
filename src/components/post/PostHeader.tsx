@@ -8,9 +8,15 @@ interface PostHeaderProps {
   author: User;
   createdAt: Date;
   location?: string;
+  onProfileClick?: (userId: string, username?: string) => void;
 }
 
-export default function PostHeader({ author, createdAt, location }: PostHeaderProps) {
+export default function PostHeader({ 
+  author, 
+  createdAt, 
+  location, 
+  onProfileClick 
+}: PostHeaderProps) {
   const { t } = useTranslation();
   
   const displayName = author.name || author.username;
@@ -18,7 +24,7 @@ export default function PostHeader({ author, createdAt, location }: PostHeaderPr
   return (
     <div className="flex items-center space-x-3 p-4">
       <Link href={`/profile/${author._id}`}>
-        <div className="relative h-10 w-10 rounded-full overflow-hidden">
+        <div className="relative h-10 w-10 rounded-full overflow-hidden hover:opacity-80 transition-opacity">
           <Image
             src={author.profilePicture || '/default-avatar.svg'}
             alt={author.username}

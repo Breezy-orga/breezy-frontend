@@ -238,7 +238,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (lastUserId) {
         fetchNotifications();
       }
-    }, 500000000000);
+    }, 10000);
     
     return () => clearInterval(interval);
   }, [lastUserId]);

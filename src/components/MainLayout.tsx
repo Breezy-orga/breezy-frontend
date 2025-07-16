@@ -5,6 +5,7 @@ import { MdMenu } from 'react-icons/md'
 import AppSidebar from './AppSidebar'
 import { Follows } from './LayoutParts'
 import { usePathname } from 'next/navigation'
+import UserStatusAlert from './UserStatusAlert'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -115,6 +116,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
           )}
         </main>
       </div>
+      
+      {!isAuthPage && <UserStatusAlert />}
     </div>
   )
 }
