@@ -10,6 +10,12 @@ export interface User {
   followers?: string[];
   following?: string[];
   bio?: string;
+  
+  status?: 'active' | 'suspended' | 'banned';
+  suspendedUntil?: string;
+  suspensionReason?: string;
+  moderationHistory?: string[];
+  
   createdAt?: string;
   updatedAt?: string;
 }
@@ -58,4 +64,32 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
+}
+
+export interface ModerationAction {
+  _id: string;
+  type: 'suspend' | 'ban' | 'unban' | 'warn' | 'delete_content';
+  targetUser: string;
+  moderator: string;
+  reason: string;
+  duration?: number;
+  targetContent?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Report {
+  _id: string;
+  reporter: string;
+  targetUser?: string;
+  targetPost?: string;
+  type: 'user' | 'post';
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  moderator?: string;
+  moderatorNotes?: string;
+  createdAt: string;
+  updatedAt: string;
 }

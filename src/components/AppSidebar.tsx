@@ -17,7 +17,10 @@ import {
   MdClose,
   MdLogout,
   MdSearch,
-  MdMenu
+  MdMenu,
+  MdShield, 
+  MdFlag,
+  MdSecurity
 } from 'react-icons/md'
 import { useLanguage } from './LanguageProvider'
 import NotificationBadge from './NotificationBadge'
@@ -37,6 +40,8 @@ interface UserInfo {
   avatar?: string;
   following?: string[];
   followers?: string[];
+  role?: string;
+  status?: 'active' | 'suspended' | 'banned';
   [key: string]: any;
 }
 
@@ -55,6 +60,10 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const [avatarKey, setAvatarKey] = useState(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+  // États pour les notifications de modération
+  const [pendingReports, setPendingReports] = useState(0)
+  const [loadingReports, setLoadingReports] = useState(false)
+
   // Fonction pour récupérer les infos utilisateur
   const fetchUserInfo = async () => {
     try {
@@ -67,6 +76,11 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
         console.log('User data récupérée dans sidebar:', userData);
         setUserInfo(userData);
         setAvatarKey(prev => prev + 1);
+        
+        // Si admin/modérateur, récupérer les signalements
+        if (userData.role === 'admin' || userData.role === 'moderator') {
+          fetchPendingReports();
+        }
       } else {
         console.error('Erreur API users/me:', response.status, response.statusText);
         setUserInfo(null);
@@ -79,7 +93,34 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     }
   };
 
-  // Fonction de déconnexion améliorée
+  // Fonction pour récupérer les signalements en attente
+  const fetchPendingReports = async () => {
+    try {
+      setLoadingReports(true);
+      const response = await fetch('/api/moderation/reports?status=pending', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPendingReports(data.reports?.length || 0);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des signalements:', error);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  // Polling pour les signalements (toutes les 30 secondes)
+  useEffect(() => {
+    if (userInfo?.role === 'admin' || userInfo?.role === 'moderator') {
+      const interval = setInterval(fetchPendingReports, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [userInfo?.role]);
+
+  // Fonction de déconnexion
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
@@ -171,14 +212,30 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     };
   }, [userInfo?._id]);
 
-  // Navigation principale
-  const navItems = [
-    { key: 'feed', label: t('sidebar.home'), icon: MdHome, href: '/feed' },
-    { key: 'profile', label: t('sidebar.profile'), icon: MdPerson, href: '/profile' },
-    { key: 'search', label: t('sidebar.search'), icon: MdSearch, href: '/search' },
-    { key: 'messagerie', label: t('sidebar.messages'), icon: MdMail, href: '/messagerie' },
-    { key: 'notifications', label: t('sidebar.notifications'), icon: MdNotifications, href: '/notifications' },
-  ];
+  // Navigation avec logique conditionnelle pour admin/modérateur
+  const getNavItems = () => {
+    const baseItems = [
+      { key: 'feed', label: t('sidebar.home'), icon: MdHome, href: '/feed' },
+      { key: 'profile', label: t('sidebar.profile'), icon: MdPerson, href: '/profile' },
+      { key: 'search', label: t('sidebar.search'), icon: MdSearch, href: '/search' },
+      { key: 'messagerie', label: t('sidebar.messages'), icon: MdMail, href: '/messagerie' },
+      { key: 'notifications', label: t('sidebar.notifications'), icon: MdNotifications, href: '/notifications' },
+    ];
+
+    // Ajouter le lien de modération pour admin/modérateur
+    if (userInfo?.role === 'admin' || userInfo?.role === 'moderator') {
+      baseItems.push({
+        key: 'moderation',
+        label: userInfo.role === 'admin' ? t('sidebar.admin_panel', 'Administration') : t('sidebar.moderation_panel', 'Modération'),
+        icon: userInfo.role === 'admin' ? MdShield : MdSecurity,
+        href: '/admin/moderation'
+      });
+    }
+
+    return baseItems;
+  };
+
+  const navItems = getNavItems();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -201,6 +258,62 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const getUsername = () => {
     if (!userInfo) return 'utilisateur';
     return userInfo.username || 'utilisateur';
+  };
+
+  // Fonction pour obtenir le badge de rôle
+  const getRoleBadge = () => {
+    if (!userInfo?.role || userInfo.role === 'user') return null;
+    
+    const roleConfig = {
+      admin: {
+        label: t('roles.admin', 'Admin'),
+        color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        icon: '👑'
+      },
+      moderator: {
+        label: t('roles.moderator', 'Modérateur'),
+        color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+        icon: '🛡️'
+      }
+    };
+
+    const config = roleConfig[userInfo.role as keyof typeof roleConfig];
+    if (!config) return null;
+
+    return (
+      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        <span>{config.icon}</span>
+        <span>{config.label}</span>
+      </div>
+    );
+  };
+
+  // Fonction pour obtenir l'indicateur de statut
+  const getStatusIndicator = () => {
+    if (!userInfo?.status || userInfo.status === 'active') return null;
+    
+    const statusConfig = {
+      suspended: {
+        label: t('status.suspended', 'Suspendu'),
+        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+        icon: '⏸️'
+      },
+      banned: {
+        label: t('status.banned', 'Banni'),
+        color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        icon: '🚫'
+      }
+    };
+
+    const config = statusConfig[userInfo.status as keyof typeof statusConfig];
+    if (!config) return null;
+
+    return (
+      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        <span>{config.icon}</span>
+        <span>{config.label}</span>
+      </div>
+    );
   };
 
   return (
@@ -246,6 +359,14 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               )}
             </div>
           </div>
+
+          {/* Badges de rôle et statut */}
+          {!loading && (
+            <div className="flex flex-col gap-2">
+              {getRoleBadge()}
+              {getStatusIndicator()}
+            </div>
+          )}
           
           {/* Stats */}
           <div className="flex justify-start gap-6 text-sm">
@@ -289,21 +410,70 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               <Link
                 href={item.href}
                 className={`flex items-center px-4 py-3 rounded-lg relative ${
-                  (item.key === 'search' ? pathname.startsWith('/search') : pathname === item.href)
+                  (item.key === 'search' ? pathname.startsWith('/search') : 
+                   item.key === 'moderation' ? pathname.startsWith('/admin') :
+                   pathname === item.href)
                     ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-400'
                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                 }`}
               >
                 <item.icon className="w-5 h-5 mr-3" />
                 {item.label}
+                
                 {/* Badge pour les notifications */}
                 {item.key === 'notifications' && (
                   <NotificationBadge className="ml-auto" />
                 )}
+                
+                {/* Badge pour les signalements en attente */}
+              {item.key === 'moderation' && pendingReports > 0 && (
+                <div className="ml-auto">
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-medium leading-none text-white bg-red-500 rounded-full animate-pulse">
+                    {pendingReports > 99 ? '99+' : pendingReports}
+                  </span>
+                </div>
+              )}
+
               </Link>
             </li>
           ))}
         </ul>
+
+        {/* Section d'accès rapide pour admin/modérateur */}
+        {(userInfo?.role === 'admin' || userInfo?.role === 'moderator') && (
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              {t('sidebar.moderation_tools', 'Outils de modération')}
+            </h4>
+            <ul className="space-y-1">
+              <li>
+                <Link
+                  href="/admin/moderation"
+                  className="flex items-center px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <MdFlag className="w-4 h-4 mr-3" />
+                  {t('sidebar.reports', 'Signalements')}
+                  {pendingReports > 0 && (
+                    <span className="ml-auto text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-2 py-1 rounded-full">
+                      {pendingReports}
+                    </span>
+                  )}
+                </Link>
+              </li>
+              {userInfo?.role === 'admin' && (
+                <li>
+                  <Link
+                    href="/admin/users"
+                    className="flex items-center px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <MdPerson className="w-4 h-4 mr-3" />
+                    {t('sidebar.user_management', 'Gestion utilisateurs')}
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Menu options */}

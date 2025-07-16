@@ -18,7 +18,6 @@ import '../../i18n';
 import 'flag-icons/css/flag-icons.min.css';
 import { Post as PostType } from '@/types/models'
 
-
 interface Story {
   username: string;
   avatar: string;
@@ -162,9 +161,29 @@ function Poll({ poll }: { poll: Poll }) {
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<PostType[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null) // Ajout de l'utilisateur actuel
   const [activeTab, setActiveTab] = useState<'all' | 'following'>('all');
   const [loading, setLoading] = useState(true)
   const { t } = useTranslation();
+  
+  // Charger l'utilisateur actuel
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/me', { 
+          credentials: 'include' 
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser(user);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
   
   useEffect(() => {
     fetch(`/api/posts/feed`)
@@ -206,6 +225,50 @@ export default function FeedPage() {
     } catch (err) {
       console.error('Erreur réseau lors de la suppression:', err);
     }
+  };
+
+  // NOUVELLE FONCTION : Gestion des likes dans le feed
+  const handleLike = (postId: string, update: { liked: boolean; totalLikes: number }) => {
+    console.log('Like dans FeedPage:', postId, update);
+    
+    if (!currentUser) {
+      console.warn('Utilisateur non connecté');
+      return;
+    }
+    
+    setPosts(prevPosts => 
+      prevPosts.map(post => {
+        if (post._id === postId) {
+          const userId = currentUser._id;
+          let newLikes = [...(post.likes || [])];
+          
+          if (update.liked) {
+            // Ajouter le like s'il n'existe pas déjà
+            if (!newLikes.includes(userId)) {
+              newLikes.push(userId);
+            }
+          } else {
+            // Retirer le like
+            newLikes = newLikes.filter(id => id !== userId);
+          }
+          
+          console.log('Mise à jour likes FeedPage:', {
+            postId,
+            oldLikes: post.likes,
+            newLikes,
+            liked: update.liked
+          });
+          
+          return { ...post, likes: newLikes };
+        }
+        return post;
+      })
+    );
+  };
+
+  // Fonction pour récupérer l'ID de l'utilisateur actuel
+  const getCurrentUserId = () => {
+    return currentUser?._id || '';
   };
 
   // URL de l'API en fonction de l'onglet actif
@@ -252,7 +315,8 @@ export default function FeedPage() {
           initialPosts={posts}
           fetchUrl={getFetchUrl()}
           onDelete={handleDeletePost}
-          key={activeTab} // Force le re-render quand on change d'onglet
+          onLike={handleLike}
+          key={activeTab} 
         />
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import LikeButton from './LikeButton'
-import { MdDelete, MdChatBubbleOutline, MdShare, MdRepeat } from 'react-icons/md';
+import { MdDelete, MdChatBubbleOutline, MdShare, MdRepeat, MdFlag } from 'react-icons/md';
 import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './PostContent'
@@ -13,6 +13,7 @@ import MediaModal from './ImageModal'
 import type { Post as PostType, User } from '@/types/models'
 import { useTranslation } from 'react-i18next';
 import { formatRelativeDate } from '../i18n/formatRelativeDate';
+import ReportModal from './ReportModal'
 
 interface ExtendedPost extends PostType {
   commentsCount?: number;
@@ -39,6 +40,7 @@ interface PostProps {
   onComment: (postId: string, updatedPost: PostType) => Promise<void>
   onShare: (postId: string) => void
   onDelete?: (postId: string) => void
+  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
 }
 
 const defaultUser: User = {
@@ -63,6 +65,7 @@ export default function Post({
   onComment,
   onShare,
   onDelete,
+  onProfileClick, // Nouvelle prop
 }: PostProps) {
   const safeCurrentUser = currentUser || defaultUser
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
@@ -71,6 +74,8 @@ export default function Post({
   const { t, i18n } = useTranslation();
   const [forceRerender, setForceRerender] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [showReportModal, setShowReportModal] = useState(false);
   
   // Détection si on est sur la page du post
   const [isOnPostPage, setIsOnPostPage] = useState(false);
@@ -96,12 +101,19 @@ export default function Post({
   const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
   const [showCommentForm, setShowCommentForm] = useState(false)
   
-  // Fonction améliorée pour vérifier si l'utilisateur a liké
+  // Fonction améliorée pour vérifier si l'utilisateur a liké avec logs détaillés
   const isLikedByUser = useCallback((likes: any[], currentUserId: string | null) => {
-   
-    if (!currentUserId || !likes || likes.length === 0) return false;
+    if (!currentUserId || !likes || likes.length === 0) {
+      console.log('isLikedByUser: false (pas d\'utilisateur ou pas de likes)', {
+        currentUserId,
+        likes,
+        hasUser: !!currentUserId,
+        hasLikes: !!(likes && likes.length > 0)
+      });
+      return false;
+    }
     
-    return likes.some(like => {
+    const userHasLiked = likes.some(like => {
       // Gestion des différents formats de données
       if (typeof like === 'string') {
         return like === currentUserId;
@@ -111,6 +123,20 @@ export default function Post({
       }
       return false;
     });
+    
+    console.log('isLikedByUser: résultat', {
+      currentUserId,
+      likes,
+      userHasLiked,
+      likesDetails: likes.map(like => ({
+        value: like,
+        type: typeof like,
+        matches: typeof like === 'string' ? like === currentUserId : 
+                 (like && typeof like === 'object') ? (like._id === currentUserId || like.toString() === currentUserId) : false
+      }))
+    });
+    
+    return userHasLiked;
   }, []);
 
   const [isLiked, setIsLiked] = useState(false)
@@ -146,9 +172,18 @@ export default function Post({
 
   // Synchroniser avec les props quand le post change
   useEffect(() => {
+    console.log('Synchronisation post:', {
+      initialPost: initialPost._id,
+      likes: initialPost.likes.length,
+      newLikes: initialPost.likes
+    });
     setPost(initialPost);
+    
+    // Recalculer l'état des likes quand le post change
+    const liked = isLikedByUser(initialPost.likes, safeCurrentUser._id);
+    setIsLiked(liked);
     setLikesCount(initialPost.likes.length);
-  }, [initialPost]);
+  }, [initialPost, isLikedByUser, safeCurrentUser._id]);
 
   // Fonction pour transformer le contenu avec mentions cliquables
   const renderContentWithMentions = (text: string) => {
@@ -159,25 +194,8 @@ export default function Post({
         return (
           <Link
             key={index}
-            href="#"
+            href={`/profile/username/${username}`}
             className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
-            onClick={async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              try {
-                const response = await fetch(`/api/users/find-id-by-username/${username}`, {
-                  credentials: 'include'
-                });
-                if (response.ok) {
-                  const data = await response.json();
-                  window.location.href = `/profile/${data._id}`;
-                } else {
-                  console.error('Utilisateur non trouvé:', username);
-                }
-              } catch (error) {
-                console.error('Erreur lors de la recherche d\'utilisateur:', error);
-              }
-            }}
           >
             {part}
           </Link>
@@ -399,8 +417,8 @@ export default function Post({
               itemId={post._id.toString()}
               itemType="post"
               size="normal" 
-              initialLikes={likesCount}
-              initialLikedStatus={isLiked}
+              initialLikes={post.likes.length}
+              initialLikedStatus={isLikedByUser(post.likes, safeCurrentUser._id)}
               onLikeSuccess={handleLike}
             />
           </div>
@@ -428,6 +446,19 @@ export default function Post({
           >
             <MdShare className="w-5 h-5" />
           </button>
+          
+          {/* Bouton de signalement */}
+          <button 
+            className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation(); 
+              setShowReportModal(true);
+            }}
+            title={t('report.report_post', 'Signaler ce post')}
+          >
+            <MdFlag className="w-5 h-5" />
+          </button>
+          
           {userId === authorId && (
             <button
               className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:pointer-events-none"
@@ -473,6 +504,7 @@ export default function Post({
                 expandedComments={expandedComments}
                 setExpandedComments={setExpandedComments}
                 currentUser={safeCurrentUser}
+                onProfileClick={onProfileClick} // Passer la prop
                 onDelete={(commentId) => {
                   if (commentId === post._id) {
                     console.warn('Tentative de suppression du post principal via commentaire - ignorée');
@@ -489,6 +521,13 @@ export default function Post({
           </div>
         </div>
       )}
+
+      {/* Modal de signalement */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={post._id}
+      />
     </article>
   )
 }
@@ -506,7 +545,8 @@ function ThreadItem({
   isClickable = true,
   isComment = false,
   onDelete,
-  deletingCommentId
+  deletingCommentId,
+  onProfileClick // Nouvelle prop
 }: {
   item: any,
   currentUser: User,
@@ -520,11 +560,15 @@ function ThreadItem({
   isClickable?: boolean,
   isComment?: boolean,
   onDelete?: (commentId: string) => void,
-  deletingCommentId?: string | null
+  deletingCommentId?: string | null,
+  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
 }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState(item.likes.length)
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // État pour le modal de signalement dans ThreadItem
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const isLikedByUser = useCallback((likes: any[], currentUserId: string | null) => {
     if (!currentUserId || !likes || likes.length === 0) return false;
@@ -574,7 +618,7 @@ function ThreadItem({
     }
   };
 
-  // Fonction pour transformer le contenu avec mentions cliquables
+  // Fonction pour transformer le contenu avec mentions cliquables dans ThreadItem
   const renderContentWithMentions = (text: string) => {
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, index) => {
@@ -585,23 +629,7 @@ function ThreadItem({
             key={index}
             href={`/profile/username/${username}`}
             className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
-            onClick={async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              try {
-                const response = await fetch(`/api/users/find-id-by-username/${username}`, {
-                  credentials: 'include'
-                });
-                if (response.ok) {
-                  const data = await response.json();
-                  window.location.href = `/profile/${data._id}`;
-                } else {
-                  console.error('Utilisateur non trouvé:', username);
-                }
-              } catch (error) {
-                console.error('Erreur lors de la recherche d\'utilisateur:', error);
-              }
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
             {part}
           </Link>
@@ -671,13 +699,18 @@ function ThreadItem({
       onClick={handleClick}
     >
       <div className="flex gap-3 mb-3">
-        <Image
-          src={item.author?.profilePicture || '/default-avatar.svg'}
-          alt={`Avatar de ${item.author?.username || 'utilisateur'}`}
-          width={isComment ? 32 : 40}
-          height={isComment ? 32 : 40}
-          className={`${isComment ? 'w-8 h-8' : 'w-10 h-10'} rounded-full object-cover`}
-        />
+        {/* Avatar cliquable avec Link */}
+        <Link href={`/profile/${typeof item.author === 'string' ? item.author : item.author?._id}`}>
+          <div className="hover:opacity-80 transition-opacity">
+            <Image
+              src={item.author?.profilePicture || '/default-avatar.svg'}
+              alt={`Avatar de ${item.author?.username || 'utilisateur'}`}
+              width={isComment ? 32 : 40}
+              height={isComment ? 32 : 40}
+              className={`${isComment ? 'w-8 h-8' : 'w-10 h-10'} rounded-full object-cover`}
+            />
+          </div>
+        </Link>
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2">
             <a
@@ -810,6 +843,18 @@ function ThreadItem({
           <MdShare className="w-4 h-4" />
         </button>
 
+        {/* Bouton de signalement dans ThreadItem */}
+        <button
+          className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowReportModal(true);
+          }}
+          title={t('report.report_content', 'Signaler ce contenu')}
+        >
+          <MdFlag className="w-4 h-4" />
+        </button>
+
         {userId === (typeof item.author === 'string' ? item.author : item.author?._id) && (
           <button
             className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
@@ -838,6 +883,13 @@ function ThreadItem({
         </div>
       )}
 
+      {/* Modal de signalement dans ThreadItem */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={item._id}
+      />
+
       <MediaModal
         isOpen={modalOpen}
         src={modalSrc}
@@ -861,7 +913,8 @@ function FlatComments({
   expandedComments,
   setExpandedComments,
   onDelete,
-  deletingCommentId
+  deletingCommentId,
+  onProfileClick // Nouvelle prop
 }: {
   parentId: string | null,
   formatDate: (date: string) => string,
@@ -874,7 +927,8 @@ function FlatComments({
   setExpandedComments: React.Dispatch<any>,
   currentUser: User,
   onDelete?: (commentId: string) => void,
-  deletingCommentId?: string | null
+  deletingCommentId?: string | null,
+  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
 }): React.ReactNode {
   const { t } = useTranslation();
   const maxDisplayedComments = 3
@@ -950,6 +1004,7 @@ function FlatComments({
               isComment={true}
               onDelete={handleCommentDelete}
               deletingCommentId={deletingCommentId}
+              onProfileClick={onProfileClick} // Passer la prop
             />
 
             {totalRepliesCount > 0 && (
@@ -988,6 +1043,7 @@ function FlatComments({
                   setExpandedComments={setExpandedComments}
                   onDelete={onDelete}
                   deletingCommentId={deletingCommentId}
+                  onProfileClick={onProfileClick} // Passer la prop
                 />
               </div>
             )}

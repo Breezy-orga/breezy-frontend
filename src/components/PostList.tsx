@@ -1,218 +1,164 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import Post from './Post'
-import { Post as PostType, User } from '@/types/models'
-import { useTranslation } from 'react-i18next'
-import { formatRelativeDate } from '../i18n/formatRelativeDate'
+import { useState, useEffect } from 'react';
+import Post from './Post';
+import { Post as PostType, User } from '@/types/models';
 
 interface PostListProps {
-  initialPosts?: PostType[]
-  fetchUrl: string
-  onDelete?: (postId: string) => void
+  initialPosts: PostType[];
+  fetchUrl: string;
+  onDelete: (postId: string) => void;
+  onLike?: (postId: string, update: { liked: boolean; totalLikes: number }) => void;
 }
 
-export default function PostList({ fetchUrl, initialPosts, onDelete }: PostListProps) {
-  const { t } = useTranslation()
-  const [posts, setPosts] = useState<PostType[]>(initialPosts || []);
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [shareNotification, setShareNotification] = useState<string | null>(null);
+export default function PostList({ 
+  initialPosts, 
+  fetchUrl, 
+  onDelete, 
+  onLike 
+}: PostListProps) {
+  const [posts, setPosts] = useState<PostType[]>(initialPosts);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const updatePostInState = (updatedPost: PostType) => {
-    setPosts(prevPosts =>
-      prevPosts.map(post =>
-        post._id === updatedPost._id ? updatedPost : post
-      )
-    )
-  }
-
-  const updatePostLikesInState = (
-    postId: string,
-    update: { liked: boolean; totalLikes: number }
-  ) => {
-    setPosts(prevPosts =>
-      prevPosts.map(post => {
-        if (post._id !== postId) return post
-
-        const userId = currentUser?._id
-        let newLikes = post.likes
-
-        if (userId) {
-          if (update.liked) {
-            if (!newLikes.includes(userId)) {
-              newLikes = [...newLikes, userId]
-            }
-          } else {
-            newLikes = newLikes.filter(id => id !== userId)
-          }
-        }
-
-        return { ...post, likes: newLikes }
-      })
-    )
-  }
-
-  const handlePostDelete = (postId: string) => {
-    console.log('handlePostDelete appelé pour le post:', postId);
-    
-    const postExists = posts.some(post => post._id === postId);
-    if (!postExists) {
-      console.log('Post déjà supprimé de la liste, appel ignoré');
-      return;
-    }
-
-    setPosts(prevPosts => {
-      const newPosts = prevPosts.filter(post => post._id !== postId);
-      console.log('Posts mis à jour:', newPosts.length, 'posts restants');
-      return newPosts;
-    });
-    
-    if (onDelete) {
-      console.log('Appel de la fonction onDelete du parent');
-      onDelete(postId);
-    }
-  };
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(fetchUrl, { credentials: 'include' })
-      if (!res.ok) throw new Error('Erreur lors de la récupération des messages')
-      const data = await res.json()
-      setPosts(data)
-      setError(null)
-    } catch (err) {
-      console.error('Erreur:', err)
-      setError('Une erreur est survenue lors du chargement des messages')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Récupérer l'utilisateur actuel
   useEffect(() => {
-    if (initialPosts && initialPosts.length > 0) {
-      setPosts(prevPosts => {
-        const existingIds = new Set(prevPosts.map(post => post._id));
-        
-        const newPosts = initialPosts.filter(post => !existingIds.has(post._id));
-        
-        if (newPosts.length > 0) {
-          console.log(`Ajout de ${newPosts.length} nouveaux posts`);
-          return [...newPosts, ...prevPosts];
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/users/me', { 
+          credentials: 'include' 
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser(user);
         }
-        
-        return prevPosts;
-      });
-    }
+      } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  // Synchroniser avec les props
+  useEffect(() => {
+    setPosts(initialPosts);
   }, [initialPosts]);
 
+  // Charger les posts depuis l'URL
   useEffect(() => {
-    fetchPosts()
-  }, [fetchUrl])
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(fetchUrl, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const newPosts = await response.json();
+          setPosts(newPosts);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    fetchCurrentUser()
-  }, [])
+    fetchPosts();
+  }, [fetchUrl]);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await fetch('/api/users/me', { credentials: 'include' })
-      if (!res.ok) throw new Error('Utilisateur non authentifié')
-      const user = await res.json()
-      setCurrentUser({
-        ...user,
-        profilePicture: user.profilePicture || '/default-avatar.svg',
-      })
-    } catch (err) {
-      console.error("Erreur récupération user:", err)
-      setCurrentUser({
-        _id: '',
-        username: 'utilisateur',
-        email: '',
-        profilePicture: '/default-avatar.svg',
-        role: 'user',
-      })
+  // Gérer les likes localement et notifier le parent
+  const handleLike = (postId: string, update: { liked: boolean; totalLikes: number }) => {
+    console.log('handleLike dans PostList:', postId, update);
+    
+    // Mettre à jour l'état local
+    if (currentUser) {
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post._id === postId) {
+            const userId = currentUser._id;
+            let newLikes = [...(post.likes || [])];
+            
+            if (update.liked) {
+              // Ajouter le like s'il n'existe pas déjà
+              if (!newLikes.includes(userId)) {
+                newLikes.push(userId);
+              }
+            } else {
+              // Retirer le like
+              newLikes = newLikes.filter(id => id !== userId);
+            }
+            
+            return { ...post, likes: newLikes };
+          }
+          return post;
+        })
+      );
     }
-  }
+    
+    // Notifier le parent
+    onLike?.(postId, update);
+  };
 
+  const handleComment = async (postId: string, updatedPost: PostType) => {
+    // Mettre à jour le post avec les  commentaires
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post._id === postId ? updatedPost : post
+      )
+    );
+  };
+
+  const handleShare = (postId: string) => {
+    // Logique de partage
+    const postUrl = `${window.location.origin}/post/${postId}`;
+    navigator.clipboard.writeText(postUrl)
+      .then(() => console.log('Lien copié'))
+      .catch(() => console.error('Erreur lors de la copie'));
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-2 text-gray-500">{t('postlist.loading')}</span>
+      <div className="space-y-4">
+        {/* Skeleton loading */}
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 animate-pulse">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div className="space-y-1">
+                <div className="w-24 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                <div className="w-16 h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="w-full h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+              <div className="w-3/4 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            </div>
+          </div>
+        ))}
       </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <div className="text-red-500 mb-4">{error}</div>
-        <button
-          onClick={fetchPosts}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          {t('postlist.retry', 'Réessayer')}
-        </button>
-      </div>
-    )
+    );
   }
 
   return (
-    <>
-      {shareNotification && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
-          {shareNotification}
+    <div className="space-y-4">
+      {posts.map(post => (
+        <Post
+          key={post._id}
+          post={post}
+          currentUser={currentUser}
+          onLike={handleLike}
+          onComment={handleComment}
+          onShare={handleShare}
+          onDelete={onDelete}
+        />
+      ))}
+      
+      {posts.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">
+            Aucun post à afficher
+          </p>
         </div>
       )}
-      <div className="space-y-4">
-        {posts.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            {t('postlist.empty')}
-          </div>
-        ) : (
-          posts.map(post => {
-            if (!post?._id) {
-              console.error('Post invalide détecté:', post)
-              return null
-            }
-            return (
-              <Post
-                key={post._id.toString()}
-                post={post}
-                currentUser={currentUser || {
-                  _id: '',
-                  username: '',
-                  email: '',
-                  profilePicture: '/default-avatar.png',
-                  role: 'user',
-                }}
-                onLike={(postId, update) =>
-                  updatePostLikesInState(postId, update)
-                }
-                onComment={async (_postId, updatedPost) => {
-                  updatePostInState(updatedPost)
-                }}
-                onShare={postId => {
-                  navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`)
-                    .then(() => {
-                      setShareNotification(t('postlist.link_copied', 'Link copied to clipboard'));
-                      setTimeout(() => setShareNotification(null), 2000);
-                    })
-                    .catch(() => {
-                      setShareNotification(t('postlist.copy_error', 'Error copying link'));
-                      setTimeout(() => setShareNotification(null), 2000);
-                    });
-                }}
-                onDelete={handlePostDelete}
-              />
-            )
-          })
-        )}
-      </div>
-    </>
-  )
+    </div>
+  );
 }

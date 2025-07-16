@@ -47,6 +47,12 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
   const [deletedComments, setDeletedComments] = useState<Set<string>>(new Set());
   const router = useRouter();
 
+  
+  const handleProfileClick = (userId: string, username?: string) => {
+    if (!userId) return;
+    router.push(`/profile/${userId}`);
+  };
+
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -140,7 +146,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
     );
   };
 
-  // Fonction améliorée pour supprimer un commentaire de façon dynamique
+  // Fonction pour supprimer un commentaire de façon dynamique
   const handleDeleteComment = async (commentId: string) => {
     if (!currentUser) return;
     
@@ -297,6 +303,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
               onCommentCreated={refreshComments}
               currentUser={currentUser}
               onDelete={undefined}
+              onProfileClick={handleProfileClick}
             />
           </div>
 
@@ -329,6 +336,7 @@ export default function PostFocusPage({ params }: { params: { id: string } }) {
                 expandedComments={expandedComments}
                 setExpandedComments={setExpandedComments}
                 currentUser={currentUser}
+                onProfileClick={handleProfileClick} // Nouvelle prop
                 onDelete={(commentId) => {
                   if (commentId === post._id) {
                     console.warn('PROTECTION: Tentative de suppression du post principal via commentaire - BLOQUÉE');
