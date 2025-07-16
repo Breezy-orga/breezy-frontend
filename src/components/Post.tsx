@@ -98,6 +98,7 @@ export default function Post({
   
   // Fonction améliorée pour vérifier si l'utilisateur a liké
   const isLikedByUser = useCallback((likes: any[], currentUserId: string | null) => {
+   
     if (!currentUserId || !likes || likes.length === 0) return false;
     
     return likes.some(like => {
@@ -134,9 +135,13 @@ export default function Post({
   }, [post.commentsCount])
   
   useEffect(() => {
-    const liked = isLikedByUser(post.likes, userId);
-
-    setIsLiked(liked);
+    // Protection contre les valeurs nulles/undefined
+    if (Array.isArray(post.likes) && userId) {
+      const liked = isLikedByUser(post.likes, userId);
+      setIsLiked(liked);
+    } else {
+      setIsLiked(false);
+    }
   }, [post.likes, userId, isLikedByUser, post._id]);
 
   // Synchroniser avec les props quand le post change
@@ -199,9 +204,19 @@ export default function Post({
 
   const handleLike = (update: { liked: boolean; totalLikes: number }) => {
     console.log('handleLike appelé:', update);
-    setIsLiked(update.liked);
-    setLikesCount(update.totalLikes);
     onLike?.(post._id.toString(), update);
+
+    // Synchroniser le post depuis le backend après un like/unlike
+    fetch(`/api/posts/${post._id}`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setPost(data);
+          setLikesCount(data.likes.length);
+          setIsLiked(isLikedByUser(data.likes, userId));
+        }
+      })
+      .catch(err => console.error('Erreur lors du refresh post après like:', err));
   };
 
   const formatDate = useCallback((dateString: string) => formatRelativeDate(dateString, t), [t, i18n.resolvedLanguage, forceRerender]);
@@ -380,6 +395,7 @@ export default function Post({
             onClick={(e) => e.stopPropagation()} 
           >
             <LikeButton
+              key={`likebtn-${post._id}-${likesCount}-${isLiked}`}
               itemId={post._id.toString()}
               itemType="post"
               size="normal" 
