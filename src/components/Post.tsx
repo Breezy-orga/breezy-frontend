@@ -664,12 +664,20 @@ function ThreadItem({
         />
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
+            <a
+              href={`/profile/${item.author?._id}`}
+              className="font-semibold text-gray-900 dark:text-gray-100 hover:underline"
+              onClick={e => e.stopPropagation()}
+            >
               {item.author?.name || item.author?.username || 'utilisateur'}
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
+            </a>
+            <a
+              href={`/profile/${item.author?._id}`}
+              className="text-gray-500 dark:text-gray-400 text-sm hover:underline"
+              onClick={e => e.stopPropagation()}
+            >
               @{item.author?.username || 'utilisateur'}
-            </span>
+            </a>
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             {formatDate(item.createdAt)}
