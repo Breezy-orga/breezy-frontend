@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 export default function BanCheck() {
   const router = useRouter();
   const pathname = usePathname();
   const [isBanned, setIsBanned] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-
+  const { t } = useTranslation(); // Assurez-vous que i18next est configuré correctement
   useEffect(() => {
     // Ne pas vérifier si on est déjà sur la page banned ou login
     if (pathname === '/banned' || pathname === '/login' || pathname === '/register') {
@@ -63,7 +64,7 @@ export default function BanCheck() {
       <div className="fixed inset-0 bg-red-600 flex items-center justify-center z-50">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-xl font-semibold">Redirection en cours...</p>
+          <p className="text-xl font-semibold">{t("user_status.redirecting")}</p>
         </div>
       </div>
     );
@@ -75,7 +76,7 @@ export default function BanCheck() {
       <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 flex items-center justify-center z-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Vérification en cours...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t("user_status.checking")}</p>
         </div>
       </div>
     );
