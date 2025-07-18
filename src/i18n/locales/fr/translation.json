@@ -33,7 +33,11 @@
     "poll": "Sondage",
     "event": "Événement",
     "loading": "Chargement...",
-    "no_suggestions": "Aucune suggestion disponible."
+    "no_suggestions": "Aucune suggestion disponible.",
+    "unfollow": "Ne plus suivre",
+    "refresh_suggestions": "Actualiser les suggestions", 
+    "refreshing": "Actualisation...",
+    "suggestions_info": "Suggestions basées sur votre activité"
   },
   "feed": {
     "for_you": "Pour toi",
@@ -100,11 +104,11 @@
     "profile_updated": "Profil mis à jour avec succès",
     "bio": "Biographie",
     "characters": "Caractères",
-    "followed_success": "Vous suivez maintenant @{{username}}",
-    "unfollowed_success": "Vous ne suivez plus @{{username}}",
+    "followed_success": "Vous suivez cette utilisateur",
+    "unfollowed_success": "Vous ne suivez plus cette utilisateur",
     "delete_account_title": "Supprimer le compte",
     "delete_account_self_message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et toutes vos données seront perdues.",
-    "delete_account_other_message": "Êtes-vous sûr de vouloir supprimer le compte de @{{username}} ? Cette action est irréversible.",
+    "delete_account_other_message": "Êtes-vous sûr de vouloir supprimer ce compte? Cette action est irréversible.",
     "delete_permanently": "Supprimer définitivement"
   },
   "login": {
@@ -180,7 +184,7 @@
     "days_ago": "Il y a {{count}}j",
     "confirmDeleteComment": "Êtes-vous sûr de vouloir supprimer ce commentaire ?",
     "deleteError": "Erreur lors de la suppression du commentaire",
-    "post.deleting": "Suppression du post...",
+    "deleting": "Suppression du post...",
     "comments_deleted": "Commentaires supprimés",
     "actions": {
       "comment": "Commenter",
@@ -192,7 +196,11 @@
     "no_comments": "Aucun commentaire pour l'instant",
     "video": "Vidéo",
     "show_more_comments": "Afficher plus de commentaires ({{count}})",
-    "reply_to": "Répondre à @{{user}}"
+    "reply_to": "Répondre à @{{user}}",
+    "confirm_delete_title": "Supprimer le post",
+    "confirm_delete_message": "Êtes-vous sûr de vouloir supprimer ce post ? Cette action est irréversible.",
+    "delete_post": "Supprimer le post",
+    "delete":"Supprimer"
   },
   "common": {
     "loading": "Chargement...",
@@ -206,7 +214,8 @@
     "cancel": "Annuler",
     "optional": "optionnel",
     "processing": "Traitement...",
-    "dismiss": "Fermer"
+    "dismiss": "Fermer",
+    "delete": "Supprimer"
   },
   "register": {
     "slogan": "Un souffle de partage frais",

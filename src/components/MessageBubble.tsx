@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 interface Message {
   _id: string
-  senderId: string | { _id: string }
+  senderId: string | { _id: string; profilePicture?: string; name?: string; username?: string; status?: 'active' | 'banned' | 'suspended' }
   content: string
   timestamp: string
   status?: 'sent' | 'delivered' | 'seen'
@@ -34,11 +35,36 @@ export default function MessageBubble({
   const [isHovered, setIsHovered] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
-  const senderId = typeof message.senderId === 'string'
-    ? message.senderId
-    : (message.senderId?._id || '')
+  // Extraction des informations de l'expéditeur
+  const getSenderInfo = () => {
+    if (typeof message.senderId === 'string') {
+      return {
+        id: message.senderId,
+        profilePicture: '/default-avatar.png',
+        name: '',
+        username: '',
+        status: 'active' as const
+      }
+    } else if (message.senderId && typeof message.senderId === 'object') {
+      return {
+        id: message.senderId._id || '',
+        profilePicture: message.senderId.profilePicture || '/default-avatar.png',
+        name: message.senderId.name || '',
+        username: message.senderId.username || '',
+        status: message.senderId.status || 'active' as const
+      }
+    }
+    return {
+      id: '',
+      profilePicture: '/default-avatar.png',
+      name: '',
+      username: '',
+      status: 'active' as const
+    }
+  }
 
-  const isMine = senderId === me
+  const senderInfo = getSenderInfo()
+  const isMine = senderInfo.id === me
 
   // Formatage d'heure selon la langue
   const getFormattedTime = () => {
@@ -57,7 +83,7 @@ export default function MessageBubble({
     }
   }
 
-  // Fermer le menu quand on clique ailleurs (inutile ici mais conservé si besoin)
+  // Fermer le menu quand on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Element
@@ -72,6 +98,20 @@ export default function MessageBubble({
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showMenu, message._id])
+
+  // Classes CSS pour l'avatar selon le statut
+  const getAvatarClasses = () => {
+    const baseClasses = "w-8 h-8 rounded-full object-cover border-2 flex-shrink-0"
+    
+    switch (senderInfo.status) {
+      case 'banned':
+        return `${baseClasses} border-red-400 dark:border-red-600 grayscale`
+      case 'suspended':
+        return `${baseClasses} border-yellow-400 dark:border-yellow-600 opacity-75`
+      default:
+        return `${baseClasses} border-gray-300 dark:border-gray-600`
+    }
+  }
 
   return (
     <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} mb-2 group`}>
@@ -96,10 +136,21 @@ export default function MessageBubble({
           </div>
         )}
 
-        {/* Avatar (seulement pour les messages des autres et si activé) */}
+        {/* Avatar amélioré (seulement pour les messages des autres et si activé) */}
         {!isMine && showAvatar && (
-          <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0 overflow-hidden">
-            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
+          <div className="flex-shrink-0">
+            <Image
+              src={senderInfo.profilePicture}
+              alt={senderInfo.name || senderInfo.username || 'Avatar utilisateur'}
+              width={32}
+              height={32}
+              className={getAvatarClasses()}
+              onError={(e) => {
+                // Fallback vers l'avatar par défaut en cas d'erreur de chargement
+                const target = e.target as HTMLImageElement
+                target.src = '/default-avatar.png'
+              }}
+            />
           </div>
         )}
         
@@ -129,6 +180,19 @@ export default function MessageBubble({
             </p>
           </div>
         </div>
+
+        {/* Indicateur de statut utilisateur (optionnel) */}
+        {!isMine && showAvatar && senderInfo.status !== 'active' && (
+          <div className="absolute -top-1 left-6">
+            <div className={`w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+              senderInfo.status === 'banned' 
+                ? 'bg-red-500' 
+                : senderInfo.status === 'suspended' 
+                ? 'bg-yellow-500' 
+                : 'bg-green-500'
+            }`} />
+          </div>
+        )}
       </div>
 
       {/* Heure affichée directement sous le message */}
@@ -140,6 +204,8 @@ export default function MessageBubble({
         <span className="text-xs text-gray-500 dark:text-gray-400">
           {getFormattedTime()}
         </span>
+        
+       
       </div>
     </div>
   )

@@ -105,7 +105,7 @@ export default function BannedPage() {
           // Utilisateur banni/suspendu
           const errorData = await response.json().catch(() => ({}));
           setBanInfo({
-            reason: errorData.reason || t('banned_page.no_reason', 'Aucune raison spécifiée'),
+            reason: errorData.reason || t('banned_page.no_reason'),
             bannedAt: new Date().toISOString(),
             status: errorData.status || 'banned'
           });
@@ -171,7 +171,7 @@ export default function BannedPage() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-gray-100 dark:from-gray-900 dark:to-red-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">{t('common.loading', 'Chargement...')}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -198,14 +198,14 @@ export default function BannedPage() {
             <div>
               <h1 className="text-2xl font-bold">
                 {isSuspended 
-                  ? t('suspended_page.title', 'Compte suspendu')
-                  : t('banned_page.title', 'Compte banni')
+                  ? t('suspended_page.title')
+                  : t('banned_page.title')
                 }
               </h1>
               <p className={`${isSuspended ? 'text-orange-100' : 'text-red-100'} mt-1`}>
                 {isSuspended
-                  ? t('suspended_page.subtitle', 'Votre accès à cette plateforme a été temporairement révoqué.')
-                  : t('banned_page.subtitle', 'Votre accès à cette plateforme a été révoqué de façon permanente.')
+                  ? t('suspended_page.subtitle')
+                  : t('banned_page.subtitle')
                 }
               </p>
             </div>
@@ -220,13 +220,13 @@ export default function BannedPage() {
             <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
               <h3 className="font-semibold text-orange-800 dark:text-orange-200 mb-3 flex items-center gap-2">
                 <MdAccessTime className="w-5 h-5" />
-                {t('suspended_page.time_remaining', 'Temps restant')}
+                {t('suspended_page.time_remaining')}
               </h3>
               <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">
                 {timeRemaining}
               </div>
               <p className="text-sm text-orange-700 dark:text-orange-300">
-                {t('suspended_page.suspension_ends', 'Suspension levée le :')} {formatDate(banInfo.suspendedUntil)}
+                {t('suspended_page.suspension_ends')} {formatDate(banInfo.suspendedUntil)}
               </p>
             </div>
           )}
@@ -244,8 +244,8 @@ export default function BannedPage() {
             } mb-3 flex items-center gap-2`}>
               <MdInfo className="w-5 h-5" />
               {isSuspended 
-                ? t('suspended_page.reason_title', 'Raison de la suspension :')
-                : t('banned_page.reason_title', 'Raison du bannissement :')
+                ? t('suspended_page.reason_title')
+                : t('banned_page.reason_title')
               }
             </h3>
             <p className={`${
@@ -253,7 +253,7 @@ export default function BannedPage() {
                 ? 'text-orange-700 dark:text-orange-300' 
                 : 'text-red-700 dark:text-red-300'
             } mb-3`}>
-              {banInfo.reason || t('user_status.no_reason', 'Aucune raison spécifiée')}
+              {banInfo.reason || t('user_status.no_reason')}
             </p>
             {banInfo.bannedAt && (
               <p className={`text-sm ${
@@ -262,8 +262,8 @@ export default function BannedPage() {
                   : 'text-red-600 dark:text-red-400'
               }`}>
                 {isSuspended 
-                  ? t('suspended_page.suspended_on', 'Suspendu le :')
-                  : t('banned_page.banned_on', 'Banni le :')
+                  ? t('suspended_page.suspended_on')
+                  : t('banned_page.banned_on')
                 } {formatDate(banInfo.bannedAt)}
               </p>
             )}
@@ -288,8 +288,8 @@ export default function BannedPage() {
             <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-3 flex items-center gap-2">
               <MdWarning className="w-5 h-5" />
               {isSuspended 
-                ? t('suspended_page.suspension_conditions', 'Conditions de la suspension')
-                : t('banned_page.ban_conditions', 'Conditions du bannissement')
+                ? t('suspended_page.suspension_conditions')
+                : t('banned_page.ban_conditions')
               }
             </h3>
             <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-2">
@@ -297,15 +297,15 @@ export default function BannedPage() {
                 <>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-500 mt-1">•</span>
-                    <span>{t('suspended_page.temporary_access_revoked', 'Accès temporairement révoqué')}</span>
+                    <span>{t('suspended_page.temporary_access_revoked')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-500 mt-1">•</span>
-                    <span>{t('suspended_page.automatic_restoration', 'Restauration automatique à la fin de la période')}</span>
+                    <span>{t('suspended_page.automatic_restoration')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-500 mt-1">•</span>
-                    <span>{t('suspended_page.no_circumvention', 'Tentatives de contournement interdites')}</span>
+                    <span>{t('suspended_page.no_circumvention')}</span>
                   </li>
                 </>
               ) : (

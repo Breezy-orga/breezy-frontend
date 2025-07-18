@@ -31,21 +31,21 @@ export default function AdminModerationPage() {
             setUserRole(user.role);
           } else {
             console.log('Accès refusé: rôle insuffisant');
-            setError(t('admin.access_denied', 'Accès refusé: droits de modération requis'));
+            setError(t('admin.access_denied'));
             setTimeout(() => router.push('/'), 2000);
           }
         } else if (response.status === 401) {
           console.log('Utilisateur non authentifié');
-          setError(t('admin.not_authenticated', 'Non authentifié'));
+          setError(t('admin.not_authenticated'));
           setTimeout(() => router.push('/login'), 2000);
         } else {
           console.log('Erreur de vérification des droits');
-          setError(t('admin.verification_error', 'Erreur de vérification des droits'));
+          setError(t('admin.verification_error'));
           setTimeout(() => router.push('/'), 2000);
         }
       } catch (error) {
         console.error('Erreur lors de la vérification des droits:', error);
-        setError(t('admin.network_error', 'Erreur de connexion'));
+        setError(t('admin.network_error'));
         setTimeout(() => router.push('/'), 2000);
       } finally {
         setLoading(false);
@@ -61,10 +61,10 @@ export default function AdminModerationPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            {t('admin.checking_access', 'Vérification des droits d\'accès...')}
+            {t('admin.checking_access')}
           </h2>
           <p className="text-gray-500 dark:text-gray-400">
-            {t('admin.please_wait', 'Veuillez patienter')}
+            {t('admin.please_wait')}
           </p>
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function AdminModerationPage() {
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {t('admin.access_denied_title', 'Accès refusé')}
+            {t('admin.access_denied_title')}
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             {error}
@@ -86,7 +86,7 @@ export default function AdminModerationPage() {
             onClick={() => router.push('/')}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
           >
-            {t('admin.return_home', 'Retour à l\'accueil')}
+            {t('admin.return_home')}
           </button>
         </div>
       </div>
@@ -109,13 +109,13 @@ export default function AdminModerationPage() {
                 onClick={() => router.push('/')}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
               >
-                ← {t('admin.back_to_app', 'Retour à l\'application')}
+                ← {t('admin.back_to_app')}
               </button>
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 🛡️ {userRole === 'admin' 
-                      ? t('admin.panel_title', 'Panel d\'administration') 
-                      : t('moderation.panel_title', 'Panel de modération')
+                      ? t('admin.panel_title') 
+                      : t('moderation.panel_title')
                     }
               </h1>
             </div>
@@ -126,8 +126,8 @@ export default function AdminModerationPage() {
                   : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
               }`}>
                 {userRole === 'admin' 
-                  ? t('admin.admin_mode', 'Mode Administrateur')
-                  : t('moderation.moderator_mode', 'Mode Modérateur')
+                  ? t('admin.admin_mode')
+                  : t('moderation.moderator_mode')
                 }
               </span>
             </div>

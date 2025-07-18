@@ -10,6 +10,7 @@ import PostForm from './PostForm'
 import PostHeader from './post/PostHeader'
 import PostContent from './PostContent'
 import MediaModal from './ImageModal'
+import ConfirmationModal from './ConfirmationModal'
 import type { Post as PostType, User } from '@/types/models'
 import { useTranslation } from 'react-i18next';
 import { formatRelativeDate } from '../i18n/formatRelativeDate';
@@ -40,7 +41,6 @@ const handleMentionClick = async (e: React.MouseEvent, username: string) => {
   e.stopPropagation();
   
   try {
-    // Vérifier le cache d'abord
     if (userIdCache.has(username)) {
       const userId = userIdCache.get(username)!;
       console.log(`ID trouvé dans le cache pour @${username}: ${userId}`);
@@ -50,7 +50,6 @@ const handleMentionClick = async (e: React.MouseEvent, username: string) => {
     
     console.log(`Recherche de l'ID pour @${username}...`);
     
-    // Utiliser votre route existante
     const response = await fetch(`/api/users/find-id-by-username/${username}`, {
       credentials: 'include'
     });
@@ -59,19 +58,14 @@ const handleMentionClick = async (e: React.MouseEvent, username: string) => {
       const userData = await response.json();
       console.log(`ID trouvé pour @${username}: ${userData._id}`);
       
-      // Mettre en cache pour les prochaines fois
       userIdCache.set(username, userData._id);
-      
-      // Redirection vers le profil avec l'ID
       window.location.href = `/profile/${userData._id}`;
     } else {
       console.warn(`Utilisateur @${username} non trouvé`);
-      // Fallback vers la recherche
       window.location.href = `/search?q=${username}`;
     }
   } catch (error) {
     console.error('Erreur lors de la recherche du profil:', error);
-    // Fallback vers la recherche en cas d'erreur
     window.location.href = `/search?q=${username}`;
   }
 };
@@ -83,7 +77,7 @@ interface PostProps {
   onComment: (postId: string, updatedPost: PostType) => Promise<void>
   onShare: (postId: string) => void
   onDelete?: (postId: string) => void
-  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
+  onProfileClick?: (userId: string, username?: string) => void
 }
 
 const defaultUser: User = {
@@ -108,7 +102,7 @@ export default function Post({
   onComment,
   onShare,
   onDelete,
-  onProfileClick, // Nouvelle prop
+  onProfileClick,
 }: PostProps) {
   const safeCurrentUser = currentUser || defaultUser
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
@@ -116,15 +110,16 @@ export default function Post({
   const [post, setPost] = useState<ExtendedPost>(initialPost);
   const { t, i18n } = useTranslation();
   const [forceRerender, setForceRerender] = useState(0);
+  
+  // États pour la suppression
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   
   const [showReportModal, setShowReportModal] = useState(false);
-  
-  // Détection si on est sur la page du post
   const [isOnPostPage, setIsOnPostPage] = useState(false);
   
   useEffect(() => {
-    // Vérifier si on est sur la page individuelle du post
     setIsOnPostPage(window.location.pathname.includes(`/post/${post._id}`));
   }, [post._id]);
   
@@ -144,20 +139,12 @@ export default function Post({
   const authorId = typeof post.author === 'string' ? post.author : (authorObject?._id || '');
   const [showCommentForm, setShowCommentForm] = useState(false)
   
-  // Fonction améliorée pour vérifier si l'utilisateur a liké avec logs détaillés
   const isLikedByUser = useCallback((likes: any[], currentUserId: string | null) => {
     if (!currentUserId || !likes || likes.length === 0) {
-      console.log('isLikedByUser: false (pas d\'utilisateur ou pas de likes)', {
-        currentUserId,
-        likes,
-        hasUser: !!currentUserId,
-        hasLikes: !!(likes && likes.length > 0)
-      });
       return false;
     }
     
     const userHasLiked = likes.some(like => {
-      // Gestion des différents formats de données
       if (typeof like === 'string') {
         return like === currentUserId;
       }
@@ -165,18 +152,6 @@ export default function Post({
         return like._id === currentUserId || like.toString() === currentUserId;
       }
       return false;
-    });
-    
-    console.log('isLikedByUser: résultat', {
-      currentUserId,
-      likes,
-      userHasLiked,
-      likesDetails: likes.map(like => ({
-        value: like,
-        type: typeof like,
-        matches: typeof like === 'string' ? like === currentUserId : 
-                 (like && typeof like === 'object') ? (like._id === currentUserId || like.toString() === currentUserId) : false
-      }))
     });
     
     return userHasLiked;
@@ -204,7 +179,6 @@ export default function Post({
   }, [post.commentsCount])
   
   useEffect(() => {
-    // Protection contre les valeurs nulles/undefined
     if (Array.isArray(post.likes) && userId) {
       const liked = isLikedByUser(post.likes, userId);
       setIsLiked(liked);
@@ -213,7 +187,6 @@ export default function Post({
     }
   }, [post.likes, userId, isLikedByUser, post._id]);
 
-  // Synchroniser avec les props quand le post change
   useEffect(() => {
     console.log('Synchronisation post:', {
       initialPost: initialPost._id,
@@ -222,13 +195,11 @@ export default function Post({
     });
     setPost(initialPost);
     
-    // Recalculer l'état des likes quand le post change
     const liked = isLikedByUser(initialPost.likes, safeCurrentUser._id);
     setIsLiked(liked);
     setLikesCount(initialPost.likes.length);
   }, [initialPost, isLikedByUser, safeCurrentUser._id]);
 
-  // Fonction pour transformer le contenu avec mentions cliquables
   const renderContentWithMentions = useCallback((text: string) => {
     if (!text) return text;
     
@@ -239,7 +210,7 @@ export default function Post({
         return (
           <a
             key={index}
-            href={`/profile/username/${username}`} // Fallback href
+            href={`/profile/username/${username}`}
             className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors cursor-pointer"
             onClick={(e) => handleMentionClick(e, username)}
           >
@@ -270,7 +241,6 @@ export default function Post({
     console.log('handleLike appelé:', update);
     onLike?.(post._id.toString(), update);
 
-    // Synchroniser le post depuis le backend après un like/unlike
     fetch(`/api/posts/${post._id}`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
@@ -310,7 +280,6 @@ export default function Post({
     }
   }
 
-  // Fonction pour gérer le clic sur le post
   const handlePostClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (
@@ -339,16 +308,19 @@ export default function Post({
     }
   }
 
-  // Fonction pour supprimer le post
+  // Fonction de suppression 
   const handleDelete = async (postId: string) => {
+    console.log('=== DÉBUT SUPPRESSION POST ===', postId);
+    
     if (isDeleting) {
-      console.log('Suppression déjà en cours, appel ignoré');
+      console.log('Suppression déjà en cours, abandon');
       return;
     }
 
     setIsDeleting(true);
     
     try {
+      console.log('Envoi requête DELETE...');
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -357,33 +329,48 @@ export default function Post({
         },
       });
       
+      console.log('Réponse DELETE:', response.status);
+      
       if (response.ok) {
         console.log('Post supprimé avec succès côté serveur');
         
+        // Marquer comme supprimé pour l'UI
+        setIsDeleted(true);
+        
         if (isOnPostPage) {
-          console.log('Redirection vers l\'accueil...');
+          console.log('Redirection vers accueil...');
           window.location.href = '/';
           return;
         }
 
+        // Notifier le parent pour retirer de la liste
         if (onDelete) {
+          console.log('Appel du callback onDelete...');
           onDelete(postId);
-        } else {
-          console.warn('onDelete callback non fourni');
         }
+        
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || 'Erreur lors de la suppression';
-        console.error('Erreur serveur lors de la suppression:', errorMessage);
-        setIsDeleting(false);
+        const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
+        console.error('Erreur serveur:', errorData.message);
+        alert(`Erreur lors de la suppression: ${errorData.message}`);
       }
     } catch (error) {
-      console.error('Erreur réseau lors de la suppression:', error);
+      console.error('Erreur réseau:', error);
+      alert('Erreur de connexion lors de la suppression');
+    } finally {
+      console.log('=== FIN SUPPRESSION POST ===');
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
-  // Fonction pour supprimer un commentaire
+  // Fonction de confirmation 
+  const confirmDelete = () => {
+    console.log('Confirmation suppression - fermeture modal');
+    setShowDeleteConfirm(false);
+    handleDelete(post._id.toString());
+  };
+
   const handleCommentDelete = async (commentId: string) => {
     if (commentId === post._id) {
       console.warn('Tentative de suppression du post principal via handleCommentDelete - ignorée');
@@ -414,6 +401,11 @@ export default function Post({
     }
   };
 
+  // Ne pas afficher le post s'il est supprimé
+  if (isDeleted) {
+    return null;
+  }
+
   if (isDeleting) {
     return (
       <article className="bg-white dark:bg-[#141622] rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-800 transition-colors duration-300 opacity-50">
@@ -426,155 +418,179 @@ export default function Post({
   }
 
   return (
-    <article 
-      className={`bg-white dark:bg-[#141622] rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-800 transition-colors duration-300 ${
-        !isOnPostPage ? 'cursor-pointer hover:shadow-lg hover:border-gray-200 dark:hover:border-gray-700' : ''
-      }`}
-      onClick={handlePostClick}
-    >
-      <PostHeader
-        author={post.author as unknown as User || defaultUser}
-        createdAt={new Date(post.createdAt)}
-        location={post.location}
-      />
-      
-      {/* Contenu avec mentions et médias */}
-      <div className="px-4 py-2">
-        {post.content && (
-          <div className="mb-3 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-            {renderContentWithMentions(post.content)}
-          </div>
-        )}
-        <PostContent
-          content=""
-          media={post.media}
-          tags={post.tags}
+    <>
+      <article 
+        className={`bg-white dark:bg-[#141622] rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-800 transition-colors duration-300 ${
+          !isOnPostPage ? 'cursor-pointer hover:shadow-lg hover:border-gray-200 dark:hover:border-gray-700' : ''
+        }`}
+        onClick={handlePostClick}
+      >
+        <PostHeader
+          author={post.author as unknown as User || defaultUser}
+          createdAt={new Date(post.createdAt)}
+          location={post.location}
         />
-      </div>
+        
+        <div className="px-4 py-2">
+          {post.content && (
+            <div className="mb-3 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+              {renderContentWithMentions(post.content)}
+            </div>
+          )}
+          <PostContent
+            content=""
+            media={post.media}
+            tags={post.tags}
+          />
+        </div>
 
-      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800 transition-colors">
-        <div className="flex space-x-6">
-          <div 
-            className="flex items-center gap-1 text-red-500 dark:text-red-500 fill-current"
-            onClick={(e) => e.stopPropagation()} 
-          >
-            <LikeButton
-              key={`likebtn-${post._id}-${likesCount}-${isLiked}`}
-              itemId={post._id.toString()}
-              itemType="post"
-              size="normal" 
-              initialLikes={post.likes.length}
-              initialLikedStatus={isLikedByUser(post.likes, safeCurrentUser._id)}
-              onLikeSuccess={handleLike}
-            />
-          </div>
-          <button
-            className={`flex items-center gap-1 transition-colors ${
-              showCommentForm 
-                ? 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
-            }`}
-            onClick={(e) => {
-              e.stopPropagation(); 
-              handleCommentClick();
-            }}>
-            <MdChatBubbleOutline className={`w-5 h-5 transition-transform ${
-              showCommentForm ? 'scale-110' : ''
-            }`} />
-            <span>{commentsCount}</span>
-          </button>
-          <button 
-            className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation(); 
-              onShare(post._id.toString());
-            }}
-          >
-            <MdShare className="w-5 h-5" />
-          </button>
-          
-          {/* Bouton de signalement */}
-          <button 
-            className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation(); 
-              setShowReportModal(true);
-            }}
-            title={t('report.report_post', 'Signaler ce post')}
-          >
-            <MdFlag className="w-5 h-5" />
-          </button>
-          
-          {userId === authorId && (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800 transition-colors">
+          <div className="flex space-x-6">
+            <div 
+              className="flex items-center gap-1 text-red-500 dark:text-red-500 fill-current"
+              onClick={(e) => e.stopPropagation()} 
+            >
+              <LikeButton
+                key={`likebtn-${post._id}-${likesCount}-${isLiked}`}
+                itemId={post._id.toString()}
+                itemType="post"
+                size="normal" 
+                initialLikes={post.likes.length}
+                initialLikedStatus={isLikedByUser(post.likes, safeCurrentUser._id)}
+                onLikeSuccess={handleLike}
+              />
+            </div>
             <button
-              className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className={`flex items-center gap-1 transition-colors ${
+                showCommentForm 
+                  ? 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg' 
+                  : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
+              }`}
               onClick={(e) => {
                 e.stopPropagation(); 
-                if (!isDeleting) {
-                  handleDelete(post._id.toString());
-                }
-              }}
-              disabled={isDeleting}
-            >
-              <MdDelete className="w-5 h-5" />
-              {isDeleting && <span className="text-xs">...</span>}
+                handleCommentClick();
+              }}>
+              <MdChatBubbleOutline className={`w-5 h-5 transition-transform ${
+                showCommentForm ? 'scale-110' : ''
+              }`} />
+              <span>{commentsCount}</span>
             </button>
-          )}
-        </div>
-      </div>
-
-      {showCommentForm && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 transition-colors">
-          <PostForm
-            parentPostId={post._id}
-            onPostCreated={() => {
-              refreshComments()
-              setCommentsCount((prev: number) => prev + 1)
-              commentInputRef.current?.blur()
-            }}
-          />
-          <div className="mt-6">
-            {loadingComments && <p className="text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</p>}
-            {commentsError && <p className="text-center text-red-500 dark:text-red-400">{t('post.error', { error: commentsError })}</p>}
-            {!loadingComments && !commentsError && comments.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">{t('post.no_comments', "No comments yet")}</p>
-            ) : (
-              <FlatComments 
-                parentId={post._id} 
-                formatDate={formatDate} 
-                allComments={comments} 
-                replyingCommentId={replyingCommentId}
-                setReplyingCommentId={setReplyingCommentId}
-                onLike={refreshComments}
-                onCommentCreated={refreshComments}
-                expandedComments={expandedComments}
-                setExpandedComments={setExpandedComments}
-                currentUser={safeCurrentUser}
-                onProfileClick={onProfileClick} // Passer la prop
-                onDelete={(commentId) => {
-                  if (commentId === post._id) {
-                    console.warn('Tentative de suppression du post principal via commentaire - ignorée');
-                    return;
+            <button 
+              className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation(); 
+                onShare(post._id.toString());
+              }}
+            >
+              <MdShare className="w-5 h-5" />
+            </button>
+            
+            <button 
+              className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation(); 
+                setShowReportModal(true);
+              }}
+              title={t('report.report_post', 'Signaler ce post')}
+            >
+              <MdFlag className="w-5 h-5" />
+            </button>
+            
+            {/* Bouton de suppression*/}
+            {userId === authorId && (
+              <button
+                className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  console.log('Clic bouton suppression - isDeleting:', isDeleting, 'showDeleteConfirm:', showDeleteConfirm);
+                  
+                  if (!isDeleting && !showDeleteConfirm) {
+                    console.log('Ouverture modal confirmation');
+                    setShowDeleteConfirm(true);
                   }
-                  setComments(prevComments => 
-                    prevComments.filter(comment => comment._id !== commentId)
-                  );
-                  setCommentsCount(prev => Math.max(0, prev - 1));
-                  handleCommentDelete(commentId);
                 }}
-              />
+                disabled={isDeleting}
+                title="Supprimer ce post"
+              >
+                <MdDelete className="w-5 h-5" />
+                {isDeleting && <span className="text-xs ml-1">...</span>}
+              </button>
             )}
           </div>
         </div>
-      )}
 
-      {/* Modal de signalement */}
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        postId={post._id}
+        {showCommentForm && (
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 transition-colors">
+            <PostForm
+              parentPostId={post._id}
+              onPostCreated={() => {
+                refreshComments()
+                setCommentsCount((prev: number) => prev + 1)
+                commentInputRef.current?.blur()
+              }}
+            />
+            <div className="mt-6">
+              {loadingComments && <p className="text-center text-gray-500 dark:text-gray-400">{t('post.loading')}</p>}
+              {commentsError && <p className="text-center text-red-500 dark:text-red-400">{t('post.error', { error: commentsError })}</p>}
+              {!loadingComments && !commentsError && comments.length === 0 ? (
+                <p className="text-center text-gray-500 dark:text-gray-400">{t('post.no_comments', "No comments yet")}</p>
+              ) : (
+                <FlatComments 
+                  parentId={post._id} 
+                  formatDate={formatDate} 
+                  allComments={comments} 
+                  replyingCommentId={replyingCommentId}
+                  setReplyingCommentId={setReplyingCommentId}
+                  onLike={refreshComments}
+                  onCommentCreated={refreshComments}
+                  expandedComments={expandedComments}
+                  setExpandedComments={setExpandedComments}
+                  currentUser={safeCurrentUser}
+                  onProfileClick={onProfileClick}
+                  onDelete={(commentId) => {
+                    if (commentId === post._id) {
+                      console.warn('Tentative de suppression du post principal via commentaire - ignorée');
+                      return;
+                    }
+                    setComments(prevComments => 
+                      prevComments.filter(comment => comment._id !== commentId)
+                    );
+                    setCommentsCount(prev => Math.max(0, prev - 1));
+                    handleCommentDelete(commentId);
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          postId={post._id}
+        />
+      </article>
+
+      {/* Modal de confirmation*/}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          console.log('Fermeture modal via onClose');
+          setShowDeleteConfirm(false);
+        }}
+        onConfirm={() => {
+          console.log('Confirmation via onConfirm');
+          confirmDelete();
+        }}
+        title={t('post.confirm_delete_title', 'Supprimer le post')}
+        message={t('post.confirm_delete_message', 'Êtes-vous sûr de vouloir supprimer ce post ? Cette action est irréversible.')}
+        confirmText={t('post.delete', 'Supprimer')}
+        cancelText={t('common.cancel', 'Annuler')}
+        isDangerous={true}
       />
-    </article>
+    </>
   )
 }
 
@@ -592,7 +608,7 @@ function ThreadItem({
   isComment = false,
   onDelete,
   deletingCommentId,
-  onProfileClick // Nouvelle prop
+  onProfileClick
 }: {
   item: any,
   currentUser: User,
@@ -607,13 +623,15 @@ function ThreadItem({
   isComment?: boolean,
   onDelete?: (commentId: string) => void,
   deletingCommentId?: string | null,
-  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
+  onProfileClick?: (userId: string, username?: string) => void
 }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState(item.likes.length)
+  
+  // États pour la suppression des commentaires
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // État pour le modal de signalement dans ThreadItem
+  
   const [showReportModal, setShowReportModal] = useState(false);
 
   const isLikedByUser = useCallback((likes: any[], currentUserId: string | null) => {
@@ -631,18 +649,25 @@ function ThreadItem({
   }, []);
 
   const [isLiked, setIsLiked] = useState(false)
-
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSrc, setModalSrc] = useState<string>('');
   const [modalAlt, setModalAlt] = useState<string>('');
   const [modalType, setModalType] = useState<'image' | 'video'>('image');
   const { t } = useTranslation();
 
-  // Fonction pour supprimer un commentaire
+  // Fonction de suppression de commentaire 
   const handleDeleteComment = async (commentId: string) => {
+    console.log('=== DÉBUT SUPPRESSION COMMENTAIRE ===', commentId);
+    
+    if (isDeleting) {
+      console.log('Suppression déjà en cours, abandon');
+      return;
+    }
+    
     setIsDeleting(true);
     
     try {
+      console.log('Envoi requête DELETE pour commentaire...');
       const response = await fetch(`/api/posts/${commentId}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -651,20 +676,38 @@ function ThreadItem({
         },
       });
       
+      console.log('Réponse DELETE commentaire:', response.status);
+      
       if (response.ok) {
-        onDelete?.(commentId);
+        console.log('Commentaire supprimé avec succès côté serveur');
+        
+        // Appeler onDelete pour mettre à jour l'UI
+        if (onDelete) {
+          console.log('Appel de onDelete callback pour commentaire');
+          onDelete(commentId);
+        }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Erreur lors de la suppression du commentaire:', errorData.message);
+        const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
+        console.error('Erreur serveur commentaire:', errorData.message);
+        alert(`Erreur lors de la suppression: ${errorData.message}`);
       }
     } catch (error) {
-      console.error('Erreur suppression commentaire:', error);
+      console.error('Erreur réseau commentaire:', error);
+      alert('Erreur de connexion lors de la suppression');
     } finally {
+      console.log('=== FIN SUPPRESSION COMMENTAIRE ===');
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
-  // Fonction pour transformer le contenu avec mentions cliquables dans ThreadItem
+  // Fonction de confirmation  pour commentaires
+  const confirmDeleteComment = () => {
+    console.log('Confirmation suppression commentaire - fermeture modal');
+    setShowDeleteConfirm(false);
+    handleDeleteComment(item._id);
+  };
+
   const renderContentWithMentions = useCallback((text: string) => {
     if (!text) return text;
     
@@ -740,212 +783,236 @@ function ThreadItem({
   }
 
   return (
-    <div
-      className={`p-4 bg-white dark:bg-[#151925] rounded-xl shadow-md transition-colors ${
-        isComment ? 'mb-2' : 'mb-4'
-      } ${isClickable && !isComment ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1f2e]' : ''}`}
-      onClick={handleClick}
-    >
-      <div className="flex gap-3 mb-3">
-        {/* Avatar cliquable avec Link */}
-        <Link href={`/profile/${typeof item.author === 'string' ? item.author : item.author?._id}`}>
-          <div className="hover:opacity-80 transition-opacity">
-            <Image
-              src={item.author?.profilePicture || '/default-avatar.svg'}
-              alt={`Avatar de ${item.author?.username || 'utilisateur'}`}
-              width={isComment ? 32 : 40}
-              height={isComment ? 32 : 40}
-              className={`${isComment ? 'w-8 h-8' : 'w-10 h-10'} rounded-full object-cover`}
+    <>
+      <div
+        className={`p-4 bg-white dark:bg-[#151925] rounded-xl shadow-md transition-colors ${
+          isComment ? 'mb-2' : 'mb-4'
+        } ${isClickable && !isComment ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1a1f2e]' : ''}`}
+        onClick={handleClick}
+      >
+        <div className="flex gap-3 mb-3">
+          <Link href={`/profile/${typeof item.author === 'string' ? item.author : item.author?._id}`}>
+            <div className="hover:opacity-80 transition-opacity">
+              <Image
+                src={item.author?.profilePicture || '/default-avatar.svg'}
+                alt={`Avatar de ${item.author?.username || 'utilisateur'}`}
+                width={isComment ? 32 : 40}
+                height={isComment ? 32 : 40}
+                className={`${isComment ? 'w-8 h-8' : 'w-10 h-10'} rounded-full object-cover`}
+              />
+            </div>
+          </Link>
+          <div className="flex flex-col justify-center">
+            <div className="flex items-center gap-2">
+              <a
+                href={`/profile/${item.author?._id}`}
+                className="font-semibold text-gray-900 dark:text-gray-100 hover:underline"
+                onClick={e => e.stopPropagation()}
+              >
+                {item.author?.name || item.author?.username || 'utilisateur'}
+              </a>
+              <a
+                href={`/profile/${item.author?._id}`}
+                className="text-gray-500 dark:text-gray-400 text-sm hover:underline"
+                onClick={e => e.stopPropagation()}
+              >
+                @{item.author?.username || 'utilisateur'}
+              </a>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formatDate(item.createdAt)}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-3 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+          {renderContentWithMentions(item.content)}
+        </div>
+
+        {media.length > 0 && (
+          <div
+            className={`mb-3 grid gap-2 ${
+              media.length === 1
+                ? 'grid-cols-1'
+                : media.length === 2
+                ? 'grid-cols-2'
+                : 'grid-cols-2 grid-rows-2'
+            }`}
+          >
+            {media.slice(0, 4).map((m: any, idx: number) => {
+              const src = getMediaSrc(m);
+              const type = getMediaType(m);
+              if (!src) return null;
+
+              return (
+                <div
+                  key={idx}
+                  className="relative w-full aspect-square rounded-lg overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {type === 'image' ? (
+                    <Image
+                      src={src}
+                      alt={m.alt || ''}
+                      fill
+                      className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => openMediaModal(src, m.alt || '', 'image')}
+                    />
+                  ) : (
+                    <video
+                      src={src}
+                      controls
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  )}
+                  {idx === 3 && media.length > 4 && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-xl font-semibold">
+                      +{media.length - 4}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {item.tags && item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {item.tags.map((tag: string, index: number) => (
+              <Link
+                key={index}
+                href={`/search?tag=${encodeURIComponent(tag)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+              >
+                #{tag}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div onClick={(e) => e.stopPropagation()}>
+            <LikeButton
+              itemId={item._id.toString()}
+              itemType={isComment ? 'comment' : 'post'}
+              parentId={isComment ? item.parentPost?.toString() : undefined}
+              size={isComment ? 'small' : 'normal'}
+              initialLikes={likesCount}
+              initialLikedStatus={isLiked}
+              onLikeSuccess={handleLikeSuccess}
             />
           </div>
-        </Link>
-        <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-2">
-            <a
-              href={`/profile/${item.author?._id}`}
-              className="font-semibold text-gray-900 dark:text-gray-100 hover:underline"
-              onClick={e => e.stopPropagation()}
-            >
-              {item.author?.name || item.author?.username || 'utilisateur'}
-            </a>
-            <a
-              href={`/profile/${item.author?._id}`}
-              className="text-gray-500 dark:text-gray-400 text-sm hover:underline"
-              onClick={e => e.stopPropagation()}
-            >
-              @{item.author?.username || 'utilisateur'}
-            </a>
-          </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {formatDate(item.createdAt)}
-          </span>
-        </div>
-      </div>
 
-      <div className="mb-3 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-        {renderContentWithMentions(item.content)}
-      </div>
-
-      {media.length > 0 && (
-        <div
-          className={`mb-3 grid gap-2 ${
-            media.length === 1
-              ? 'grid-cols-1'
-              : media.length === 2
-              ? 'grid-cols-2'
-              : 'grid-cols-2 grid-rows-2'
-          }`}
-        >
-          {media.slice(0, 4).map((m: any, idx: number) => {
-            const src = getMediaSrc(m);
-            const type = getMediaType(m);
-            if (!src) return null;
-
-            return (
-              <div
-                key={idx}
-                className="relative w-full aspect-square rounded-lg overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {type === 'image' ? (
-                  <Image
-                    src={src}
-                    alt={m.alt || ''}
-                    fill
-                    className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => openMediaModal(src, m.alt || '', 'image')}
-                  />
-                ) : (
-                  <video
-                    src={src}
-                    controls
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                )}
-                {idx === 3 && media.length > 4 && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-xl font-semibold">
-                    +{media.length - 4}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Tags */}
-      {item.tags && item.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {item.tags.map((tag: string, index: number) => (
-            <Link
-              key={index}
-              href={`/search?tag=${encodeURIComponent(tag)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-            >
-              #{tag}
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-        <div onClick={(e) => e.stopPropagation()}>
-          <LikeButton
-            itemId={item._id.toString()}
-            itemType={isComment ? 'comment' : 'post'}
-            parentId={isComment ? item.parentPost?.toString() : undefined}
-            size={isComment ? 'small' : 'normal'}
-            initialLikes={likesCount}
-            initialLikedStatus={isLiked}
-            onLikeSuccess={handleLikeSuccess}
-          />
-        </div>
-
-        <button
-          className={`flex items-center gap-1 transition-colors ${
-            replyingCommentId === item._id 
-              ? 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg' 
-              : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
-          }`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setReplyingCommentId(replyingCommentId === item._id ? null : item._id);
-          }}
-        >
-          <MdChatBubbleOutline className={`w-4 h-4 transition-transform ${
-            replyingCommentId === item._id ? 'scale-110' : ''
-          }`} />
-          <span className="text-sm">{repliesCount}</span>
-        </button>
-
-        <button
-          className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(window.location.origin + `/post/${item._id}`)
-              .then(() => console.log('Lien copié dans le presse-papier'))
-              .catch(() => console.error('Erreur lors de la copie du lien'));
-          }}
-        >
-          <MdShare className="w-4 h-4" />
-        </button>
-
-        {/* Bouton de signalement dans ThreadItem */}
-        <button
-          className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowReportModal(true);
-          }}
-          title={t('report.report_content', 'Signaler ce contenu')}
-        >
-          <MdFlag className="w-4 h-4" />
-        </button>
-
-        {userId === (typeof item.author === 'string' ? item.author : item.author?._id) && (
           <button
-            className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+            className={`flex items-center gap-1 transition-colors ${
+              replyingCommentId === item._id 
+                ? 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
-              handleDeleteComment(item._id);
+              setReplyingCommentId(replyingCommentId === item._id ? null : item._id);
             }}
-            disabled={isDeleting}
           >
-            <MdDelete className="w-4 h-4" />
-            {isDeleting && <span className="text-xs">...</span>}
+            <MdChatBubbleOutline className={`w-4 h-4 transition-transform ${
+              replyingCommentId === item._id ? 'scale-110' : ''
+            }`} />
+            <span className="text-sm">{repliesCount}</span>
           </button>
+
+          <button
+            className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(window.location.origin + `/post/${item._id}`)
+                .then(() => console.log('Lien copié dans le presse-papier'))
+                .catch(() => console.error('Erreur lors de la copie du lien'));
+            }}
+          >
+            <MdShare className="w-4 h-4" />
+          </button>
+
+          <button
+            className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowReportModal(true);
+            }}
+            title={t('report.report_content', 'Signaler ce contenu')}
+          >
+            <MdFlag className="w-4 h-4" />
+          </button>
+
+          {/* Bouton de suppressionpour les commentaires */}
+          {userId === (typeof item.author === 'string' ? item.author : item.author?._id) && (
+            <button
+              className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Clic bouton suppression commentaire - isDeleting:', isDeleting, 'showDeleteConfirm:', showDeleteConfirm);
+                
+                if (!isDeleting && !showDeleteConfirm) {
+                  console.log('Ouverture modal confirmation commentaire');
+                  setShowDeleteConfirm(true);
+                }
+              }}
+              disabled={isDeleting}
+            >
+              <MdDelete className="w-4 h-4" />
+              {isDeleting && <span className="text-xs ml-1">...</span>}
+            </button>
+          )}
+        </div>
+
+        {replyingCommentId === item._id && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <PostForm
+              parentPostId={item._id}
+              placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
+              onPostCreated={() => {
+                setReplyingCommentId(null);
+                onCommentCreated?.();
+              }}
+            />
+          </div>
         )}
+
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          postId={item._id}
+        />
+
+        <MediaModal
+          isOpen={modalOpen}
+          src={modalSrc}
+          alt={modalAlt}
+          mediaType={modalType}
+          onClose={() => setModalOpen(false)}
+        />
       </div>
 
-      {replyingCommentId === item._id && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <PostForm
-            parentPostId={item._id}
-            placeholder={`Répondre à @${item.author?.username || 'utilisateur'}...`}
-            onPostCreated={() => {
-              setReplyingCommentId(null);
-              onCommentCreated?.();
-            }}
-          />
-        </div>
-      )}
-
-      {/* Modal de signalement dans ThreadItem */}
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        postId={item._id}
+      {/* Modal de confirmation pour les commentaires */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          console.log('Fermeture modal commentaire via onClose');
+          setShowDeleteConfirm(false);
+        }}
+        onConfirm={() => {
+          console.log('Confirmation suppression commentaire via onConfirm');
+          confirmDeleteComment();
+        }}
+        title={t('post.confirm_delete_title', 'Supprimer le commentaire')}
+        message={t('post.confirm_delete_message', 'Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.')}
+        confirmText={t('post.delete', 'Supprimer')}
+        cancelText={t('common.cancel', 'Annuler')}
+        isDangerous={true}
       />
-
-      <MediaModal
-        isOpen={modalOpen}
-        src={modalSrc}
-        alt={modalAlt}
-        mediaType={modalType}
-        onClose={() => setModalOpen(false)}
-      />
-    </div>
+    </>
   );
 }
 
@@ -962,7 +1029,7 @@ function FlatComments({
   setExpandedComments,
   onDelete,
   deletingCommentId,
-  onProfileClick // Nouvelle prop
+  onProfileClick
 }: {
   parentId: string | null,
   formatDate: (date: string) => string,
@@ -976,7 +1043,7 @@ function FlatComments({
   currentUser: User,
   onDelete?: (commentId: string) => void,
   deletingCommentId?: string | null,
-  onProfileClick?: (userId: string, username?: string) => void // Nouvelle prop
+  onProfileClick?: (userId: string, username?: string) => void
 }): React.ReactNode {
   const { t } = useTranslation();
   const maxDisplayedComments = 3
@@ -992,7 +1059,6 @@ function FlatComments({
     }, 0)
   }
 
-  // Fonction pour supprimer un commentaire et tous ses enfants de façon récursive
   const handleCommentDelete = (commentId: string) => {
     const findAllChildComments = (parentCommentId: string): string[] => {
       const children = allComments
@@ -1052,7 +1118,7 @@ function FlatComments({
               isComment={true}
               onDelete={handleCommentDelete}
               deletingCommentId={deletingCommentId}
-              onProfileClick={onProfileClick} // Passer la prop
+              onProfileClick={onProfileClick}
             />
 
             {totalRepliesCount > 0 && (
@@ -1091,7 +1157,7 @@ function FlatComments({
                   setExpandedComments={setExpandedComments}
                   onDelete={onDelete}
                   deletingCommentId={deletingCommentId}
-                  onProfileClick={onProfileClick} // Passer la prop
+                  onProfileClick={onProfileClick}
                 />
               </div>
             )}

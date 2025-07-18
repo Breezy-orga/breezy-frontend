@@ -123,13 +123,13 @@ export default function MessagesPage() {
                 </p>
               </div>
               
-              {/* Bouton nouveau message (desktop) */}
+              {/* Bouton post.message (desktop) */}
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <MdMail className="w-5 h-5" />
-                {t('messagerie.new_message', 'Nouveau message')}
+                {t('messagerie.new_message', 'post.message')}
               </button>
             </div>
 
@@ -220,7 +220,7 @@ export default function MessagesPage() {
                         onClick={() => setIsModalOpen(true)}
                         className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                       >
-                        {t('messagerie.new_message', 'Nouveau message')}
+                        {t('messagerie.new_message', 'post.message')}
                       </button>
                     )}
                   </div>
@@ -246,7 +246,7 @@ export default function MessagesPage() {
           <MdMail size={24} />
         </button>
 
-        {/* Modal nouveau message */}
+        {/* Modal post.message */}
         {isModalOpen && (
           <NewMessageModal
             isOpen={true}

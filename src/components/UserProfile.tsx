@@ -272,13 +272,14 @@ export default function UserProfile({ userId }: Props) {
     try {
       const wasFollowing = (currentUser?.following ?? []).includes(user._id)
       
-      console.log('handleFollowToggle démarré:');
+      console.log('🔄 handleFollowToggle démarré (UserProfile):');
       console.log('- User à follow/unfollow:', user._id, '@' + user.username);
       console.log('- Était déjà suivi:', wasFollowing);
       
       const response = await api.post(`/users/${user._id}/follow`)
       console.log('Réponse API follow:', response.data);
       
+      // Récupérer les nouvelles données utilisateur
       const userRes = userId
         ? await api.get(`/users/getById/${userId}`)
         : await api.get('/users/me')
@@ -287,27 +288,52 @@ export default function UserProfile({ userId }: Props) {
       setUser(userRes.data)
       setCurrentUser(meRes.data)
       
+      // Déclencher l'événement pour rafraîchir la sidebar
+      const eventName = response.data.action === 'followed' || !wasFollowing 
+        ? 'userFollowUpdate' 
+        : 'userUnfollowUpdate';
+      
+      console.log('Déclenchement événement:', eventName);
+      
+      // Envoyer les nouvelles données complètes pour mise à jour immédiate
+      window.dispatchEvent(new CustomEvent(eventName, {
+        detail: {
+          userId: user._id,
+          username: user.username,
+          action: response.data.action || (wasFollowing ? 'unfollowed' : 'followed'),
+          source: 'user_profile',
+          timestamp: Date.now(),
+          // AJOUT : Nouvelles données utilisateur pour mise à jour immédiate
+          newUserData: meRes.data,
+          followingCount: meRes.data.following?.length || 0,
+          followersCount: meRes.data.followers?.length || 0
+        }
+      }));
+      
+      // Émettre aussi via ProfileSync pour cohérence
+      ProfileSync.emitUpdate(meRes.data);
+      
       if (response.data.action === 'followed') {
         showNotification(
-          `Vous suivez maintenant @${user.username}`, 
+          t('profile.followed_success'),
           'success'
         )
         console.log('👥 Utilisateur suivi avec succès');
       } else if (response.data.action === 'unfollowed') {
         showNotification(
-          `Vous ne suivez plus @${user.username}`, 
+          t('profile.unfollowed_success'),
           'success'
         )
         console.log('Utilisateur non suivi avec succès');
       } else {
         if (!wasFollowing) {
           showNotification(
-            `Vous suivez maintenant @${user.username}`, 
+            t('profile.followed_success'),
             'success'
           )
         } else {
           showNotification(
-            `Vous ne suivez plus @${user.username}`, 
+            t('profile.unfollowed_success'),
             'success'
           )
         }
@@ -775,13 +801,18 @@ export default function UserProfile({ userId }: Props) {
         userName={user.username}
       />
 
-      {/* Publications */}
+      {/* Publications - Toujours visible même en mode édition */}
       <div>
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
           {t('profile.posts')}
           {user.status && user.status !== 'active' && (
             <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
               ({user.status === 'banned' ? 'Compte banni' : 'Compte suspendu'})
+            </span>
+          )}
+          {isEditing && (
+            <span className="text-sm font-normal text-blue-500 dark:text-blue-400">
+              (Mode édition)
             </span>
           )}
         </h2>

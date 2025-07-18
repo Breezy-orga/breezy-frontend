@@ -64,6 +64,56 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
   const [pendingReports, setPendingReports] = useState(0)
   const [loadingReports, setLoadingReports] = useState(false)
 
+  // États pour les stats en temps réel
+  const [followingCount, setFollowingCount] = useState(0)
+  const [followersCount, setFollowersCount] = useState(0)
+  const [statsLoading, setStatsLoading] = useState(false)
+
+  // mettre à jour immédiatement depuis les événements
+  const updateStatsFromEvent = (eventDetail: any) => {
+    console.log('📊 Mise à jour stats depuis événement:', eventDetail);
+    
+    if (eventDetail.newUserData) {
+      // Mise à jour immédiate avec les nouvelles données
+      setFollowingCount(eventDetail.followingCount || 0);
+      setFollowersCount(eventDetail.followersCount || 0);
+      
+      // Mettre à jour aussi les infos utilisateur
+      setUserInfo(prev => ({
+        ...prev,
+        ...eventDetail.newUserData,
+        following: eventDetail.newUserData.following,
+        followers: eventDetail.newUserData.followers
+      }));
+    } else {
+      // Fallback : récupérer les stats depuis l'API
+      fetchUserStats();
+    }
+  };
+
+  // Fonction pour récupérer les stats uniquement
+  const fetchUserStats = async () => {
+    if (!userInfo?._id) return;
+    
+    try {
+      setStatsLoading(true);
+      const response = await fetch(`/api/users/${userInfo._id}/stats`, {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('Stats mises à jour:', stats);
+        setFollowingCount(stats.followingCount || 0);
+        setFollowersCount(stats.followersCount || 0);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   // Fonction pour récupérer les infos utilisateur
   const fetchUserInfo = async () => {
     try {
@@ -76,6 +126,10 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
         console.log('User data récupérée dans sidebar:', userData);
         setUserInfo(userData);
         setAvatarKey(prev => prev + 1);
+        
+        // Initialiser les stats
+        setFollowingCount(userData.following?.length || 0);
+        setFollowersCount(userData.followers?.length || 0);
         
         // Si admin/modérateur, récupérer les signalements
         if (userData.role === 'admin' || userData.role === 'moderator') {
@@ -119,6 +173,69 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
       return () => clearInterval(interval);
     }
   }, [userInfo?.role]);
+
+  // Écouter les événements de follow/unfollow - AMÉLIORÉ
+  useEffect(() => {
+    const handleFollowUpdate = (event: CustomEvent) => {
+      console.log('Événement follow détecté dans AppSidebar:', event.detail);
+      
+      // Mise à jour immédiate depuis l'événement
+      updateStatsFromEvent(event.detail);
+      
+      // Backup : récupération différée au cas où
+      setTimeout(() => {
+        fetchUserStats();
+      }, 1000);
+    };
+
+    const handleUnfollowUpdate = (event: CustomEvent) => {
+      console.log('Événement unfollow détecté dans AppSidebar:', event.detail);
+      
+      // Mise à jour immédiate depuis l'événement
+      updateStatsFromEvent(event.detail);
+      
+      // Backup : récupération différée au cas où
+      setTimeout(() => {
+        fetchUserStats();
+      }, 1000);
+    };
+
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('Événement profile update détecté dans AppSidebar:', event.detail);
+      
+      // Pour les mises à jour de profil (photo, etc.)
+      if (event.detail.newUserData) {
+        setUserInfo(prev => ({
+          ...prev,
+          ...event.detail.newUserData
+        }));
+        setAvatarKey(prev => prev + 1);
+      }
+    };
+
+    // Écouter les événements personnalisés
+    window.addEventListener('userFollowUpdate', handleFollowUpdate as EventListener);
+    window.addEventListener('userUnfollowUpdate', handleUnfollowUpdate as EventListener);
+    window.addEventListener('userProfileUpdate', handleProfileUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('userFollowUpdate', handleFollowUpdate as EventListener);
+      window.removeEventListener('userUnfollowUpdate', handleUnfollowUpdate as EventListener);
+      window.removeEventListener('userProfileUpdate', handleProfileUpdate as EventListener);
+    };
+  }, [userInfo?._id]);
+
+  // Polling périodique des stats (réduit à 60 secondes)
+  useEffect(() => {
+    if (userInfo?._id) {
+      const interval = setInterval(() => {
+        console.log('⏰ Polling périodique des stats');
+        fetchUserStats();
+      }, 60000); // Augmenté à 60 secondes
+
+      return () => clearInterval(interval);
+    }
+  }, [userInfo?._id]);
 
   // Fonction de déconnexion
   const handleLogout = async () => {
@@ -191,22 +308,29 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     fetchUserInfo();
   }, []);
 
+  // ProfileSync amélioré
   useEffect(() => {
     console.log('AppSidebar: Mise en place de l\'écoute des mises à jour');
     
     const cleanup = ProfileSync.onUpdate((updatedUserData: UserInfo) => {
-      console.log('AppSidebar: Mise à jour reçue:', updatedUserData);
+      console.log('AppSidebar: Mise à jour reçue via ProfileSync:', updatedUserData);
       
       // Vérifier que c'est le même utilisateur
       if (userInfo && updatedUserData._id === userInfo._id) {
-        console.log('AppSidebar: Mise à jour appliquée');
+        console.log('AppSidebar: Mise à jour appliquée via ProfileSync');
         setUserInfo(prevUserInfo => ({
           ...prevUserInfo,
           ...updatedUserData
         }));
         setAvatarKey(prev => prev + 1);
-      } else {
-        console.log('AppSidebar: Mise à jour ignorée (utilisateur différent)');
+        
+        // Mettre à jour aussi les stats si disponibles
+        if (updatedUserData.following !== undefined) {
+          setFollowingCount(updatedUserData.following.length);
+        }
+        if (updatedUserData.followers !== undefined) {
+          setFollowersCount(updatedUserData.followers.length);
+        }
       }
     });
 
@@ -327,6 +451,21 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
     );
   };
 
+  // Fonction pour débugger les stats
+  const debugStats = () => {
+    console.log('📊 Debug stats AppSidebar:', {
+      followingCount,
+      followersCount,
+      userInfoFollowing: userInfo?.following?.length,
+      userInfoFollowers: userInfo?.followers?.length,
+      statsLoading,
+      userInfo: userInfo
+    });
+  };
+
+  // Mode développement pour debug
+  const isDev = process.env.NODE_ENV === 'development';
+
   return (
     <aside className={`fixed top-0 left-0 h-full flex flex-col bg-white dark:bg-gray-900 w-64 z-20 shadow-lg border-r border-gray-200 dark:border-gray-800 ${className}`}>
       {/* Section profil en haut */}
@@ -379,15 +518,17 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
             </div>
           )}
           
-          {/* Stats */}
+          {/* Stats avec rafraîchissement automatique - AMÉLIORÉES */}
           <div className="flex justify-start gap-6 text-sm">
             <div className="flex items-center gap-1">
-              {loading ? (
+              {loading || statsLoading ? (
                 <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
               ) : (
                 <>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {userInfo?.following?.length || 0}
+                  <span className={`font-medium text-gray-900 dark:text-gray-100 transition-all duration-300 ${
+                    statsLoading ? 'opacity-50' : 'opacity-100'
+                  }`}>
+                    {followingCount}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {t('sidebar.following')}
@@ -396,12 +537,14 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
               )}
             </div>
             <div className="flex items-center gap-1">
-              {loading ? (
+              {loading || statsLoading ? (
                 <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
               ) : (
                 <>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {userInfo?.followers?.length || 0}
+                  <span className={`font-medium text-gray-900 dark:text-gray-100 transition-all duration-300 ${
+                    statsLoading ? 'opacity-50' : 'opacity-100'
+                  }`}>
+                    {followersCount}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {t('sidebar.followers')}
@@ -409,6 +552,17 @@ export default function AppSidebar({ className = '' }: AppSidebarProps) {
                 </>
               )}
             </div>
+            
+            {/* Bouton debug en développement */}
+            {isDev && (
+              <button 
+                onClick={debugStats}
+                className="text-xs text-gray-400 hover:text-gray-600"
+                title="Debug stats"
+              >
+                🐛
+              </button>
+            )}
           </div>
         </div>
       </div>
