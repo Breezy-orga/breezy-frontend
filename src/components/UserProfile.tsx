@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import api from '@/lib/axios'
-import { User } from '@/types/models'
+import { User, Post as PostType } from '@/types/models'
 import PostList from './PostList'
 import Link from 'next/link'
 import { MdArrowBack, MdEdit, MdCamera, MdFlag, MdWarning, MdBlock, MdInfo, MdDelete, MdClose } from 'react-icons/md'
@@ -119,6 +119,10 @@ export default function UserProfile({ userId }: Props) {
   
   // État pour le dialogue de confirmation de suppression
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  
+  // États pour les posts (comme dans le feed)
+  const [posts, setPosts] = useState<PostType[]>([])
+  const [postsLoading, setPostsLoading] = useState(true)
 
   const isSelf = user?._id === currentUser?._id
 
@@ -136,6 +140,35 @@ export default function UserProfile({ userId }: Props) {
     setNotification(prev => prev ? { ...prev, visible: false } : null)
     setTimeout(() => setNotification(null), 300)
   }
+
+  // Charger les posts de l'utilisateur
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      if (!user?._id) return;
+      
+      setPostsLoading(true);
+      try {
+        console.log('🔄 Chargement des posts pour l\'utilisateur:', user._id);
+        const response = await fetch(`/api/posts/user/${user._id}`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userPosts = await response.json();
+          console.log('Posts de l\'utilisateur chargés:', userPosts.length);
+          setPosts(userPosts);
+        } else {
+          console.error('❌ Erreur lors du chargement des posts utilisateur');
+        }
+      } catch (error) {
+        console.error('❌ Erreur réseau posts utilisateur:', error);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+    
+    fetchUserPosts();
+  }, [user?._id]); // Se recharge quand l'utilisateur change
 
   useEffect(() => {
     const fetchData = async () => {
@@ -260,6 +293,18 @@ export default function UserProfile({ userId }: Props) {
       }
       
       showNotification(t('profile.profile_updated') || 'Profil mis à jour avec succès', 'success')
+      
+      // Recharger les posts après mise à jour du profil
+      if (user?._id) {
+        const response = await fetch(`/api/posts/user/${user._id}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const refreshedPosts = await response.json();
+          setPosts(refreshedPosts);
+        }
+      }
+      
     } catch (error) {
       console.error('Erreur mise à jour:', error);
       showNotification(t('profile.update_error') || 'Erreur lors de la mise à jour', 'error')
@@ -348,6 +393,66 @@ export default function UserProfile({ userId }: Props) {
     }
   }
 
+  // Fonction de suppression des posts (comme dans le feed)
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        setPosts(prev => prev.filter(p => p._id !== postId));
+        console.log('Post supprimé avec succès du profil');
+        showNotification('Post supprimé avec succès', 'success');
+      } else {
+        console.error('Erreur lors de la suppression du post');
+        showNotification('Erreur lors de la suppression', 'error');
+      }
+    } catch (err) {
+      console.error('Erreur réseau lors de la suppression:', err);
+      showNotification('Erreur réseau', 'error');
+    }
+  };
+
+  // Fonction de gestion des likes (comme dans le feed)
+  const handleLike = (postId: string, update: { liked: boolean; totalLikes: number }) => {
+    console.log('Like dans UserProfile:', postId, update);
+    
+    if (!currentUser) {
+      console.warn('Utilisateur non connecté');
+      return;
+    }
+    
+    setPosts(prevPosts => 
+      prevPosts.map(post => {
+        if (post._id === postId) {
+          const userId = currentUser._id;
+          let newLikes = [...(post.likes || [])];
+          
+          if (update.liked) {
+            // Ajouter le like s'il n'existe pas déjà
+            if (!newLikes.includes(userId)) {
+              newLikes.push(userId);
+            }
+          } else {
+            // Retirer le like
+            newLikes = newLikes.filter(id => id !== userId);
+          }
+          
+          console.log('Mise à jour likes UserProfile:', {
+            postId,
+            oldLikes: post.likes,
+            newLikes,
+            liked: update.liked
+          });
+          
+          return { ...post, likes: newLikes };
+        }
+        return post;
+      })
+    );
+  };
   // Fonction pour gérer la suppression du compte
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -801,7 +906,7 @@ export default function UserProfile({ userId }: Props) {
         userName={user.username}
       />
 
-      {/* Publications - Toujours visible même en mode édition */}
+      {/* Publications */}
       <div>
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
           {t('profile.posts')}
@@ -810,21 +915,12 @@ export default function UserProfile({ userId }: Props) {
               ({user.status === 'banned' ? 'Compte banni' : 'Compte suspendu'})
             </span>
           )}
-          {isEditing && (
-            <span className="text-sm font-normal text-blue-500 dark:text-blue-400">
-              (Mode édition)
-            </span>
-          )}
         </h2>
         <PostList 
+          initialPosts={posts}
           fetchUrl={`/api/posts/user/${user._id}`}
-          initialPosts={[]}
-          onDelete={(postId) => {
-            console.log('Post supprimé dans le profil:', postId);
-          }}
-          onLike={(postId, update) => {
-            console.log('Like dans le profil:', postId, update);
-          }}
+          onDelete={handleDeletePost}
+          onLike={handleLike}
         />
       </div>
     </div>
