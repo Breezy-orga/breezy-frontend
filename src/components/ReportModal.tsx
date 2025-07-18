@@ -90,16 +90,23 @@ export default function ReportModal({ isOpen, onClose, postId, userId, userName 
     setIsSubmitting(true);
 
     try {
+      const reportData: any = {
+        type: selectedType,
+        reason: reason.trim() || `Signalement: ${selectedType}`
+      };
+
+      // Signaler uniquement le post OU l'utilisateur, pas les deux
+      if (postId) {
+        reportData.postId = postId;
+      } else if (userId) {
+        reportData.userId = userId;
+      }
+
       const response = await fetch('/api/moderation/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          type: selectedType,
-          reason: reason.trim() || `Signalement: ${selectedType}`,
-          ...(postId && { postId }),
-          ...(userId && { userId })
-        })
+        body: JSON.stringify(reportData)
       });
 
       // Traitement de la réponse avec gestion d'erreur robuste
@@ -127,9 +134,14 @@ export default function ReportModal({ isOpen, onClose, postId, userId, userName 
         onClose();
         
         // Afficher la notification de succès
-        const successMessage = userName
-          ? t('report.success_with_user', `Utilisateur @${userName} signalé avec succès !`)
-          : t('report.success', 'Signalement envoyé avec succès !');
+        let successMessage;
+        if (postId) {
+          successMessage = t('report.post_success', 'Post signalé avec succès !');
+        } else if (userName) {
+          successMessage = t('report.success_with_user', `Utilisateur @${userName} signalé avec succès !`);
+        } else {
+          successMessage = t('report.success', 'Signalement envoyé avec succès !');
+        }
         
         showNotification('success', successMessage);
       } else {
@@ -150,6 +162,22 @@ export default function ReportModal({ isOpen, onClose, postId, userId, userName 
   const handleClose = () => {
     if (!isSubmitting) {
       onClose();
+    }
+  };
+
+  // Détermine le titre en fonction du type de signalement
+  const getModalTitle = () => {
+    if (postId) {
+      return t('report.title_post', 'Signaler ce post');
+    } else if (userName) {
+      return (
+        <>
+          {t('report.title_user', 'Signaler un utilisateur')}
+          <span className="text-base font-normal">@{userName}</span>
+        </>
+      );
+    } else {
+      return t('report.title', 'Signaler un contenu');
     }
   };
 
@@ -175,8 +203,7 @@ export default function ReportModal({ isOpen, onClose, postId, userId, userName 
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <MdFlag className="text-red-500" />
-              {t('report.title', 'Signaler un contenu')}
-              {userName && <span className="text-base font-normal">@{userName}</span>}
+              {getModalTitle()}
             </h2>
             <button 
               onClick={handleClose} 

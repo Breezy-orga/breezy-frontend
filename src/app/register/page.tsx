@@ -16,21 +16,21 @@ export default function Register() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
- useEffect(() => {
-  // Empêche la redirection automatique si on vient d'un logout
-  const fromLogout = window.sessionStorage.getItem('fromLogout');
-  if (fromLogout === 'true') {
-    window.sessionStorage.removeItem('fromLogout');
-    return;
-  }
-  fetch('/api/users/me', { credentials: 'include' })
-    .then(res => res.ok ? res.json() : null)
-    .then(data => {
-      if (data && data._id) {
-        router.replace('/feed');
-      }
-    });
-}, [router]);
+  useEffect(() => {
+    // Empêche la redirection automatique si on vient d'un logout
+    const fromLogout = window.sessionStorage.getItem('fromLogout');
+    if (fromLogout === 'true') {
+      window.sessionStorage.removeItem('fromLogout');
+      return;
+    }
+    fetch('/api/users/me', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data._id) {
+          router.replace('/feed');
+        }
+      });
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -66,11 +66,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden
+    <div className="h-screen flex flex-col relative
       bg-gradient-to-r from-blue-50 via-white to-white text-gray-900
       dark:bg-gradient-to-r dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 dark:text-gray-100
       transition-colors">
-      <div className="flex flex-1">
+      
+      {/* Contenu principal */}
+      <div className="flex flex-1 min-h-0">
         {/* Colonne gauche : logo + slogan avec halo */}
         <div className="hidden md:flex flex-col justify-center items-center flex-1 relative">
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full
@@ -82,14 +84,17 @@ export default function Register() {
             <p className="text-xl text-gray-500 font-medium text-center max-w-xs dark:text-gray-300">A breath of fresh share</p>
           </div>
         </div>
+        
         {/* Colonne droite : bloc d'inscription */}
-        <div className="flex flex-col justify-center items-center flex-1 py-12 px-4 sm:px-8 relative">
-          <div className="w-full max-w-md bg-white p-10 rounded-3xl shadow-2xl border-l-8 border-blue-200
-            dark:bg-gray-900 dark:border-blue-900 dark:shadow-blue-900/40 transition-colors">
+        <div className="flex flex-col justify-center items-center flex-1 py-4 px-4 sm:px-8 relative overflow-y-auto">
+          <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl border-l-8 border-blue-200
+            dark:bg-gray-900 dark:border-blue-900 dark:shadow-blue-900/40 transition-colors
+            my-4">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center mb-2">
               {t('register.title')}
             </h2>
             <p className="text-gray-500 dark:text-gray-300 text-center mb-6">{t('register.subtitle')}</p>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('register.username')}</label>
@@ -140,12 +145,14 @@ export default function Register() {
               {error && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-center dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">{t('register.error', { error })}</div>}
               {success && <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-xl text-center dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">{t('register.success')}</div>}
             </form>
+            
             {/* Séparateur */}
             <div className="flex items-center my-6">
               <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
               <span className="mx-4 text-gray-500 font-medium dark:text-gray-300">{t('register.or')}</span>
               <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
             </div>
+            
             {/* Bouton Google */}
             <button
               className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-700 rounded-xl py-3 px-4 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all transform hover:scale-[1.02] focus:scale-[0.98] shadow-sm"
@@ -162,6 +169,7 @@ export default function Register() {
               </svg>
               <span className="text-gray-700 dark:text-gray-200 font-medium">{t('register.google')}</span>
             </button>
+            
             {/* Texte d'accord */}
             <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md mt-6">
               {t('register.agree')}{' '}
@@ -169,6 +177,7 @@ export default function Register() {
               {' '} {t('register.and')} {' '}
               <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">{t('register.privacy')}</Link>
             </p>
+            
             {/* Lien connexion */}
             <div className="w-full text-center mt-6">
               <span className="text-gray-500 dark:text-gray-300">{t('register.already')}</span>
@@ -177,8 +186,9 @@ export default function Register() {
           </div>
         </div>
       </div>
-      {/* Footer */}
-      <footer className="py-6 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm
+      
+      {/* Footer fixé en bas */}
+      <footer className="flex-shrink-0 py-4 px-4 border-t border-gray-200 bg-white/50 backdrop-blur-sm
         dark:bg-gray-900/80 dark:border-gray-800 dark:text-gray-400 transition-colors">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <Link href="/about" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('register.about')}</Link>
@@ -187,7 +197,7 @@ export default function Register() {
           <Link href="/contact" className="hover:text-gray-700 dark:hover:text-white transition-colors">{t('register.contact')}</Link>
           <span>© {new Date().getFullYear()} Breezy</span>
         </div>
-        <div className="absolute right-4 bottom-6">
+        <div className="absolute right-4 bottom-4">
           <ThemeToggle />
         </div>
       </footer>

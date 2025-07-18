@@ -160,13 +160,20 @@ const PromptDialog = ({ dialog, onClose }: { dialog: PromptDialog; onClose: () =
   const { t } = useTranslation();
   const [value, setValue] = useState('');
 
+  // Réinitialiser la valeur quand le dialogue s'ouvre
+  useEffect(() => {
+    if (dialog.isOpen) {
+      setValue('');
+    }
+  }, [dialog.isOpen]);
+
   if (!dialog.isOpen) return null;
 
   const handleConfirm = () => {
     if (value.trim()) {
       dialog.onConfirm(value);
-      onClose();
-      setValue('');
+      // Ne pas fermer le dialogue ici ni réinitialiser la valeur
+      // Laisser le parent gérer la fermeture
     }
   };
 
@@ -193,6 +200,11 @@ const PromptDialog = ({ dialog, onClose }: { dialog: PromptDialog; onClose: () =
             placeholder={dialog.placeholder}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6"
             autoFocus
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && value.trim()) {
+                handleConfirm();
+              }
+            }}
           />
           <div className="flex gap-3 justify-end">
             <button
@@ -203,7 +215,8 @@ const PromptDialog = ({ dialog, onClose }: { dialog: PromptDialog; onClose: () =
             </button>
             <button
               onClick={handleConfirm}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              disabled={!value.trim()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
             >
               {t('common.confirm', 'Confirmer')}
             </button>
@@ -312,7 +325,7 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
     }
   };
 
-  const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unban', reason?: string, duration?: number) => {
+  const handleUserAction = async (userId: string, action: 'suspend' | 'ban' | 'unban', reason?: string, duration?: number, reportId?: string) => {
     try {
       setIsProcessing(true);
       
@@ -349,24 +362,38 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
 
       if (response.status >= 200 && response.status < 300) {
         let successMessage;
+        let moderatorAction;
+        
         switch (action) {
           case 'suspend':
             successMessage = duration 
               ? t('moderation.suspend_success_duration', 'Utilisateur suspendu pour {{duration}} jour(s)', { duration })
               : t('moderation.suspend_success_indefinite', 'Utilisateur suspendu indéfiniment');
+            moderatorAction = duration 
+              ? t('moderation.actions.suspended_duration', 'Utilisateur suspendu {{duration}} jour(s)', { duration })
+              : t('moderation.actions.suspended_indefinite', 'Utilisateur suspendu indéfiniment');
             break;
           case 'ban':
             successMessage = t('moderation.ban_success', 'Utilisateur banni avec succès');
+            moderatorAction = t('moderation.actions.user_banned', 'Utilisateur banni');
             break;
           case 'unban':
             successMessage = t('moderation.unban_success', 'Utilisateur réactivé avec succès');
+            moderatorAction = t('moderation.actions.user_unbanned', 'Utilisateur réactivé');
             break;
           default:
             successMessage = responseData.message || t('moderation.action_success', 'Action effectuée avec succès');
+            moderatorAction = successMessage;
         }
 
         showAlert('success', successMessage);
-        await fetchReports();
+        
+        // Marquer automatiquement le signalement comme résolu si un reportId est fourni
+        if (reportId) {
+          await handleReportAction(reportId, 'resolved', moderatorAction);
+        } else {
+          await fetchReports();
+        }
       } else {
         const errorMessage = responseData.message || 
                            responseData.error || 
@@ -405,7 +432,14 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
 
       if (response.status >= 200 && response.status < 300) {
         showAlert('success', t('moderation.post_deleted', 'Post supprimé avec succès'));
-        await fetchReports();
+        
+        // Marquer automatiquement le signalement comme résolu après suppression du post
+        const reportToUpdate = reports.find(r => r.post?._id === postId);
+        if (reportToUpdate) {
+          await handleReportAction(reportToUpdate._id, 'resolved', t('moderation.actions.post_deleted_action', 'Post supprimé'));
+        } else {
+          await fetchReports();
+        }
       } else {
         let errorMessage = t('moderation.action_error', 'Erreur lors de la suppression');
         try {
@@ -427,7 +461,7 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
     }
   };
 
-  const promptUserAction = (userId: string, action: 'suspend' | 'ban') => {
+  const promptUserAction = (userId: string, action: 'suspend' | 'ban', reportId?: string) => {
     setPromptDialog({
       isOpen: true,
       title: t(`moderation.${action}_title`, `${action.charAt(0).toUpperCase() + action.slice(1)} utilisateur`),
@@ -435,27 +469,42 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
       placeholder: t(`moderation.${action}_reason_placeholder`, 'Entrez la raison...'),
       onConfirm: (reason) => {
         if (action === 'suspend') {
-          setPromptDialog({
-            isOpen: true,
-            title: t('moderation.suspend_duration_title', 'Durée de suspension'),
-            message: t('moderation.suspend_duration_prompt', 'Durée en jours (optionnel):'),
-            placeholder: t('moderation.duration_placeholder', 'Ex: 7'),
-            inputType: 'number',
-            onConfirm: (durationStr) => {
-              const duration = durationStr ? parseInt(durationStr) : undefined;
-              if (durationStr && isNaN(duration!)) {
-                showAlert('error', t('moderation.invalid_duration', 'Durée invalide'));
-                return;
+          // Fermer le premier dialogue
+          setPromptDialog({ ...promptDialog, isOpen: false });
+          
+          // Ouvrir le dialogue pour la durée après un court délai
+          setTimeout(() => {
+            setPromptDialog({
+              isOpen: true,
+              title: t('moderation.suspend_duration_title', 'Durée de suspension'),
+              message: t('moderation.suspend_duration_prompt', 'Durée en jours (optionnel, laissez vide pour indéfini):'),
+              placeholder: t('moderation.duration_placeholder', 'Ex: 7'),
+              inputType: 'number',
+              onConfirm: (durationStr) => {
+                // Fermer le dialogue de durée
+                setPromptDialog({ ...promptDialog, isOpen: false });
+                
+                const duration = durationStr.trim() ? parseInt(durationStr) : undefined;
+                if (durationStr.trim() && isNaN(duration!)) {
+                  showAlert('error', t('moderation.invalid_duration', 'Durée invalide'));
+                  return;
+                }
+                handleUserAction(userId, action, reason, duration, reportId);
+              },
+              onCancel: () => {
+                setPromptDialog({ ...promptDialog, isOpen: false });
               }
-              handleUserAction(userId, action, reason, duration);
-            },
-            onCancel: () => {}
-          });
+            });
+          }, 100);
         } else {
-          handleUserAction(userId, action, reason);
+          // Pour le bannissement, fermer le dialogue et exécuter l'action
+          setPromptDialog({ ...promptDialog, isOpen: false });
+          handleUserAction(userId, action, reason, undefined, reportId);
         }
       },
-      onCancel: () => {}
+      onCancel: () => {
+        setPromptDialog({ ...promptDialog, isOpen: false });
+      }
     });
   };
 
@@ -576,7 +625,8 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
                   </div>
                 )}
 
-                {report.reported && (
+                {/* Utilisateur signalé - Seulement pour les signalements directs d'utilisateur */}
+                {report.reported && !report.post && (
                   <div className="mb-4 bg-orange-50 dark:bg-orange-900/30 p-4 rounded-lg">
                     <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-2">
                       {t('moderation.report.reported_user', 'Utilisateur signalé:')}
@@ -612,6 +662,7 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
                       {t('moderation.actions.dismiss', 'Rejeter')}
                     </button>
 
+                    {/* Actions spécifiques pour les posts */}
                     {report.post && (
                       <button
                         onClick={() => promptPostDeletion(report.post!._id)}
@@ -622,10 +673,11 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
                       </button>
                     )}
                     
-                    {report.reported && (
+                    {/* Actions spécifiques pour les utilisateurs (signalement direct d'utilisateur) */}
+                    {report.reported && !report.post && (
                       <>
                         <button
-                          onClick={() => promptUserAction(report.reported!._id, 'suspend')}
+                          onClick={() => promptUserAction(report.reported!._id, 'suspend', report._id)}
                           disabled={isProcessing}
                           className="px-3 py-1 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50 transition-colors"
                         >
@@ -633,7 +685,7 @@ export default function AdminModerationPanel({ userRole }: AdminModerationPanelP
                         </button>
                         
                         <button
-                          onClick={() => promptUserAction(report.reported!._id, 'ban')}
+                          onClick={() => promptUserAction(report.reported!._id, 'ban', report._id)}
                           disabled={isProcessing}
                           className="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
